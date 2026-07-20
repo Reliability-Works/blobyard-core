@@ -56,5 +56,5 @@ while IFS= read -r reference; do
     --signer-digest "$source_revision" >/dev/null
 done < <(jq -er '.images[].reference' "$container_manifest")
 
-printf 'Verified %s signed private container images for Blobyard %s.\n' \
+printf 'Verified %s signed release-candidate container images for Blobyard %s.\n' \
   "$(jq '.images | length' "$container_manifest")" "$version"

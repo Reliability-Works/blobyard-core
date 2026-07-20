@@ -1,4 +1,4 @@
-name: Build private release candidate
+name: Build release candidate
 
 on:
   workflow_dispatch:
@@ -16,12 +16,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: private-release-v${{ inputs.version }}
+  group: core-release-v${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
   prerequisites:
-    name: Authorize and prepare private candidate
+    name: Authorize and prepare release candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
@@ -53,7 +53,7 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$COMMIT_SHA" ]]
           git rev-parse --verify 'refs/remotes/origin/main^{commit}' >/dev/null
           git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main
-          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PRIVATE" ]]
+          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PUBLIC" ]]
           workspace_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
           [[ "$workspace_version" == "$RELEASE_VERSION" ]]
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -71,12 +71,12 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --draft \
               --target "$COMMIT_SHA" \
-              --title "Blob Yard v$RELEASE_VERSION private candidate" \
-              --notes "Private validation candidate. Do not publish."
+              --title "Blob Yard v$RELEASE_VERSION release candidate" \
+              --notes "Verified release candidate. Review all attached evidence before publishing."
           fi
           printf 'version=%s\n' "$RELEASE_VERSION" >>"$GITHUB_OUTPUT"
 
-      - name: Require private-candidate signing credentials
+      - name: Require release signing credentials
         shell: bash
         env:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
@@ -365,7 +365,7 @@ jobs:
           retention-days: 1
 
   containers:
-    name: Build, sign, and attest private ${{ matrix.surface }} image
+    name: Build, sign, and attest ${{ matrix.surface }} image
     needs: [prerequisites, assemble]
     strategy:
       fail-fast: false
@@ -425,7 +425,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
-      - name: Authenticate to private GitHub Container Registry
+      - name: Authenticate to GitHub Container Registry
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         with:
           registry: ghcr.io
@@ -433,7 +433,7 @@ jobs:
           password: ${{ github.token }}
 
       - id: build
-        name: Build and push exact private candidate image
+        name: Build and push exact release candidate image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
@@ -461,7 +461,7 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
-      - name: Verify private visibility, signature, provenance, and binary
+      - name: Verify candidate isolation, signature, provenance, and binary
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -561,14 +561,14 @@ jobs:
       - name: Preserve attestation bundle
         run: cp "${{ steps.attest.outputs.bundle-path }}" dist/blobyard-provenance.intoto.jsonl
 
-      - name: Authenticate to private GitHub Container Registry
+      - name: Authenticate to GitHub Container Registry
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Verify signed private candidate before staging
+      - name: Verify signed release candidate before staging
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -654,8 +654,8 @@ jobs:
           output=$("$RUNNER_TEMP/blobyard-server" --version)
           grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
 
-  stage-private-release:
-    name: Stage verified assets on private draft release
+  stage-release:
+    name: Stage verified assets on draft release
     needs: [prerequisites, release-smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -668,14 +668,14 @@ jobs:
           name: blobyard-release-${{ needs.prerequisites.outputs.version }}
           path: dist
 
-      - name: Revalidate private draft and upload exact assets
+      - name: Revalidate public repository draft and upload exact assets
         shell: bash
         env:
           COMMIT_SHA: ${{ inputs.commit_sha }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: v${{ needs.prerequisites.outputs.version }}
         run: |
-          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PRIVATE" ]]
+          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PUBLIC" ]]
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --json isDraft,targetCommitish |
             jq -e --arg sha "$COMMIT_SHA" \

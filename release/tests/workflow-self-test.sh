@@ -16,6 +16,7 @@ grep -Fq "git merge-base --is-ancestor \"\$COMMIT_SHA\" refs/remotes/origin/main
 
 prerequisites_job=$(sed -n '/^  prerequisites:/,/^  macos:/p' "$workflow")
 grep -Fq "gh repo view \"\$GITHUB_REPOSITORY\"" <<<"$prerequisites_job"
+grep -Fq '== "PUBLIC"' <<<"$prerequisites_job"
 grep -Fq "gh release view \"\$RELEASE_TAG\" --repo \"\$GITHUB_REPOSITORY\" --json isDraft" \
   <<<"$prerequisites_job"
 grep -Fq "gh release edit \"\$RELEASE_TAG\" \\" <<<"$prerequisites_job"
@@ -42,8 +43,9 @@ if grep -Fq "if: \${{ matrix.surface == 'cli' }}" <<<"$containers_job"; then
   exit 1
 fi
 
-stage_job=$(sed -n '/^  stage-private-release:/,$p' "$workflow")
+stage_job=$(sed -n '/^  stage-release:/,$p' "$workflow")
 grep -Fq "gh repo view \"\$GITHUB_REPOSITORY\"" <<<"$stage_job"
+grep -Fq '== "PUBLIC"' <<<"$stage_job"
 grep -Fq "gh release view \"\$RELEASE_TAG\" --repo \"\$GITHUB_REPOSITORY\"" <<<"$stage_job"
 grep -Fq "gh release upload \"\$RELEASE_TAG\" \"\${assets[@]}\" --clobber \\" <<<"$stage_job"
 grep -Fq -- "--repo \"\$GITHUB_REPOSITORY\"" <<<"$stage_job"

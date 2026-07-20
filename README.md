@@ -5,8 +5,8 @@ artifacts and generated files durably, keeps them private by default, and expose
 download, sharing, preview, automation, and Web Yard workflows without giving users permanent
 storage credentials.
 
-This repository is currently private while extraction and release validation are completed. Public
-visibility and public artifacts require a separate approval.
+The source is published under Apache License 2.0. Signed release artifacts are produced only from
+the repository's verified release workflow.
 
 ## What is included
 

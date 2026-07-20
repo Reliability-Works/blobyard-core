@@ -5,9 +5,9 @@ of truth for the CLI and server targets, packed automation surfaces, container n
 provenance assets, and trusted GitHub Actions signing identity. MCP ships inside the native
 `blobyard` CLI through `blobyard mcp`, not as a second binary.
 
-The repository remains private. The current workflow can create and validate a private draft
-candidate, but it cannot publish a GitHub release, create a public tag, update the public R2 host,
-update Homebrew, or make a container public.
+The repository is public. The release workflow creates and validates a draft candidate, but it
+cannot publish the GitHub release, create the public tag, update the public R2 host, update
+Homebrew, or make a container public. Those publication actions remain deliberate operator steps.
 
 ## Candidate contents
 
@@ -21,7 +21,7 @@ A candidate contains:
 - a revision-stamped conformance bundle containing OpenAPI documents, operation metadata,
   authorization vectors, behavior fixtures, and inner checksums;
 - one repository SPDX SBOM;
-- private multi-architecture CLI and server images, pinned by digest in
+- isolated multi-architecture CLI and server candidate images, pinned by digest in
   `blobyard-container-images.json`;
 - a generated Homebrew formula for inspection only;
 - the release manifest, exact SHA-256 inventory, keyless checksum signature, GitHub artifact
@@ -40,30 +40,31 @@ The Action, SDK, and conformance archives have exact safe file inventories. The 
 also verifies its own inner checksum file and exact source revision. macOS CLI binaries require a
 valid Developer ID signature and successful notarization before packaging.
 
-The CLI and server images are built without a mutable `latest` tag. The workflow checks that both
-GHCR packages remain private, signs each immutable digest with GitHub OIDC, publishes provenance to
-the registry, verifies both claims, and runs each image by digest. Their verified digests enter the
-signed release file set only after those checks pass.
+The CLI and server images are built without a mutable `latest` tag. Candidate packages remain
+private until the operator deliberately changes their visibility. The workflow signs each immutable
+digest with GitHub OIDC, publishes provenance to the registry, verifies both claims, and runs each
+image by digest. Their verified digests enter the signed release file set only after those checks
+pass.
 
 No installer, smoke test, hosted acceptance job, or operator path may execute a binary before its
 checksum, signature, provenance, archive inventory, source commit, and reported version pass.
 
-## Private workflow
+## Draft-first workflow
 
-`Build private release candidate` is manually dispatched with one full commit on `main` and the
-exact prepared semantic version. It verifies that the repository is still private and creates or
-reuses a draft GitHub release bound to that commit. It then:
+`Build release candidate` is manually dispatched with one full commit on `main` and the exact
+prepared semantic version. It verifies that the repository is public and creates or reuses a draft
+GitHub release bound to that commit. It then:
 
 1. builds, signs, notarizes, runs, and deterministically packages the four CLI targets;
 2. builds, runs, and packages the two Linux standalone server targets;
 3. packs and inspects the Action, SDK, and revision-stamped conformance surfaces;
 4. generates the release manifest, Homebrew formula, and SPDX SBOM;
-5. builds the two private multi-architecture images, then signs, attests, verifies, and runs their
-   immutable digests;
+5. builds the two isolated multi-architecture candidate images, then signs, attests, verifies, and
+   runs their immutable digests;
 6. records both digests, generates the final exact checksum set, signs it, and attests every file;
 7. downloads the final bundle on every supported native runner, verifies it again, atomically
    installs and runs the CLI, and runs both standalone server archives;
-8. attaches the complete verified file bundle to the private draft without publishing it.
+8. attaches the complete verified file bundle to the draft without publishing it.
 
 The local non-publishing checks are:
 

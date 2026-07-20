@@ -1,8 +1,7 @@
 # Contributing
 
-Blob Yard Core is currently private while its extraction and release contract are validated.
-Contribution workflows will open with the repository. Until then, authorized contributors should use
-a short-lived branch and a pull request into `main`.
+Blob Yard Core accepts focused contributions that preserve its self-hostable product contract and
+hard quality gates. Use a short-lived branch and open a pull request into `main`.
 
 ## Before opening a pull request
 
