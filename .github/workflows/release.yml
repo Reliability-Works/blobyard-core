@@ -61,7 +61,9 @@ jobs:
               jq -e '.isDraft == true' >/dev/null
             gh release edit "$RELEASE_TAG" \
               --repo "$GITHUB_REPOSITORY" \
-              --target "$COMMIT_SHA"
+              --target "$COMMIT_SHA" \
+              --title "Blob Yard v$RELEASE_VERSION release candidate" \
+              --notes "Verified release candidate. Review all attached evidence before publishing."
             gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
               --json isDraft,targetCommitish |
               jq -e --arg sha "$COMMIT_SHA" \

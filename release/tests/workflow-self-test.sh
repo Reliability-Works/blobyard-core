@@ -21,6 +21,11 @@ grep -Fq "gh release view \"\$RELEASE_TAG\" --repo \"\$GITHUB_REPOSITORY\" --jso
   <<<"$prerequisites_job"
 grep -Fq "gh release edit \"\$RELEASE_TAG\" \\" <<<"$prerequisites_job"
 grep -Fq -- "--target \"\$COMMIT_SHA\"" <<<"$prerequisites_job"
+grep -Fq -- "--title \"Blob Yard v\$RELEASE_VERSION release candidate\"" \
+  <<<"$prerequisites_job"
+grep -Fq -- \
+  '--notes "Verified release candidate. Review all attached evidence before publishing."' \
+  <<<"$prerequisites_job"
 grep -Fq "gh release create \"\$RELEASE_TAG\" \\" <<<"$prerequisites_job"
 grep -Fq -- "--repo \"\$GITHUB_REPOSITORY\"" <<<"$prerequisites_job"
 
