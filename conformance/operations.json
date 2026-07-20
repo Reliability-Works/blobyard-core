@@ -1,0 +1,967 @@
+{
+  "operations": [
+    {
+      "id": "abortUpload",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/uploads/abort",
+      "requiredCiActions": ["upload"],
+      "requiredUserScopes": ["object:write"],
+      "risk": "destructive"
+    },
+    {
+      "id": "clearRetention",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "DELETE",
+      "ownership": "core",
+      "path": "/retention",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["retention:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "completeAccountDeletion",
+      "idempotency": {
+        "required": false,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/account/deletion/complete",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:delete"],
+      "risk": "destructive"
+    },
+    {
+      "id": "completeUpload",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/uploads/complete",
+      "requiredCiActions": ["upload"],
+      "requiredUserScopes": ["object:write"],
+      "risk": "write"
+    },
+    {
+      "id": "createApiToken",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/api-tokens",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["tokens:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createBillingCheckout",
+      "idempotency": {
+        "required": false,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/billing/checkout",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createBillingPortal",
+      "idempotency": {
+        "required": false,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/billing/portal",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createBillingSubscriptionUpdate",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/billing/subscription/update",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createCiTrust",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/ci/trusts",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["ci:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createInbox",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/inboxes",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["inbox:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createInvite",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/members/invites",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["members:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createOneTimeSecret",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/secrets",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createPreview",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/previews",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createProject",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/projects",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["project:write"],
+      "risk": "write"
+    },
+    {
+      "id": "createShare",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/shares",
+      "requiredCiActions": ["share"],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createStorageCheckout",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/billing/storage/checkout",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createStorageUpdate",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/billing/storage/update",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createWorkspace",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/workspaces",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["project:write"],
+      "risk": "write"
+    },
+    {
+      "id": "deleteObject",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "DELETE",
+      "ownership": "core",
+      "path": "/objects",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["object:write"],
+      "risk": "destructive"
+    },
+    {
+      "id": "deleteWebYard",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/delete",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "downloadAccountExport",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/account/exports/download",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:export"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "downloadShare",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/shares/download",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "exchangeBootstrapToken",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/bootstrap/exchange",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "exchangeGitHubOidc",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/ci/github/oidc/exchange",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "failWebYardDeploy",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/deploys/fail",
+      "requiredCiActions": ["upload", "yard:manage"],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "write"
+    },
+    {
+      "id": "finaliseWebYardDeploy",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/deploys/finalise",
+      "requiredCiActions": ["upload", "yard:manage"],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "write"
+    },
+    {
+      "id": "getAccountDeletion",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "hosted-extension",
+      "path": "/account/deletion",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:delete"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "getAccountExport",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "hosted-extension",
+      "path": "/account/exports",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:export"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "getBilling",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "hosted-extension",
+      "path": "/billing",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["billing:manage"],
+      "risk": "read"
+    },
+    {
+      "id": "getRetention",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/retention",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["retention:manage"],
+      "risk": "read"
+    },
+    {
+      "id": "getRetentionOverview",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/retention/overview",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["retention:manage"],
+      "risk": "read"
+    },
+    {
+      "id": "getUploadStatus",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/uploads/status",
+      "requiredCiActions": ["upload"],
+      "requiredUserScopes": ["object:write"],
+      "risk": "read"
+    },
+    {
+      "id": "health",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/health",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "read"
+    },
+    {
+      "id": "listApiTokens",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/api-tokens",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["tokens:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listAuditEvents",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/audit",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["audit:read"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listCiTrusts",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/ci/trusts",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["ci:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listCliSessions",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/cli/sessions",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["sessions:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listInboxes",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/inboxes",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["inbox:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listInvites",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "hosted-extension",
+      "path": "/members/invites",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["members:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listMembers",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "hosted-extension",
+      "path": "/members",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["workspace:read"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listObjects",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/objects",
+      "requiredCiActions": ["download"],
+      "requiredUserScopes": ["object:read"],
+      "risk": "read"
+    },
+    {
+      "id": "listPreviews",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/previews",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listProjects",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/projects",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["project:read"],
+      "risk": "read"
+    },
+    {
+      "id": "listShares",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/shares",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "listWebYardDeploys",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/deploys",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:read"],
+      "risk": "read"
+    },
+    {
+      "id": "listWebYards",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:read"],
+      "risk": "read"
+    },
+    {
+      "id": "listWorkspaces",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/workspaces",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["workspace:read"],
+      "risk": "read"
+    },
+    {
+      "id": "logoutCliSession",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/cli/logout",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "destructive"
+    },
+    {
+      "id": "pollDeviceLogin",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/cli/device/poll",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "prepareAccountDeletion",
+      "idempotency": {
+        "required": false,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/account/deletion/prepare",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:delete"],
+      "risk": "destructive"
+    },
+    {
+      "id": "redeemOneTimeSecret",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/secrets/redeem",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "refreshCliSession",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/cli/token/refresh",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "removeMember",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/members/remove",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["members:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "renameWorkspace",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/workspaces/rename",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["project:write"],
+      "risk": "write"
+    },
+    {
+      "id": "requestAccountExport",
+      "idempotency": {
+        "required": false,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/account/exports",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:export"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "requestDownload",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/downloads/request",
+      "requiredCiActions": ["download"],
+      "requiredUserScopes": ["object:read"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "requestUpload",
+      "idempotency": {
+        "required": true,
+        "supported": true
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/uploads/request",
+      "requiredCiActions": ["upload"],
+      "requiredUserScopes": ["object:write"],
+      "risk": "write"
+    },
+    {
+      "id": "requestUploadParts",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/uploads/parts/request",
+      "requiredCiActions": ["upload"],
+      "requiredUserScopes": ["object:write"],
+      "risk": "write"
+    },
+    {
+      "id": "resolveInbox",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/inboxes/resolve",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "resolveShare",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/shares/resolve",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "retryAccountDeletion",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/account/deletion/retry",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["account:delete"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeApiToken",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/api-tokens/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["tokens:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeCiTrust",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/ci/trusts/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["ci:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeCliSession",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/cli/sessions/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["sessions:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeInbox",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/inboxes/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["inbox:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeInvite",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/members/invites/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["members:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokePreview",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/previews/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeShare",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/shares/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["share:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "rollbackWebYard",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/rollback",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "write"
+    },
+    {
+      "id": "setRetention",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "PUT",
+      "ownership": "core",
+      "path": "/retention",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["retention:manage"],
+      "risk": "write"
+    },
+    {
+      "id": "startDeviceLogin",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/cli/device/start",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "sensitive"
+    },
+    {
+      "id": "startWebYardDeploy",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/deploys/start",
+      "requiredCiActions": ["upload", "yard:manage"],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "write"
+    },
+    {
+      "id": "updateMemberRole",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "hosted-extension",
+      "path": "/members/role",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["members:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "whoAmI",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/cli/whoami",
+      "requiredCiActions": [],
+      "requiredUserScopes": [],
+      "risk": "read"
+    }
+  ],
+  "schemaVersion": 2
+}

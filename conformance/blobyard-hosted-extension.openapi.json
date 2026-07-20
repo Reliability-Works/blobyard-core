@@ -1,0 +1,871 @@
+{
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "$ref": "./blobyard-shared.openapi.json#/components/securitySchemes/bearerAuth"
+      },
+      "githubOidc": {
+        "$ref": "./blobyard-shared.openapi.json#/components/securitySchemes/githubOidc"
+      }
+    }
+  },
+  "info": {
+    "description": "The stable API for durable object storage and scoped access. Stored files do not expire when a transfer grant or public capability expires.",
+    "title": "Blob Yard Cloud Extensions API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/account/deletion": {
+      "get": {
+        "description": "Read deletion state with an active account credential or the deletion recovery capability returned by prepare. The recovery capability expires with the deletion tombstone.",
+        "operationId": "getAccountDeletion",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetAccountDeletionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "delete", "show"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_account_deletion" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/account/deletion/complete": {
+      "post": {
+        "description": "Consume the one-time confirmation and queue deletion. A deletion recovery capability may authenticate an idempotent replay after ordinary credentials are revoked.",
+        "operationId": "completeAccountDeletion",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional retry-stable request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CompleteAccountDeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CompleteAccountDeletionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "delete", "complete"] },
+        "x-blobyard-mcp": {
+          "excluded": "Destructive completion requires explicit human-owned confirmation outside model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/account/deletion/prepare": {
+      "post": {
+        "description": "Issue short-lived deletion confirmation and recovery capabilities. A later preparation supersedes the earlier confirmation, so replaying its idempotency key returns a conflict instead of a revoked capability.",
+        "operationId": "prepareAccountDeletion",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional retry-stable request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/PrepareAccountDeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/PrepareAccountDeletionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "delete", "prepare"] },
+        "x-blobyard-mcp": {
+          "excluded": "Deletion confirmation and recovery capabilities must not enter model context. Use the CLI or SDK."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/account/deletion/retry": {
+      "post": {
+        "description": "Retry failed cleanup with an active account credential or the unexpired deletion recovery capability.",
+        "operationId": "retryAccountDeletion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RetryAccountDeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RetryAccountDeletionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "delete", "retry"] },
+        "x-blobyard-mcp": {
+          "excluded": "Destructive retry requires explicit human-owned confirmation outside model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/account/exports": {
+      "get": {
+        "operationId": "getAccountExport",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetAccountExportSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "export", "show"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_account_export" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "requestAccountExport",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional retry-stable request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestAccountExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestAccountExportSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "export", "request"] },
+        "x-blobyard-mcp": { "tool": "blobyard_request_account_export" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/account/exports/download": {
+      "post": {
+        "operationId": "downloadAccountExport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DownloadAccountExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DownloadAccountExportSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["account", "export", "download"] },
+        "x-blobyard-mcp": {
+          "excluded": "Signed export URLs must not enter model context. Use the CLI or SDK."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing": {
+      "get": {
+        "operationId": "getBilling",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetBillingSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "show"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_billing" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing/checkout": {
+      "post": {
+        "operationId": "createBillingCheckout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional retry-stable request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingCheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingCheckoutSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "checkout"] },
+        "x-blobyard-mcp": {
+          "excluded": "Returns a Stripe hosted-session bearer capability URL that must not enter model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing/portal": {
+      "post": {
+        "operationId": "createBillingPortal",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional retry-stable request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingPortalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingPortalSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "portal"] },
+        "x-blobyard-mcp": {
+          "excluded": "Returns a Stripe hosted-session bearer capability URL that must not enter model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing/storage/checkout": {
+      "post": {
+        "operationId": "createStorageCheckout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateStorageCheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateStorageCheckoutSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "storage", "checkout"] },
+        "x-blobyard-mcp": {
+          "excluded": "Returns a Stripe hosted-session bearer capability URL that must not enter model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing/storage/update": {
+      "post": {
+        "operationId": "createStorageUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateStorageUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateStorageUpdateSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "storage", "update"] },
+        "x-blobyard-mcp": {
+          "excluded": "Returns a Stripe hosted-session bearer capability URL that must not enter model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/billing/subscription/update": {
+      "post": {
+        "operationId": "createBillingSubscriptionUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingSubscriptionUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateBillingSubscriptionUpdateSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["billing", "update"] },
+        "x-blobyard-mcp": {
+          "excluded": "Returns a Stripe hosted-session bearer capability URL that must not enter model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/device/poll": {
+      "post": {
+        "operationId": "pollDeviceLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/PollDeviceLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/PollDeviceLoginSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "command": ["login"] },
+        "x-blobyard-mcp": {
+          "excluded": "MCP reuses an approved CLI session and never handles authentication secrets."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/device/start": {
+      "post": {
+        "operationId": "startDeviceLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/StartDeviceLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/StartDeviceLoginSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "command": ["login"] },
+        "x-blobyard-mcp": {
+          "excluded": "MCP reuses an approved CLI session and never handles authentication secrets."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/logout": {
+      "post": {
+        "operationId": "logoutCliSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/LogoutCliSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/LogoutCliSessionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["logout"] },
+        "x-blobyard-mcp": {
+          "excluded": "The CLI host owns session lifecycle outside model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/token/refresh": {
+      "post": {
+        "operationId": "refreshCliSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RefreshCliSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RefreshCliSessionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "command": ["login"] },
+        "x-blobyard-mcp": { "excluded": "The CLI host rotates its session outside model context." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/members": {
+      "get": {
+        "operationId": "listMembers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListMembersSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["members", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_members" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/members/invites": {
+      "get": {
+        "operationId": "listInvites",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListInvitesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["invites", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_invites" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateInviteSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["invites", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_invite" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/members/invites/revoke": {
+      "post": {
+        "operationId": "revokeInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeInviteSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["invites", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_invite" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/members/remove": {
+      "post": {
+        "operationId": "removeMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RemoveMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RemoveMemberSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["members", "remove"] },
+        "x-blobyard-mcp": { "tool": "blobyard_remove_member" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/members/role": {
+      "post": {
+        "operationId": "updateMemberRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/UpdateMemberRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/UpdateMemberRoleSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["members", "role"] },
+        "x-blobyard-mcp": { "tool": "blobyard_update_member_role" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/secrets": {
+      "post": {
+        "operationId": "createOneTimeSecret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateOneTimeSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateOneTimeSecretSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": {
+          "excluded": "Secret material and encryption or decryption must remain in a human-controlled browser or client and must not enter MCP model context."
+        },
+        "x-blobyard-mcp": {
+          "excluded": "Secret material and encryption or decryption must remain in a human-controlled browser or client and must not enter MCP model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/secrets/redeem": {
+      "post": {
+        "operationId": "redeemOneTimeSecret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RedeemOneTimeSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RedeemOneTimeSecretSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": {
+          "excluded": "Secret material and encryption or decryption must remain in a human-controlled browser or client and must not enter MCP model context."
+        },
+        "x-blobyard-mcp": {
+          "excluded": "Secret material and encryption or decryption must remain in a human-controlled browser or client and must not enter MCP model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "servers": [{ "url": "https://api.blobyard.com/v1" }],
+  "x-blobyard-contract": "hosted-extension"
+}

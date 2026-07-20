@@ -1,0 +1,1281 @@
+openapi: 3.1.0
+info:
+  title: Blob Yard Core API
+  version: 1.0.0
+  description:
+    The stable API for durable object storage and scoped access. Stored files do not expire when a
+    transfer grant or public capability expires.
+servers:
+  - url: https://api.blobyard.com/v1
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: health
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/HealthSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        excluded: Service readiness probe has no user workflow.
+      x-blobyard-mcp:
+        excluded: Service readiness probe has no agent workflow.
+  /bootstrap/exchange:
+    post:
+      operationId: exchangeBootstrapToken
+      x-blobyard-deployments:
+        - self-hosted
+      security: []
+      responses:
+        "200":
+          description: Bootstrap authority exchanged once for a scoped local API token.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ExchangeBootstrapTokenSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - profiles
+          - add
+      x-blobyard-mcp:
+        excluded: Bootstrap credentials must never enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ExchangeBootstrapTokenRequest
+  /cli/whoami:
+    get:
+      operationId: whoAmI
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/WhoAmISuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - whoami
+      x-blobyard-mcp:
+        tool: blobyard_whoami
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListWorkspacesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - workspaces
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_workspaces
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+    post:
+      operationId: createWorkspace
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateWorkspaceSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - workspaces
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateWorkspaceRequest
+  /projects:
+    get:
+      operationId: listProjects
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListProjectsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - projects
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_projects
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createProject
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateProjectSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - projects
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateProjectRequest
+  /ci/github/oidc/exchange:
+    post:
+      operationId: exchangeGitHubOidc
+      security:
+        - githubOidc: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ExchangeGitHubOidcSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        excluded: GitHub Actions exchanges its assertion directly.
+      x-blobyard-mcp:
+        excluded: GitHub Actions exchanges its assertion directly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ExchangeGitHubOidcRequest
+  /uploads/request:
+    post:
+      operationId: requestUpload
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestUploadSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - upload
+      x-blobyard-mcp:
+        tool: blobyard_upload_file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestUploadRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            description: Required retry-stable upload request key.
+            minLength: 1
+            maxLength: 128
+  /uploads/parts/request:
+    post:
+      operationId: requestUploadParts
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestUploadPartsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - upload
+      x-blobyard-mcp:
+        tool: blobyard_upload_file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestUploadPartsRequest
+  /uploads/complete:
+    post:
+      operationId: completeUpload
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CompleteUploadSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - upload
+      x-blobyard-mcp:
+        tool: blobyard_upload_file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CompleteUploadRequest
+  /uploads/abort:
+    post:
+      operationId: abortUpload
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AbortUploadSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - upload
+      x-blobyard-mcp:
+        tool: blobyard_upload_file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AbortUploadRequest
+  /uploads/status:
+    get:
+      operationId: getUploadStatus
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetUploadStatusSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - upload
+      x-blobyard-mcp:
+        tool: blobyard_upload_file
+      parameters:
+        - in: query
+          name: uploadId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /objects:
+    get:
+      operationId: listObjects
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListObjectsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - ls
+      x-blobyard-mcp:
+        tool: blobyard_list_objects
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+        - in: query
+          name: prefix
+          required: false
+          schema:
+            type: string
+            description: Optional logical path prefix.
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: versions
+          required: true
+          schema:
+            type: boolean
+            description: Include immutable historical versions.
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    delete:
+      operationId: deleteObject
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeleteObjectSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - rm
+      x-blobyard-mcp:
+        tool: blobyard_delete_object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeleteObjectRequest
+  /downloads/request:
+    post:
+      operationId: requestDownload
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestDownloadSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - download
+      x-blobyard-mcp:
+        tool: blobyard_download_file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestDownloadRequest
+  /shares:
+    get:
+      operationId: listShares
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListSharesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - shares
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_shares
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createShare
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateShareSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - share
+      x-blobyard-mcp:
+        tool: blobyard_create_share
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateShareRequest
+  /shares/resolve:
+    get:
+      operationId: resolveShare
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ResolveShareSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        excluded: The public capability URL resolves this operation.
+      x-blobyard-mcp:
+        excluded: The public capability URL resolves this operation.
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CapabilityToken
+  /shares/download:
+    post:
+      operationId: downloadShare
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DownloadShareSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        excluded: The public capability URL downloads this object.
+      x-blobyard-mcp:
+        excluded: The public capability URL downloads this object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DownloadShareRequest
+  /shares/revoke:
+    post:
+      operationId: revokeShare
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeShareSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - shares
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_share
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeShareRequest
+  /previews:
+    get:
+      operationId: listPreviews
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListPreviewsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - previews
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_previews
+      parameters:
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createPreview
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreatePreviewSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - preview
+      x-blobyard-mcp:
+        tool: blobyard_create_preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreatePreviewRequest
+  /previews/revoke:
+    post:
+      operationId: revokePreview
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokePreviewSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - previews
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokePreviewRequest
+  /yards:
+    get:
+      operationId: listWebYards
+      description: Lists active Web Yards for one workspace project.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListWebYardsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_web_yards
+      parameters:
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /yards/deploys:
+    get:
+      operationId: listWebYardDeploys
+      description: Lists the current deploy followed by retained deploy history.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListWebYardDeploysSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard
+          - history
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_deploys
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/deploys/start:
+    post:
+      operationId: startWebYardDeploy
+      description: Creates or reuses a Web Yard and reserves a manifest root for a public deploy.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/StartWebYardDeploySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - deploy
+      x-blobyard-mcp:
+        tool: blobyard_deploy_web_yard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/StartWebYardDeployRequest
+  /yards/deploys/finalise:
+    post:
+      operationId: finaliseWebYardDeploy
+      description: Snapshots a ready manifest and promotes it when no newer deploy has succeeded.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/FinaliseWebYardDeploySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - deploy
+      x-blobyard-mcp:
+        tool: blobyard_deploy_web_yard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/FinaliseWebYardDeployRequest
+  /yards/deploys/fail:
+    post:
+      operationId: failWebYardDeploy
+      description: Marks an incomplete deploy as failed and schedules its manifest for cleanup.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/FailWebYardDeploySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - deploy
+      x-blobyard-mcp:
+        tool: blobyard_deploy_web_yard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/FailWebYardDeployRequest
+  /yards/rollback:
+    post:
+      operationId: rollbackWebYard
+      description:
+        Promotes a retained successful deploy. Workspace administrator access is required.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RollbackWebYardSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard
+          - rollback
+      x-blobyard-mcp:
+        tool: blobyard_rollback_web_yard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RollbackWebYardRequest
+  /yards/delete:
+    post:
+      operationId: deleteWebYard
+      description:
+        Deletes a Web Yard and schedules retained manifest objects for cleanup. Workspace
+        administrator access is required.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeleteWebYardSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard
+          - delete
+      x-blobyard-mcp:
+        tool: blobyard_delete_web_yard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeleteWebYardRequest
+  /inboxes:
+    get:
+      operationId: listInboxes
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListInboxesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - inbox
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_inboxes
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createInbox
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateInboxSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - inbox
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_inbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateInboxRequest
+  /inboxes/resolve:
+    get:
+      operationId: resolveInbox
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ResolveInboxSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        excluded: The public capability URL resolves this operation.
+      x-blobyard-mcp:
+        excluded: The public capability URL resolves this operation.
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CapabilityToken
+  /inboxes/revoke:
+    post:
+      operationId: revokeInbox
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeInboxSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - inbox
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_inbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeInboxRequest
+  /retention:
+    get:
+      operationId: getRetention
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetRetentionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - retention
+          - show
+      x-blobyard-mcp:
+        tool: blobyard_get_retention
+      parameters:
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    put:
+      operationId: setRetention
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetRetentionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - retention
+          - set
+      x-blobyard-mcp:
+        tool: blobyard_set_retention
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetRetentionRequest
+    delete:
+      operationId: clearRetention
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ClearRetentionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - retention
+          - clear
+      x-blobyard-mcp:
+        tool: blobyard_clear_retention
+      parameters:
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /retention/overview:
+    get:
+      operationId: getRetentionOverview
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetRetentionOverviewSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - retention
+          - overview
+      x-blobyard-mcp:
+        tool: blobyard_get_retention_overview
+      parameters:
+        - in: query
+          name: project
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /audit:
+    get:
+      operationId: listAuditEvents
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListAuditEventsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - audit
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_audit
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /api-tokens:
+    get:
+      operationId: listApiTokens
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListApiTokensSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - tokens
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_api_tokens
+    post:
+      operationId: createApiToken
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateApiTokenSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - tokens
+          - create
+      x-blobyard-mcp:
+        excluded: MCP must not return a newly created bearer credential to model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateApiTokenRequest
+  /api-tokens/revoke:
+    post:
+      operationId: revokeApiToken
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeApiTokenSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - tokens
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_api_token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeApiTokenRequest
+  /ci/trusts:
+    get:
+      operationId: listCiTrusts
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListCiTrustsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - trusts
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_ci_trusts
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createCiTrust
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateCiTrustSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - trusts
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_ci_trust
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateCiTrustRequest
+  /ci/trusts/revoke:
+    post:
+      operationId: revokeCiTrust
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeCiTrustSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - trusts
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_ci_trust
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeCiTrustRequest
+  /cli/sessions:
+    get:
+      operationId: listCliSessions
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListCliSessionsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - sessions
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_cli_sessions
+  /cli/sessions/revoke:
+    post:
+      operationId: revokeCliSession
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeCliSessionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - sessions
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_cli_session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeCliSessionRequest
+  /workspaces/rename:
+    post:
+      operationId: renameWorkspace
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - workspaces
+          - rename
+      x-blobyard-mcp:
+        tool: blobyard_rename_workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameWorkspaceRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameWorkspaceSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: ./blobyard-shared.openapi.yaml#/components/securitySchemes/bearerAuth
+    githubOidc:
+      $ref: ./blobyard-shared.openapi.yaml#/components/securitySchemes/githubOidc
+x-blobyard-contract: core

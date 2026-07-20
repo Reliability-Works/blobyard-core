@@ -1,0 +1,28 @@
+cases:
+  - expected:
+      allowed: true
+    id: active-download-grant-matches-version
+    input:
+      expired: false
+      revoked: false
+      scope: download
+      versionMatches: true
+  - expected:
+      allowed: false
+      code: GRANT_EXPIRED
+    id: expired-grant-is-rejected
+    input:
+      expired: true
+      revoked: false
+      scope: download
+      versionMatches: true
+  - expected:
+      allowed: false
+      code: NOT_FOUND
+    id: wrong-version-is-concealed
+    input:
+      expired: false
+      revoked: false
+      scope: download
+      versionMatches: false
+schemaVersion: 1

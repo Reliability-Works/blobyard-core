@@ -1,0 +1,4 @@
+title = "Blobyard gitleaks policy"
+
+[extend]
+useDefault = true

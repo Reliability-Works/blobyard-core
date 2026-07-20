@@ -1,0 +1,3990 @@
+openapi: 3.1.0
+info:
+  title: Blob Yard API
+  version: 1.0.0
+  description:
+    The stable API for durable object storage and scoped access. Stored files do not expire when a
+    transfer grant or public capability expires.
+servers:
+  - url: https://api.blobyard.com/v1
+security:
+  - bearerAuth: []
+paths: {}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    githubOidc:
+      type: http
+      scheme: bearer
+      bearerFormat: GitHub OIDC JWT
+  responses:
+    ApiError:
+      description: The request was rejected.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorEnvelope"
+  schemas:
+    Identifier:
+      type: string
+      description: Stable resource identifier.
+      minLength: 1
+      maxLength: 256
+    Cursor:
+      type: string
+      description: Opaque continuation cursor.
+      minLength: 1
+      maxLength: 1024
+    Slug:
+      type: string
+      description: Lowercase Blob Yard resource slug.
+      pattern: ^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$
+    IsoTimestamp:
+      type: string
+      description: RFC 3339 timestamp.
+      format: date-time
+    UnixMilliseconds:
+      type: integer
+      description: Unix timestamp in milliseconds.
+      minimum: 0
+    BlobyardUri:
+      type: string
+      description: Canonical byd:// object URI.
+      pattern: ^byd://
+    CapabilityToken:
+      type: string
+      description: Opaque capability returned once.
+      minLength: 43
+    Url:
+      type: string
+      description: Absolute HTTPS URL.
+      format: uri
+      pattern: ^https://
+    TransferUrl:
+      type: string
+      description: Absolute HTTP or HTTPS URL for a short-lived byte-transfer capability.
+      format: uri
+      pattern: ^https?://
+    EmptyResult:
+      type: object
+      additionalProperties: false
+      properties: {}
+      required: []
+    HealthResult:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          description: Service readiness state.
+          const: ok
+        version:
+          type: string
+          description: Build version.
+      required:
+        - status
+        - version
+    ExchangeBootstrapTokenResult:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          $ref: "#/components/schemas/CapabilityToken"
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted local operation scope.
+          description: Scopes granted to the local operator token.
+        webYardOrigin:
+          type: string
+          format: uri
+          description: Trusted root origin whose first-level subdomains serve public Web Yards.
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - accessToken
+        - scopes
+        - webYardOrigin
+        - workspace
+    WorkspaceSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: Workspace display name.
+        slug:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - id
+        - name
+        - slug
+    WorkspacePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    ProjectSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: Project display name.
+        slug:
+          $ref: "#/components/schemas/Slug"
+        workspaceSlug:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - id
+        - name
+        - slug
+        - workspaceSlug
+    ProjectPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    TokenPair:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          $ref: "#/components/schemas/CapabilityToken"
+        expiresInSeconds:
+          type: integer
+          description: Access token lifetime.
+          minimum: 1
+        refreshToken:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - accessToken
+        - expiresInSeconds
+        - refreshToken
+    DeviceStartResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deviceCode:
+          $ref: "#/components/schemas/CapabilityToken"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        pollIntervalSeconds:
+          type: integer
+          description: Minimum polling interval.
+          minimum: 1
+        userCode:
+          type: string
+          description: Code shown for browser approval.
+        verificationUri:
+          $ref: "#/components/schemas/Url"
+      required:
+        - deviceCode
+        - expiresAt
+        - pollIntervalSeconds
+        - userCode
+        - verificationUri
+    DevicePollResult:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          properties:
+            status:
+              type: string
+              description: Authorization state.
+              enum:
+                - pending
+                - slow_down
+                - denied
+                - expired
+          required:
+            - status
+        - type: object
+          additionalProperties: false
+          properties:
+            status:
+              type: string
+              description: Completed authorization state.
+              const: approved
+            tokens:
+              $ref: "#/components/schemas/TokenPair"
+          required:
+            - status
+            - tokens
+    WhoAmIResult:
+      type: object
+      additionalProperties: false
+      properties:
+        defaultWorkspace:
+          $ref: "#/components/schemas/WorkspaceSummary"
+        displayName:
+          type: string
+          description: Safe principal label.
+        email:
+          type: string
+          description: Verified user email, present for user credentials.
+          format: email
+        principalId:
+          $ref: "#/components/schemas/Identifier"
+        principalType:
+          type: string
+          description: Principal class.
+          enum:
+            - cli
+            - ci
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted scope.
+          description: Granted scopes.
+      required:
+        - defaultWorkspace
+        - displayName
+        - principalId
+        - principalType
+        - scopes
+    MachineTokenResult:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          $ref: "#/components/schemas/CapabilityToken"
+        expiresInSeconds:
+          type: integer
+          description: Token lifetime.
+          minimum: 1
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted scope.
+          description: Granted scopes.
+      required:
+        - accessToken
+        - expiresInSeconds
+        - scopes
+    SignedHeader:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: HTTP header name.
+        value:
+          type: string
+          description: Signed header value.
+      required:
+        - name
+        - value
+    UploadPartGrant:
+      type: object
+      additionalProperties: false
+      properties:
+        partNumber:
+          type: integer
+          description: Positive part number.
+          minimum: 1
+        uploadUrl:
+          $ref: "#/components/schemas/TransferUrl"
+      required:
+        - partNumber
+        - uploadUrl
+    RequestUploadResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        headers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignedHeader"
+          description: Required upload headers.
+        partSizeBytes:
+          anyOf:
+            - type: integer
+              description: Multipart part size.
+              minimum: 1
+            - type: "null"
+        strategy:
+          type: string
+          description: Upload strategy.
+          enum:
+            - single
+            - multipart
+        uploadId:
+          $ref: "#/components/schemas/Identifier"
+        uploadUrl:
+          anyOf:
+            - $ref: "#/components/schemas/TransferUrl"
+            - type: "null"
+      required:
+        - expiresAt
+        - headers
+        - partSizeBytes
+        - strategy
+        - uploadId
+        - uploadUrl
+    RequestUploadPartsResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        parts:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadPartGrant"
+          description: Signed part grants.
+      required:
+        - expiresAt
+        - parts
+    CompleteUploadResult:
+      type: object
+      additionalProperties: false
+      properties:
+        checksumSha256:
+          type: string
+          description: Verified SHA-256 digest.
+          pattern: ^[a-f0-9]{64}$
+        sizeBytes:
+          type: integer
+          description: Verified object bytes.
+          minimum: 0
+        uri:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - checksumSha256
+        - sizeBytes
+        - uri
+    UploadStatusResult:
+      type: object
+      additionalProperties: false
+      properties:
+        completedParts:
+          type: array
+          items:
+            type: integer
+            description: Completed part number.
+            minimum: 1
+          description: Completed parts.
+        state:
+          type: string
+          description: Upload lifecycle state.
+          enum:
+            - requested
+            - uploading
+            - completing
+            - complete
+            - aborted
+            - expired
+            - failed
+      required:
+        - completedParts
+        - state
+    DownloadResult:
+      type: object
+      additionalProperties: false
+      properties:
+        checksumSha256:
+          type: string
+          description: Expected SHA-256 digest.
+          pattern: ^[a-f0-9]{64}$
+        downloadUrl:
+          $ref: "#/components/schemas/TransferUrl"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        filename:
+          type: string
+          description: Download filename.
+        sizeBytes:
+          type: integer
+          description: Expected bytes.
+          minimum: 0
+      required:
+        - checksumSha256
+        - downloadUrl
+        - expiresAt
+        - filename
+        - sizeBytes
+    ObjectSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        availability:
+          type: string
+          description: Current object-version availability.
+          enum:
+            - available
+            - deleted
+            - pending
+            - unavailable
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        filename:
+          type: string
+          description: Original safe filename.
+        sizeBytes:
+          type: integer
+          description: Object bytes.
+          minimum: 0
+        source:
+          type: string
+          description: Object ingestion source.
+          enum:
+            - ci
+            - cli
+            - inbox
+            - preview
+            - web
+        uri:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - availability
+        - createdAt
+        - filename
+        - sizeBytes
+        - source
+        - uri
+    ObjectPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    DeleteObjectResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deleted:
+          type: boolean
+          description: The object is now deleted.
+          const: true
+        uri:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - deleted
+        - uri
+    CreateShareResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        notificationStatus:
+          type: string
+          description: Notification capture or delivery result.
+          enum:
+            - captured
+            - deduplicated
+            - failed
+            - not_requested
+            - queued
+        shareUrl:
+          $ref: "#/components/schemas/Url"
+      required:
+        - expiresAt
+        - id
+        - notificationStatus
+        - shareUrl
+    ShareSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        consumedCount:
+          type: integer
+          description: Completed downloads.
+          minimum: 0
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        maximumDownloads:
+          anyOf:
+            - type: integer
+              description: Maximum downloads.
+              minimum: 1
+            - type: "null"
+        status:
+          type: string
+          description: Share lifecycle state.
+          enum:
+            - active
+            - expired
+            - exhausted
+            - revoked
+            - unavailable
+      required:
+        - consumedCount
+        - expiresAt
+        - id
+        - maximumDownloads
+        - status
+    SharePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShareSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    ShareMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        contentTypeClass:
+          type: string
+          description: Coarse content class.
+        downloadAvailable:
+          type: boolean
+          description: Whether another download is available.
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        filename:
+          type: string
+          description: Shared filename.
+        sizeBytes:
+          type: integer
+          description: Object bytes.
+          minimum: 0
+      required:
+        - contentTypeClass
+        - downloadAvailable
+        - expiresAt
+        - filename
+        - sizeBytes
+    CreatePreviewResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        previewUrl:
+          $ref: "#/components/schemas/Url"
+      required:
+        - expiresAt
+        - id
+        - previewUrl
+    PreviewSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          type: string
+          description: Preview lifecycle state.
+          enum:
+            - active
+            - expired
+            - exhausted
+            - revoked
+      required:
+        - createdAt
+        - expiresAt
+        - id
+        - status
+    PreviewPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PreviewSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    CreateInboxResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        inboxUrl:
+          $ref: "#/components/schemas/Url"
+      required:
+        - expiresAt
+        - id
+        - inboxUrl
+    InboxSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: Inbox display name.
+        revoked:
+          type: boolean
+          description: Whether the inbox is revoked.
+      required:
+        - expiresAt
+        - id
+        - name
+        - revoked
+    InboxPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/InboxSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    InboxMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        maxBytes:
+          type: integer
+          description: Maximum accepted bytes.
+          minimum: 0
+        maxFiles:
+          type: integer
+          description: Maximum accepted files.
+          minimum: 0
+        name:
+          type: string
+          description: Inbox display name.
+        uploadAvailable:
+          type: boolean
+          description: Whether another upload may be started.
+      required:
+        - expiresAt
+        - maxBytes
+        - maxFiles
+        - name
+        - uploadAvailable
+    RetentionPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        branchGlob:
+          anyOf:
+            - type: string
+              description: Optional branch glob.
+            - type: "null"
+        keepLatest:
+          type: integer
+          description: Newest matching versions to keep.
+          minimum: 1
+        pathGlob:
+          anyOf:
+            - type: string
+              description: Optional logical path glob.
+            - type: "null"
+      required:
+        - branchGlob
+        - keepLatest
+        - pathGlob
+    ClearRetentionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        cleared:
+          type: boolean
+          description: Retention is now disabled.
+          const: true
+      required:
+        - cleared
+    WebYardSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        currentDeployId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+        hostLabel:
+          type: string
+          description: Stable public alias host label.
+        id:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          $ref: "#/components/schemas/Slug"
+        projectId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          type: string
+          description: Yard status.
+          enum:
+            - active
+            - suspended
+        url:
+          $ref: "#/components/schemas/Url"
+        workspaceId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - currentDeployId
+        - hostLabel
+        - id
+        - name
+        - projectId
+        - status
+        - url
+        - workspaceId
+    WebYardPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebYardSummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    YardDeploySummary:
+      type: object
+      additionalProperties: false
+      properties:
+        cleanUrls:
+          type: boolean
+          description: Whether extensionless HTML resolution is enabled.
+        clientDeployId:
+          $ref: "#/components/schemas/Identifier"
+        createdAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        deploymentUrl:
+          $ref: "#/components/schemas/Url"
+          description: Immutable public URL bound to this exact deploy while it is retained.
+        fileCount:
+          type: integer
+          description: Manifest file count.
+          minimum: 0
+        finalisedAt:
+          anyOf:
+            - $ref: "#/components/schemas/UnixMilliseconds"
+            - type: "null"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        isCurrent:
+          type: boolean
+          description: Whether the public alias selects this deploy.
+        spa:
+          type: boolean
+          description: Whether SPA fallback is enabled.
+        status:
+          type: string
+          description: Deploy lifecycle state.
+          enum:
+            - uploading
+            - finalising
+            - live
+            - failed
+            - superseded
+            - pruned
+        totalBytes:
+          type: integer
+          description: Manifest bytes.
+          minimum: 0
+      required:
+        - cleanUrls
+        - clientDeployId
+        - createdAt
+        - deploymentUrl
+        - fileCount
+        - finalisedAt
+        - id
+        - isCurrent
+        - spa
+        - status
+        - totalBytes
+    YardDeployPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardDeploySummary"
+          description: Resources in this page.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    StartWebYardDeployResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deployId:
+          $ref: "#/components/schemas/Identifier"
+        deploymentUrl:
+          $ref: "#/components/schemas/Url"
+          description: Immutable public URL reserved for this exact deploy.
+        hostLabel:
+          type: string
+          description: Allocated host label.
+        manifestRoot:
+          type: string
+          description: Reserved manifest root.
+        status:
+          type: string
+          description: New deploy lifecycle state.
+          const: uploading
+        url:
+          $ref: "#/components/schemas/Url"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+        yardName:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - deployId
+        - deploymentUrl
+        - hostLabel
+        - manifestRoot
+        - status
+        - url
+        - yardId
+        - yardName
+    YardDeploymentResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deployId:
+          $ref: "#/components/schemas/Identifier"
+        deploymentUrl:
+          $ref: "#/components/schemas/Url"
+          description: Immutable public URL bound to the selected deploy while it is retained.
+        status:
+          type: string
+          description: Selected deploy lifecycle state.
+          enum:
+            - live
+            - superseded
+        url:
+          $ref: "#/components/schemas/Url"
+          description: Stable public Web Yard alias selected by the operation.
+      required:
+        - deployId
+        - deploymentUrl
+        - status
+        - url
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          description: Stable audit action.
+        actor:
+          type: string
+          description: Safe actor label.
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        metadata:
+          type: object
+          description: Redaction-safe operation metadata.
+          additionalProperties:
+            type:
+              - string
+              - number
+              - boolean
+              - "null"
+          x-blobyard-opaque: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+        targetType:
+          type: string
+          description: Redaction-safe target class.
+      required:
+        - action
+        - actor
+        - createdAt
+        - id
+        - requestId
+        - targetType
+    AuditPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+          description: Audit events.
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    MemberSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          anyOf:
+            - type: string
+              description: Member display name.
+            - type: "null"
+        email:
+          type: string
+          description: Member email.
+          format: email
+        joinedAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        role:
+          type: string
+          description: Workspace role.
+          enum:
+            - owner
+            - admin
+            - member
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - displayName
+        - email
+        - joinedAt
+        - role
+        - userId
+    SeatState:
+      type: object
+      additionalProperties: false
+      properties:
+        active:
+          type: integer
+          description: Active seats.
+          minimum: 0
+        limit:
+          anyOf:
+            - type: integer
+              description: Seat limit.
+              minimum: 0
+            - type: "null"
+        reserved:
+          type: integer
+          description: Seats reserved by pending invitations.
+          minimum: 0
+        used:
+          type: integer
+          description: Active plus reserved seats.
+          minimum: 0
+      required:
+        - active
+        - limit
+        - reserved
+        - used
+      description: Server-derived seat state.
+    MemberList:
+      type: object
+      additionalProperties: false
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberSummary"
+          description: Workspace members.
+        seats:
+          $ref: "#/components/schemas/SeatState"
+      required:
+        - members
+        - seats
+    InviteSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        email:
+          type: string
+          description: Invite email.
+          format: email
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        role:
+          type: string
+          description: Workspace role.
+          enum:
+            - owner
+            - admin
+            - member
+        status:
+          type: string
+          description: Invite lifecycle state.
+      required:
+        - createdAt
+        - email
+        - expiresAt
+        - id
+        - role
+        - status
+    InviteList:
+      type: array
+      items:
+        $ref: "#/components/schemas/InviteSummary"
+      description: Workspace invitations.
+    CreateInviteResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        inviteUrl:
+          $ref: "#/components/schemas/Url"
+      required:
+        - expiresAt
+        - id
+        - inviteUrl
+    ApiTokenSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        lastUsedAt:
+          anyOf:
+            - $ref: "#/components/schemas/UnixMilliseconds"
+            - type: "null"
+        name:
+          type: string
+          description: Token name.
+        projectId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted scope.
+          description: Granted scopes.
+        status:
+          type: string
+          description: Token lifecycle state.
+        tokenPrefix:
+          type: string
+          description: Non-secret token prefix.
+        workspaceId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+      required:
+        - createdAt
+        - expiresAt
+        - id
+        - lastUsedAt
+        - name
+        - scopes
+        - status
+        - tokenPrefix
+    ApiTokenList:
+      type: array
+      items:
+        $ref: "#/components/schemas/ApiTokenSummary"
+      description: API token metadata.
+    CreateApiTokenResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: Token name.
+        projectId:
+          $ref: "#/components/schemas/Identifier"
+        rawToken:
+          type: string
+          description: Raw API token returned once.
+          pattern: ^byd_pat_
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted scope.
+          description: Granted scopes.
+        workspaceId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - expiresAt
+        - id
+        - name
+        - rawToken
+        - scopes
+    CiTrustSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        allowedActions:
+          type: array
+          items:
+            type: string
+            description: Allowed CI action.
+          description: Allowed actions.
+        allowedRefGlob:
+          type: string
+          description: Allowed Git ref glob.
+        createdAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        environment:
+          anyOf:
+            - type: string
+              description: GitHub environment.
+            - type: "null"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        projectId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+        repository:
+          type: string
+          description: GitHub owner/repository.
+        revokedAt:
+          anyOf:
+            - $ref: "#/components/schemas/UnixMilliseconds"
+            - type: "null"
+        workflowPath:
+          type: string
+          description: Workflow path.
+        workflowRef:
+          type: string
+          description: Pinned workflow ref.
+      required:
+        - allowedActions
+        - allowedRefGlob
+        - createdAt
+        - environment
+        - id
+        - projectId
+        - repository
+        - revokedAt
+        - workflowPath
+        - workflowRef
+    CiTrustList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CiTrustSummary"
+      description: GitHub OIDC trusts.
+    CliSessionSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        lastUsedAt:
+          anyOf:
+            - $ref: "#/components/schemas/UnixMilliseconds"
+            - type: "null"
+        name:
+          type: string
+          description: Session name.
+        platform:
+          type: string
+          description: Host platform.
+        version:
+          type: string
+          description: CLI version.
+      required:
+        - createdAt
+        - id
+        - lastUsedAt
+        - name
+        - platform
+        - version
+    CliSessionList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CliSessionSummary"
+      description: Active CLI sessions.
+    BillingSessionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          $ref: "#/components/schemas/Url"
+      required:
+        - url
+    AccountExportRequestStatus:
+      type: string
+      description: Account export request state at the time of the response.
+      enum:
+        - queued
+        - running
+    AccountExportResult:
+      type: object
+      additionalProperties: false
+      properties:
+        exportId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          $ref: "#/components/schemas/AccountExportRequestStatus"
+      required:
+        - exportId
+        - status
+    PrepareAccountDeletionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmationToken:
+          $ref: "#/components/schemas/CapabilityToken"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        recoveryToken:
+          allOf:
+            - $ref: "#/components/schemas/CapabilityToken"
+          description:
+            Deletion recovery capability returned once. Store it outside logs and model context
+            until cleanup completes.
+      required:
+        - confirmationToken
+        - expiresAt
+        - recoveryToken
+    CompleteAccountDeletionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        jobId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          type: string
+          description: Deletion job state.
+          const: queued
+      required:
+        - jobId
+        - status
+    AccountDeletionRetryStatus:
+      type: string
+      description: Account deletion retry state at the time of the response.
+      const: running
+    CreateOneTimeSecretResult:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        version:
+          type: string
+          description: Secret envelope version.
+          const: aes-gcm-256-v1
+      required:
+        - expiresAt
+        - version
+    RedeemOneTimeSecretResult:
+      type: object
+      additionalProperties: false
+      properties:
+        ciphertext:
+          type: string
+          description: Client-encrypted ciphertext.
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        initializationVector:
+          type: string
+          description: Base64url AES-GCM IV.
+        version:
+          type: string
+          description: Secret envelope version.
+          const: aes-gcm-256-v1
+      required:
+        - ciphertext
+        - expiresAt
+        - initializationVector
+        - version
+    RevocationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          description: Operation result.
+          enum:
+            - revoked
+            - invalid
+            - already_revoked
+      required:
+        - status
+    ApiError:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable error code.
+        message:
+          type: string
+          description: Safe public error message.
+      required:
+        - code
+        - message
+    ApiErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          $ref: "#/components/schemas/ApiError"
+        ok:
+          type: boolean
+          const: false
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - error
+        - ok
+        - requestId
+    HealthSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ExchangeBootstrapTokenRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Human-readable local credential name.
+          minLength: 1
+          maxLength: 80
+        platform:
+          type: string
+          description: Host platform reported by the standalone CLI.
+        token:
+          $ref: "#/components/schemas/CapabilityToken"
+        version:
+          type: string
+          description: Standalone CLI semantic version.
+      required:
+        - name
+        - platform
+        - token
+        - version
+    ExchangeBootstrapTokenSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ExchangeBootstrapTokenResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    StartDeviceLoginRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: CLI session label.
+          minLength: 1
+          maxLength: 80
+        platform:
+          type: string
+          description: Host platform.
+        version:
+          type: string
+          description: CLI semantic version.
+      required:
+        - name
+        - platform
+        - version
+    StartDeviceLoginResult:
+      $ref: "#/components/schemas/DeviceStartResult"
+    StartDeviceLoginSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/StartDeviceLoginResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    PollDeviceLoginRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        deviceCode:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - deviceCode
+    PollDeviceLoginResult:
+      $ref: "#/components/schemas/DevicePollResult"
+    PollDeviceLoginSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/PollDeviceLoginResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RefreshCliSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        refreshToken:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - refreshToken
+    RefreshCliSessionResult:
+      $ref: "#/components/schemas/TokenPair"
+    RefreshCliSessionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RefreshCliSessionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    LogoutCliSessionRequest:
+      type: object
+      additionalProperties: false
+      properties: {}
+      required: []
+    LogoutCliSessionResult:
+      $ref: "#/components/schemas/EmptyResult"
+    LogoutCliSessionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/LogoutCliSessionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    WhoAmISuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/WhoAmIResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListWorkspacesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+      required: []
+    ListWorkspacesResult:
+      $ref: "#/components/schemas/WorkspacePage"
+    ListWorkspacesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListWorkspacesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateWorkspaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Workspace display name.
+          minLength: 1
+          maxLength: 128
+      required:
+        - name
+    CreateWorkspaceResult:
+      $ref: "#/components/schemas/WorkspaceSummary"
+    CreateWorkspaceSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateWorkspaceResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListProjectsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListProjectsResult:
+      $ref: "#/components/schemas/ProjectPage"
+    ListProjectsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListProjectsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateProjectRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Project display name.
+          minLength: 1
+          maxLength: 128
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - name
+        - workspace
+    CreateProjectResult:
+      $ref: "#/components/schemas/ProjectSummary"
+    CreateProjectSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateProjectResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CiAction:
+      type: string
+      description: Short-lived action granted to a GitHub Actions machine session.
+      enum:
+        - upload
+        - share
+        - download
+        - yard:manage
+    ExchangeGitHubOidcRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        actions:
+          type: array
+          description: Exact short-lived actions requested by this workflow run.
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/CiAction"
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - actions
+        - project
+    ExchangeGitHubOidcResult:
+      $ref: "#/components/schemas/MachineTokenResult"
+    ExchangeGitHubOidcSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ExchangeGitHubOidcResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RequestUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        checksumSha256:
+          type: string
+          description: Lowercase SHA-256 digest.
+          pattern: ^[a-f0-9]{64}$
+        contentType:
+          type: string
+          description: Client content type hint.
+        filename:
+          type: string
+          description: Original safe filename.
+        gitBranch:
+          type: string
+          description: Source branch.
+        gitCommit:
+          type: string
+          description: Source commit.
+        gitRepository:
+          type: string
+          description: Source repository.
+        path:
+          type: string
+          description: Normalized logical object path.
+        project:
+          $ref: "#/components/schemas/Slug"
+        sizeBytes:
+          type: integer
+          description: Exact byte length.
+          minimum: 0
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - checksumSha256
+        - contentType
+        - filename
+        - path
+        - project
+        - sizeBytes
+        - workspace
+    RequestUploadSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RequestUploadResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RequestUploadPartsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        partNumbers:
+          type: array
+          items:
+            type: integer
+            description: Positive part number.
+            minimum: 1
+          description: Ordered part numbers.
+        uploadId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - partNumbers
+        - uploadId
+    RequestUploadPartsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RequestUploadPartsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CompleteUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        parts:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              etag:
+                type: string
+                description: Storage entity tag.
+              partNumber:
+                type: integer
+                description: Positive part number.
+                minimum: 1
+            required:
+              - etag
+              - partNumber
+          description: Completed multipart parts.
+        uploadId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - parts
+        - uploadId
+    CompleteUploadSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CompleteUploadResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    AbortUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        uploadId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - uploadId
+    AbortUploadResult:
+      $ref: "#/components/schemas/EmptyResult"
+    AbortUploadSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/AbortUploadResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    GetUploadStatusQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        uploadId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - uploadId
+    GetUploadStatusResult:
+      $ref: "#/components/schemas/UploadStatusResult"
+    GetUploadStatusSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetUploadStatusResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListObjectsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        prefix:
+          type: string
+          description: Optional logical path prefix.
+        project:
+          $ref: "#/components/schemas/Slug"
+        versions:
+          type: boolean
+          description: Include immutable historical versions.
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - versions
+        - workspace
+    ListObjectsResult:
+      $ref: "#/components/schemas/ObjectPage"
+    ListObjectsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListObjectsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DeleteObjectRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        uri:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - uri
+    DeleteObjectSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DeleteObjectResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RequestDownloadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        uri:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - uri
+    RequestDownloadResult:
+      $ref: "#/components/schemas/DownloadResult"
+    RequestDownloadSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RequestDownloadResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListSharesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListSharesResult:
+      $ref: "#/components/schemas/SharePage"
+    ListSharesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListSharesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateShareRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expires:
+          anyOf:
+            - type: string
+              description: Requested lifetime.
+            - type: "null"
+        notify:
+          anyOf:
+            - type: string
+              description: Optional notification recipient.
+              format: email
+            - type: "null"
+        target:
+          $ref: "#/components/schemas/BlobyardUri"
+      required:
+        - expires
+        - notify
+        - target
+    CreateShareSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateShareResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ResolveShareQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - token
+    ResolveShareResult:
+      $ref: "#/components/schemas/ShareMetadata"
+    ResolveShareSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ResolveShareResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DownloadShareRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - token
+    DownloadShareResult:
+      $ref: "#/components/schemas/DownloadResult"
+    DownloadShareSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DownloadShareResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeShareRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        shareId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - shareId
+    RevokeShareResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeShareSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeShareResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListPreviewsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - workspace
+    ListPreviewsResult:
+      $ref: "#/components/schemas/PreviewPage"
+    ListPreviewsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListPreviewsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreatePreviewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expires:
+          anyOf:
+            - type: string
+              description: Requested lifetime.
+            - type: "null"
+        manifestId:
+          $ref: "#/components/schemas/Identifier"
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - expires
+        - manifestId
+        - project
+        - workspace
+    CreatePreviewSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreatePreviewResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokePreviewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        previewId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - previewId
+    RevokePreviewResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokePreviewSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokePreviewResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListWebYardsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - workspace
+    ListWebYardsResult:
+      $ref: "#/components/schemas/WebYardPage"
+    ListWebYardsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListWebYardsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListWebYardDeploysQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListWebYardDeploysResult:
+      $ref: "#/components/schemas/YardDeployPage"
+    ListWebYardDeploysSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListWebYardDeploysResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    StartWebYardDeployRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        cleanUrls:
+          type: boolean
+          description: Enable clean HTML URLs.
+        clientDeployId:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          $ref: "#/components/schemas/Slug"
+        project:
+          $ref: "#/components/schemas/Slug"
+        public:
+          type: boolean
+          description: Acknowledge public file delivery.
+        spa:
+          type: boolean
+          description: Enable SPA fallback.
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - cleanUrls
+        - clientDeployId
+        - name
+        - project
+        - public
+        - spa
+        - workspace
+    StartWebYardDeploySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/StartWebYardDeployResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    FinaliseWebYardDeployRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        deployId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - deployId
+    FinaliseWebYardDeployResult:
+      $ref: "#/components/schemas/YardDeploymentResult"
+    FinaliseWebYardDeploySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/FinaliseWebYardDeployResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    FailWebYardDeployRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        deployId:
+          $ref: "#/components/schemas/Identifier"
+        failureCode:
+          type: string
+          description: Redaction-safe failure code.
+        failureMessage:
+          type: string
+          description: Redaction-safe failure message.
+      required:
+        - deployId
+        - failureCode
+        - failureMessage
+    FailWebYardDeployResult:
+      $ref: "#/components/schemas/EmptyResult"
+    FailWebYardDeploySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/FailWebYardDeployResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RollbackWebYardRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        deployId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    RollbackWebYardResult:
+      $ref: "#/components/schemas/YardDeploymentResult"
+    RollbackWebYardSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RollbackWebYardResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DeleteWebYardRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    DeleteWebYardResult:
+      $ref: "#/components/schemas/EmptyResult"
+    DeleteWebYardSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DeleteWebYardResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListInboxesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - workspace
+    ListInboxesResult:
+      $ref: "#/components/schemas/InboxPage"
+    ListInboxesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListInboxesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateInboxRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expires:
+          anyOf:
+            - type: string
+              description: Requested lifetime.
+            - type: "null"
+        name:
+          type: string
+          description: Inbox display name.
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - expires
+        - name
+        - project
+        - workspace
+    CreateInboxSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateInboxResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ResolveInboxQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          $ref: "#/components/schemas/CapabilityToken"
+      required:
+        - token
+    ResolveInboxResult:
+      $ref: "#/components/schemas/InboxMetadata"
+    ResolveInboxSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ResolveInboxResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeInboxRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        inboxId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - inboxId
+    RevokeInboxResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeInboxSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeInboxResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    GetRetentionQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - workspace
+    GetRetentionResult:
+      $ref: "#/components/schemas/RetentionPolicy"
+    GetRetentionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetRetentionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetRetentionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        branch:
+          type: string
+          description: Optional branch glob.
+        keepLatest:
+          type: integer
+          description: Newest matching versions to keep.
+          minimum: 1
+        path:
+          type: string
+          description: Optional logical path glob.
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - keepLatest
+        - project
+        - workspace
+    SetRetentionResult:
+      $ref: "#/components/schemas/RetentionPolicy"
+    SetRetentionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetRetentionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ClearRetentionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        project:
+          $ref: "#/components/schemas/Slug"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - project
+        - workspace
+    ClearRetentionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ClearRetentionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListAuditEventsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListAuditEventsResult:
+      $ref: "#/components/schemas/AuditPage"
+    ListAuditEventsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListAuditEventsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListMembersQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListMembersResult:
+      $ref: "#/components/schemas/MemberList"
+    ListMembersSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListMembersResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListInvitesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListInvitesResult:
+      $ref: "#/components/schemas/InviteList"
+    ListInvitesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListInvitesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateInviteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          description: Invite recipient.
+          format: email
+        role:
+          type: string
+          description: Workspace role.
+          enum:
+            - owner
+            - admin
+            - member
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - email
+        - role
+        - workspace
+    CreateInviteSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateInviteResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeInviteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        inviteId:
+          $ref: "#/components/schemas/Identifier"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - inviteId
+        - workspace
+    RevokeInviteResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeInviteSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeInviteResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    UpdateMemberRoleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          type: string
+          description: Workspace role.
+          enum:
+            - owner
+            - admin
+            - member
+        targetUserId:
+          $ref: "#/components/schemas/Identifier"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - role
+        - targetUserId
+        - workspace
+    UpdateMemberRoleResult:
+      $ref: "#/components/schemas/EmptyResult"
+    UpdateMemberRoleSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateMemberRoleResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RemoveMemberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        targetUserId:
+          $ref: "#/components/schemas/Identifier"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - targetUserId
+        - workspace
+    RemoveMemberResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RemoveMemberSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RemoveMemberResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListApiTokensResult:
+      $ref: "#/components/schemas/ApiTokenList"
+    ListApiTokensSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListApiTokensResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateApiTokenRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresInDays:
+          type: integer
+          description: Token lifetime in days.
+          enum:
+            - 7
+            - 30
+            - 90
+        name:
+          type: string
+          description: Token name.
+          minLength: 2
+          maxLength: 80
+        project:
+          $ref: "#/components/schemas/Slug"
+        scopes:
+          type: array
+          items:
+            type: string
+            description: Granted user API scope.
+          description: Granted scopes.
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - expiresInDays
+        - name
+        - scopes
+    CreateApiTokenSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateApiTokenResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeApiTokenRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        tokenId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - tokenId
+    RevokeApiTokenResult:
+      $ref: "#/components/schemas/RevocationResult"
+    RevokeApiTokenSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeApiTokenResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListCiTrustsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListCiTrustsResult:
+      $ref: "#/components/schemas/CiTrustList"
+    ListCiTrustsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListCiTrustsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateCiTrustRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        allowedActions:
+          type: array
+          items:
+            type: string
+            description: Allowed CI action.
+          description: Allowed actions.
+        allowedRefGlob:
+          type: string
+          description: Allowed Git ref glob.
+        environment:
+          type: string
+          description: Optional GitHub environment.
+        project:
+          $ref: "#/components/schemas/Slug"
+        repository:
+          type: string
+          description: GitHub owner/repository.
+        workflowPath:
+          type: string
+          description: Workflow path.
+        workflowRef:
+          type: string
+          description: Pinned workflow ref.
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - allowedActions
+        - allowedRefGlob
+        - repository
+        - workflowPath
+        - workflowRef
+        - workspace
+    CreateCiTrustResult:
+      $ref: "#/components/schemas/CiTrustSummary"
+    CreateCiTrustSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateCiTrustResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeCiTrustRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        trustId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - trustId
+    RevokeCiTrustResult:
+      type: string
+      description: CI trust revocation result.
+      enum:
+        - revoked
+        - already_revoked
+    RevokeCiTrustSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeCiTrustResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListCliSessionsResult:
+      $ref: "#/components/schemas/CliSessionList"
+    ListCliSessionsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListCliSessionsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeCliSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sessionId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - sessionId
+    RevokeCliSessionResult:
+      $ref: "#/components/schemas/RevocationResult"
+    RevokeCliSessionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeCliSessionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateOneTimeSecretRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        ciphertext:
+          type: string
+          description: Client-encrypted ciphertext.
+          minLength: 22
+        expiresIn:
+          type: string
+          description: Secret lifetime.
+          enum:
+            - 1h
+            - 24h
+            - 7d
+        initializationVector:
+          type: string
+          description: Base64url AES-GCM IV.
+          minLength: 16
+          maxLength: 16
+        tokenHash:
+          type: string
+          description: SHA-256 capability hash.
+          pattern: ^[a-f0-9]{64}$
+        version:
+          type: string
+          description: Secret envelope version.
+          const: aes-gcm-256-v1
+      required:
+        - ciphertext
+        - expiresIn
+        - initializationVector
+        - tokenHash
+        - version
+    CreateOneTimeSecretSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateOneTimeSecretResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RedeemOneTimeSecretRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        tokenHash:
+          type: string
+          description: SHA-256 capability hash.
+          pattern: ^[a-f0-9]{64}$
+        version:
+          type: string
+          description: Secret envelope version.
+          const: aes-gcm-256-v1
+      required:
+        - tokenHash
+        - version
+    RedeemOneTimeSecretSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RedeemOneTimeSecretResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RenameWorkspaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Replacement workspace name.
+          minLength: 1
+          maxLength: 128
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - name
+        - workspace
+    RenameWorkspaceResult:
+      $ref: "#/components/schemas/WorkspaceSummary"
+    RenameWorkspaceSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RenameWorkspaceResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateBillingCheckoutRequest:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          properties:
+            plan:
+              type: string
+              description: Solo plan checkout.
+              const: solo
+          required:
+            - plan
+        - type: object
+          additionalProperties: false
+          properties:
+            plan:
+              type: string
+              description: Team plan checkout.
+              const: team
+            seats:
+              type: integer
+              description: Requested Team seats.
+              minimum: 1
+              maximum: 100
+          required:
+            - plan
+            - seats
+    CreateBillingCheckoutResult:
+      $ref: "#/components/schemas/BillingSessionResult"
+    CreateBillingCheckoutSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateBillingCheckoutResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateBillingPortalRequest:
+      type: object
+      additionalProperties: false
+      properties: {}
+      required: []
+    CreateBillingPortalResult:
+      $ref: "#/components/schemas/BillingSessionResult"
+    CreateBillingPortalSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateBillingPortalResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    BillingSubscriptionStatus:
+      type: string
+      description: Stripe subscription lifecycle state.
+      enum:
+        - incomplete
+        - incomplete_expired
+        - trialing
+        - active
+        - past_due
+        - canceled
+        - unpaid
+        - paused
+    BillingProjection:
+      type: object
+      additionalProperties: false
+      properties:
+        canManageSubscription:
+          type: boolean
+        canStartCheckout:
+          type: boolean
+        customerConfigured:
+          type: boolean
+        limits:
+          $ref: "#/components/schemas/BillingLimits"
+        plan:
+          type: string
+          enum:
+            - free
+            - solo
+            - team
+            - byo
+        status:
+          type: string
+          enum:
+            - active
+            - restricted
+            - suspended
+        storageBlockMaximum:
+          type: integer
+          minimum: 0
+        subscription:
+          anyOf:
+            - $ref: "#/components/schemas/BillingSubscription"
+            - type: "null"
+        storageSubscription:
+          anyOf:
+            - $ref: "#/components/schemas/StorageSubscription"
+            - type: "null"
+        usage:
+          $ref: "#/components/schemas/BillingUsage"
+      required:
+        - canManageSubscription
+        - canStartCheckout
+        - customerConfigured
+        - limits
+        - plan
+        - status
+        - storageBlockMaximum
+        - subscription
+        - storageSubscription
+        - usage
+    BillingLimits:
+      type: object
+      additionalProperties: false
+      properties:
+        members:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        projects:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        storageBytes:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        workspaces:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+      required:
+        - members
+        - projects
+        - storageBytes
+        - workspaces
+    BillingSubscription:
+      type: object
+      additionalProperties: false
+      properties:
+        cancelAtPeriodEnd:
+          type: boolean
+        currentPeriodEnd:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        plan:
+          type: string
+          enum:
+            - solo
+            - team
+        seats:
+          type: integer
+          minimum: 1
+          maximum: 100
+        status:
+          $ref: "#/components/schemas/BillingSubscriptionStatus"
+      required:
+        - cancelAtPeriodEnd
+        - currentPeriodEnd
+        - plan
+        - seats
+        - status
+    StorageSubscription:
+      type: object
+      additionalProperties: false
+      properties:
+        cancelAtPeriodEnd:
+          type: boolean
+        currentPeriodEnd:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        status:
+          $ref: "#/components/schemas/BillingSubscriptionStatus"
+        storageBlockCount:
+          type: integer
+          minimum: 1
+      required:
+        - cancelAtPeriodEnd
+        - currentPeriodEnd
+        - status
+        - storageBlockCount
+    BillingUsage:
+      type: object
+      additionalProperties: false
+      properties:
+        members:
+          type: integer
+          minimum: 0
+        objectCount:
+          type: integer
+          minimum: 0
+        projects:
+          type: integer
+          minimum: 0
+        readyBytes:
+          type: integer
+          minimum: 0
+        reservedUploadBytes:
+          type: integer
+          minimum: 0
+        versionCount:
+          type: integer
+          minimum: 0
+        workspaces:
+          type: integer
+          minimum: 0
+      required:
+        - members
+        - objectCount
+        - projects
+        - readyBytes
+        - reservedUploadBytes
+        - versionCount
+        - workspaces
+    GetBillingResult:
+      $ref: "#/components/schemas/BillingProjection"
+    GetBillingSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetBillingResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateStorageCheckoutRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        storageBlockCount:
+          type: integer
+          minimum: 1
+      required:
+        - storageBlockCount
+    CreateStorageCheckoutResult:
+      $ref: "#/components/schemas/BillingSessionResult"
+    CreateStorageCheckoutSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateStorageCheckoutResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateStorageUpdateRequest:
+      $ref: "#/components/schemas/CreateStorageCheckoutRequest"
+    CreateStorageUpdateResult:
+      $ref: "#/components/schemas/BillingSessionResult"
+    CreateStorageUpdateSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateStorageUpdateResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateBillingSubscriptionUpdateRequest:
+      $ref: "#/components/schemas/CreateBillingCheckoutRequest"
+    CreateBillingSubscriptionUpdateResult:
+      $ref: "#/components/schemas/BillingSessionResult"
+    CreateBillingSubscriptionUpdateSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateBillingSubscriptionUpdateResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    AccountExportState:
+      type: object
+      additionalProperties: false
+      properties:
+        artifactCount:
+          type: integer
+          minimum: 0
+        errorCode:
+          anyOf:
+            - type: string
+            - type: "null"
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - ready
+            - failed
+            - expired
+      required:
+        - artifactCount
+        - errorCode
+        - expiresAt
+        - id
+        - status
+    GetAccountExportResult:
+      anyOf:
+        - $ref: "#/components/schemas/AccountExportState"
+        - type: "null"
+    GetAccountExportSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetAccountExportResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DownloadAccountExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        exportId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        partNumber:
+          type: integer
+          minimum: 0
+      required:
+        - exportId
+        - partNumber
+    DownloadAccountExportResult:
+      type: object
+      additionalProperties: false
+      properties:
+        downloadUrl:
+          $ref: "#/components/schemas/Url"
+        expiresAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+      required:
+        - downloadUrl
+        - expiresAt
+    DownloadAccountExportSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DownloadAccountExportResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    AccountDeletionState:
+      type: object
+      additionalProperties: false
+      properties:
+        errorCode:
+          anyOf:
+            - type: string
+            - type: "null"
+        requestedAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        stage:
+          type: string
+          enum:
+            - cancel_subscription
+            - delete_object_storage
+            - delete_preview_storage
+            - delete_export_storage
+            - revoke_credentials
+            - delete_versions
+            - delete_previews
+            - delete_inboxes
+            - delete_projects
+            - delete_workspace_security
+            - delete_workspaces
+            - delete_external_memberships
+            - delete_account_records
+            - minimize_audit
+            - await_identity
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - failed
+            - awaiting_identity_deletion
+            - identity_deleting
+            - complete
+        updatedAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+      required:
+        - errorCode
+        - requestedAt
+        - stage
+        - status
+        - updatedAt
+    GetAccountDeletionResult:
+      anyOf:
+        - $ref: "#/components/schemas/AccountDeletionState"
+        - type: "null"
+    GetAccountDeletionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetAccountDeletionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RetryAccountDeletionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmation:
+          type: string
+          const: DELETE MY ACCOUNT
+      required:
+        - confirmation
+    RetryAccountDeletionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        jobId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          $ref: "#/components/schemas/AccountDeletionRetryStatus"
+      required:
+        - jobId
+        - status
+    RetryAccountDeletionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RetryAccountDeletionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RetentionRun:
+      type: object
+      additionalProperties: false
+      properties:
+        candidateCount:
+          type: integer
+          minimum: 0
+        completedAt:
+          anyOf:
+            - $ref: "#/components/schemas/UnixMilliseconds"
+            - type: "null"
+        deletedCount:
+          type: integer
+          minimum: 0
+        errorSummary:
+          anyOf:
+            - type: string
+            - type: "null"
+        startedAt:
+          $ref: "#/components/schemas/UnixMilliseconds"
+        status:
+          type: string
+          enum:
+            - complete
+            - failed
+            - running
+      required:
+        - candidateCount
+        - completedAt
+        - deletedCount
+        - errorSummary
+        - startedAt
+        - status
+    RetentionOverview:
+      type: object
+      additionalProperties: false
+      properties:
+        lastRun:
+          anyOf:
+            - $ref: "#/components/schemas/RetentionRun"
+            - type: "null"
+        policy:
+          anyOf:
+            - $ref: "#/components/schemas/RetentionPolicy"
+            - type: "null"
+      required:
+        - lastRun
+        - policy
+    GetRetentionOverviewResult:
+      $ref: "#/components/schemas/RetentionOverview"
+    GetRetentionOverviewSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetRetentionOverviewResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RequestAccountExportRequest:
+      type: object
+      additionalProperties: false
+      properties: {}
+      required: []
+    RequestAccountExportResult:
+      $ref: "#/components/schemas/AccountExportResult"
+    RequestAccountExportSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RequestAccountExportResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    PrepareAccountDeletionRequest:
+      type: object
+      additionalProperties: false
+      properties: {}
+      required: []
+    PrepareAccountDeletionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/PrepareAccountDeletionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CompleteAccountDeletionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmationToken:
+          type: string
+          description: Short-lived deletion confirmation returned by prepare.
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+      required:
+        - confirmationToken
+    CompleteAccountDeletionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CompleteAccountDeletionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+x-blobyard-classifications:
+  onboardingProgress:
+    classification: ui-state
+    description: Derived browser onboarding state, not a stable versioned API resource.
+    sdk: excluded
+    cli: excluded
+    mcp: excluded
+x-blobyard-path-order:
+  - /health
+  - /bootstrap/exchange
+  - /cli/device/start
+  - /cli/device/poll
+  - /cli/token/refresh
+  - /cli/logout
+  - /cli/whoami
+  - /workspaces
+  - /projects
+  - /ci/github/oidc/exchange
+  - /uploads/request
+  - /uploads/parts/request
+  - /uploads/complete
+  - /uploads/abort
+  - /uploads/status
+  - /objects
+  - /downloads/request
+  - /shares
+  - /shares/resolve
+  - /shares/download
+  - /shares/revoke
+  - /previews
+  - /previews/revoke
+  - /yards
+  - /yards/deploys
+  - /yards/deploys/start
+  - /yards/deploys/finalise
+  - /yards/deploys/fail
+  - /yards/rollback
+  - /yards/delete
+  - /inboxes
+  - /inboxes/resolve
+  - /inboxes/revoke
+  - /retention
+  - /retention/overview
+  - /audit
+  - /members
+  - /members/invites
+  - /members/invites/revoke
+  - /members/role
+  - /members/remove
+  - /api-tokens
+  - /api-tokens/revoke
+  - /ci/trusts
+  - /ci/trusts/revoke
+  - /cli/sessions
+  - /cli/sessions/revoke
+  - /secrets
+  - /secrets/redeem
+  - /workspaces/rename
+  - /billing
+  - /billing/checkout
+  - /billing/portal
+  - /billing/storage/checkout
+  - /billing/storage/update
+  - /billing/subscription/update
+  - /account/exports
+  - /account/exports/download
+  - /account/deletion
+  - /account/deletion/prepare
+  - /account/deletion/complete
+  - /account/deletion/retry

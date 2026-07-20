@@ -1,0 +1,18 @@
+# Dependencies and generated output
+node_modules/
+coverage/
+dist/
+out/
+target/
+report/
+
+# Generated code and machine-managed files
+pnpm-lock.yaml
+Cargo.lock
+
+# Local state and credentials
+.blobyard/
+.signing/
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "operations": {
+    "abortUpload": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": ["upload"],
+      "risk": "destructive"
+    },
+    "clearRetention": {
+      "requiredUserScopes": ["retention:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "completeAccountDeletion": {
+      "requiredUserScopes": ["account:delete"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "completeUpload": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": ["upload"],
+      "risk": "write"
+    },
+    "createApiToken": {
+      "requiredUserScopes": ["tokens:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createBillingCheckout": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createBillingPortal": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createBillingSubscriptionUpdate": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createCiTrust": {
+      "requiredUserScopes": ["ci:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createInbox": {
+      "requiredUserScopes": ["inbox:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createInvite": {
+      "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createOneTimeSecret": {
+      "requiredUserScopes": [],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createPreview": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createProject": {
+      "requiredUserScopes": ["project:write"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
+    "createShare": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": ["share"],
+      "risk": "sensitive"
+    },
+    "createStorageCheckout": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createStorageUpdate": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createWorkspace": {
+      "requiredUserScopes": ["project:write"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
+    "deleteObject": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "deleteWebYard": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "destructive"
+    },
+    "downloadAccountExport": {
+      "requiredUserScopes": ["account:export"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "downloadShare": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "exchangeBootstrapToken": {
+      "requiredUserScopes": [],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "exchangeGitHubOidc": {
+      "requiredUserScopes": [],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "failWebYardDeploy": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": ["upload", "yard:manage"],
+      "risk": "write"
+    },
+    "finaliseWebYardDeploy": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": ["upload", "yard:manage"],
+      "risk": "write"
+    },
+    "getAccountDeletion": {
+      "requiredUserScopes": ["account:delete"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "getAccountExport": {
+      "requiredUserScopes": ["account:export"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "getBilling": {
+      "requiredUserScopes": ["billing:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "getRetention": {
+      "requiredUserScopes": ["retention:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "getRetentionOverview": {
+      "requiredUserScopes": ["retention:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "getUploadStatus": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": ["upload"],
+      "risk": "read"
+    },
+    "health": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "read" },
+    "listApiTokens": {
+      "requiredUserScopes": ["tokens:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listAuditEvents": {
+      "requiredUserScopes": ["audit:read"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listCiTrusts": {
+      "requiredUserScopes": ["ci:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listCliSessions": {
+      "requiredUserScopes": ["sessions:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listInboxes": {
+      "requiredUserScopes": ["inbox:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listInvites": {
+      "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listMembers": {
+      "requiredUserScopes": ["workspace:read"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listObjects": {
+      "requiredUserScopes": ["object:read"],
+      "requiredCiActions": ["download"],
+      "risk": "read"
+    },
+    "listPreviews": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listProjects": {
+      "requiredUserScopes": ["project:read"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "listShares": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "listWebYardDeploys": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
+    "listWebYards": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
+    "listWorkspaces": {
+      "requiredUserScopes": ["workspace:read"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "logoutCliSession": {
+      "requiredUserScopes": [],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "pollDeviceLogin": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "prepareAccountDeletion": {
+      "requiredUserScopes": ["account:delete"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "redeemOneTimeSecret": {
+      "requiredUserScopes": [],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "refreshCliSession": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "removeMember": {
+      "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "renameWorkspace": {
+      "requiredUserScopes": ["project:write"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
+    "requestAccountExport": {
+      "requiredUserScopes": ["account:export"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "requestDownload": {
+      "requiredUserScopes": ["object:read"],
+      "requiredCiActions": ["download"],
+      "risk": "sensitive"
+    },
+    "requestUpload": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": ["upload"],
+      "risk": "write"
+    },
+    "requestUploadParts": {
+      "requiredUserScopes": ["object:write"],
+      "requiredCiActions": ["upload"],
+      "risk": "write"
+    },
+    "resolveInbox": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "resolveShare": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "retryAccountDeletion": {
+      "requiredUserScopes": ["account:delete"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeApiToken": {
+      "requiredUserScopes": ["tokens:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeCiTrust": {
+      "requiredUserScopes": ["ci:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeCliSession": {
+      "requiredUserScopes": ["sessions:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeInbox": {
+      "requiredUserScopes": ["inbox:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeInvite": {
+      "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokePreview": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeShare": {
+      "requiredUserScopes": ["share:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "rollbackWebYard": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "write"
+    },
+    "setRetention": {
+      "requiredUserScopes": ["retention:manage"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
+    "startDeviceLogin": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
+    "startWebYardDeploy": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": ["upload", "yard:manage"],
+      "risk": "write"
+    },
+    "updateMemberRole": {
+      "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "whoAmI": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "read" }
+  }
+}

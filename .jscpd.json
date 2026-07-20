@@ -1,0 +1,21 @@
+{
+  "absolute": false,
+  "blame": false,
+  "gitignore": true,
+  "ignorePattern": [
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/target/**",
+    "**/report/**",
+    "**/*.lock",
+    "**/*.snap",
+    "scripts/tests/fixtures/**"
+  ],
+  "minLines": 5,
+  "minTokens": 50,
+  "reporters": ["console"],
+  "silent": false,
+  "threshold": 0
+}

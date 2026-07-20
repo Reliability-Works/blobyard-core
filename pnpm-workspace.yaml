@@ -1,0 +1,16 @@
+packages:
+  - sdk/*
+
+blockExoticSubdeps: true
+engineStrict: true
+minimumReleaseAge: 1440
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeStrict: true
+nodeVersion: 22.22.2
+savePrefix: ""
+strictDepBuilds: true
+strictPeerDependencies: true
+trustLockfile: false
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 43200
+verifyDepsBeforeRun: error

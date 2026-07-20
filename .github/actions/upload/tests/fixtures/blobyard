@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[[ -n ${BLOBYARD_TOKEN:-} ]]
+yard_origin=${MOCK_DEPLOY_ORIGIN:-https://blobyard.app}
+yard_scheme=${yard_origin%%://*}
+yard_authority=${yard_origin#*://}
+
+yard_url() {
+  printf '%s://%s.%s' "$yard_scheme" "$1" "$yard_authority"
+}
+
+case " $* " in
+*' whoami '*)
+  printf '{"ok":true,"data":{"principalType":"%s","scopes":%s,"defaultWorkspace":{"slug":"%s"}},"requestId":"req_whoami"}\n' \
+    "${MOCK_PRINCIPAL_TYPE:-ci}" "${MOCK_SCOPES:-[\"upload\",\"share\"]}" "${MOCK_WORKSPACE:-acme}"
+  ;;
+*' deploy '*)
+  if [[ " $* " == *' --all '* ]]; then
+    if [[ ${MOCK_DEPLOY_MODE:-success} == mixed ]]; then
+      printf '{"ok":false,"data":{"results":[{"yard":"dashboard","ok":true,"yardUrl":"%s","deploymentUrl":"%s","deployId":"deploy_dashboard","status":"live"},{"yard":"documentation","ok":false,"status":"failed","error":{"code":"PLAN_LIMIT","message":"The plan limit was reached."}}]},"error":{"code":"PLAN_LIMIT","message":"One or more Web Yard deploys failed."},"requestId":null}\n' \
+        "$(yard_url dashboard-123456789-acme)" "$(yard_url dashboard-0123456789-acme)"
+      exit 5
+    fi
+    printf '{"ok":true,"data":{"results":[{"yard":"dashboard","ok":true,"yardUrl":"%s","deploymentUrl":"%s","deployId":"deploy_dashboard","status":"live"},{"yard":"documentation","ok":true,"yardUrl":"%s","deploymentUrl":"%s","deployId":"deploy_documentation","status":"finalising"}]},"requestId":null}\n' \
+      "$(yard_url dashboard-123456789-acme)" "$(yard_url dashboard-0123456789-acme)" \
+      "$(yard_url documentation-123456789-acme)" "$(yard_url documentation-0123456789-acme)"
+  else
+    printf '{"ok":true,"data":{"yard":"documentation","yardUrl":"%s","deploymentUrl":"%s","deployId":"deploy_documentation","status":"live"},"requestId":"req_deploy"}\n' \
+      "$(yard_url documentation-123456789-acme)" "$(yard_url documentation-0123456789-acme)"
+  fi
+  ;;
+*' upload '*)
+  case ${MOCK_UPLOAD_MODE:-single} in
+  multi) printf '%s\n' '{"ok":true,"data":{"files":[{"uri":"blobyard://acme/demo/one.zip?version=1"},{"uri":"blobyard://acme/demo/two.zip?version=1"}]},"requestId":"req_upload"}' ;;
+  mutable) printf '%s\n' '{"ok":true,"data":{"files":[{"uri":"blobyard://acme/demo/build.zip"}]},"requestId":"req_upload"}' ;;
+  single) printf '%s\n' '{"ok":true,"data":{"files":[{"uri":"blobyard://acme/demo/build.zip?version=7"}]},"requestId":"req_upload"}' ;;
+  *) exit 3 ;;
+  esac
+  ;;
+*' share '*) printf '%s\n' '{"ok":true,"data":{"shareUrl":"https://blobyard.com/s/public-fixture"},"requestId":"req_share"}' ;;
+*) exit 2 ;;
+esac

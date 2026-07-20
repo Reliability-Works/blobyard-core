@@ -1,0 +1,679 @@
+name: Build private release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Exact commit on main to build.
+        required: true
+        type: string
+      version:
+        description: Exact semantic candidate version.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-release-v${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  prerequisites:
+    name: Authorize and prepare private candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - id: version
+        name: Validate release version
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          RELEASE_TAG: v${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$COMMIT_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$RELEASE_TAG" == "v$RELEASE_VERSION" ]]
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$(git rev-parse HEAD)" == "$COMMIT_SHA" ]]
+          git rev-parse --verify 'refs/remotes/origin/main^{commit}' >/dev/null
+          git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main
+          [[ "$(gh repo view --json visibility --jq .visibility)" == "PRIVATE" ]]
+          workspace_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
+          [[ "$workspace_version" == "$RELEASE_VERSION" ]]
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release view "$RELEASE_TAG" --json isDraft,targetCommitish |
+              jq -e --arg sha "$COMMIT_SHA" \
+                '.isDraft == true and .targetCommitish == $sha' >/dev/null
+          else
+            gh release create "$RELEASE_TAG" \
+              --draft \
+              --target "$COMMIT_SHA" \
+              --title "Blob Yard v$RELEASE_VERSION private candidate" \
+              --notes "Private validation candidate. Do not publish."
+          fi
+          printf 'version=%s\n' "$RELEASE_VERSION" >>"$GITHUB_OUTPUT"
+
+      - name: Require private-candidate signing credentials
+        shell: bash
+        env:
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=()
+          required=(
+            APPLE_APP_PASSWORD
+            APPLE_CERTIFICATE_P12_BASE64
+            APPLE_CERTIFICATE_PASSWORD
+            APPLE_ID
+            APPLE_SIGNING_IDENTITY
+            APPLE_TEAM_ID
+          )
+          for name in "${required[@]}"; do
+            [[ -n ${!name:-} ]] || missing+=("$name")
+          done
+          if ((${#missing[@]})); then
+            printf 'Release blocked: required signing credential is missing: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+  macos:
+    name: Sign and notarize ${{ matrix.target }}
+    needs: prerequisites
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-15
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    environment: release
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup target add "${{ matrix.target }}" --toolchain 1.96.0
+          rustup default 1.96.0
+
+      - name: Build native CLI
+        run: cargo build --locked --release --target "${{ matrix.target }}" --package blobyard-cli
+
+      - name: Build native standalone server
+        run: >-
+          cargo build --locked --release --target "${{ matrix.target }}" --package blobyard-server
+          --bin blobyard-server
+
+      - name: Import Apple Developer ID certificate
+        shell: bash
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain=$RUNNER_TEMP/blobyard-signing.keychain-db
+          password=$(openssl rand -hex 24)
+          printf '::add-mask::%s\n' "$password"
+          printf 'BLOBYARD_KEYCHAIN=%s\n' "$keychain" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+          certificate = Path(os.environ["RUNNER_TEMP"], "blobyard.p12")
+          certificate.write_bytes(
+              base64.b64decode(os.environ["APPLE_CERTIFICATE_P12_BASE64"], validate=True)
+          )
+          certificate.chmod(0o600)
+          PY
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/blobyard.p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain-db
+
+      - name: Sign and verify CLI
+        shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          binary="target/${{ matrix.target }}/release/blobyard"
+          security find-identity -v -p codesigning "$BLOBYARD_KEYCHAIN" | grep -Fq "$APPLE_SIGNING_IDENTITY"
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$binary"
+          codesign --verify --deep --strict --verbose=2 "$binary"
+
+      - name: Notarize signed CLI
+        shell: bash
+        env:
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          binary="target/${{ matrix.target }}/release/blobyard"
+          ditto -c -k --keepParent "$binary" "$RUNNER_TEMP/blobyard-notarization.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/blobyard-notarization.zip" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --wait \
+            --output-format json >"$RUNNER_TEMP/notarization-result.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          result = json.loads(Path(os.environ["RUNNER_TEMP"], "notarization-result.json").read_text())
+          if result.get("status") != "Accepted":
+              raise SystemExit("Apple notarization did not return Accepted")
+          PY
+          codesign --verify --strict --verbose=2 "$binary"
+
+      - name: Run signed CLI smoke test
+        shell: bash
+        run: |
+          output=$("target/${{ matrix.target }}/release/blobyard" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+      - name: Package signed artifact
+        shell: bash
+        run: |
+          release/package-artifact.sh \
+            "${{ needs.prerequisites.outputs.version }}" \
+            "${{ matrix.target }}" \
+            "target/${{ matrix.target }}/release/blobyard" \
+            dist
+
+      - name: Upload signed artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: blobyard-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Remove temporary signing material
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f \
+            "$RUNNER_TEMP/blobyard.p12" \
+            "$RUNNER_TEMP/blobyard-notarization.zip" \
+            "$RUNNER_TEMP/notarization-result.json"
+          if [[ -n ${BLOBYARD_KEYCHAIN:-} ]]; then
+            security delete-keychain "$BLOBYARD_KEYCHAIN" || true
+          fi
+
+  linux:
+    name: Build ${{ matrix.target }}
+    needs: prerequisites
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup target add "${{ matrix.target }}" --toolchain 1.96.0
+          rustup default 1.96.0
+
+      - name: Build native CLI
+        run: cargo build --locked --release --target "${{ matrix.target }}" --package blobyard-cli
+
+      - name: Build native standalone server
+        run: >-
+          cargo build --locked --release --target "${{ matrix.target }}" --package blobyard-server
+          --bin blobyard-server
+
+      - name: Run native CLI smoke test
+        run: |
+          output=$("target/${{ matrix.target }}/release/blobyard" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+      - name: Run native standalone server smoke test
+        run: |
+          output=$("target/${{ matrix.target }}/release/blobyard-server" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+      - name: Package release artifact
+        run: |
+          release/package-artifact.sh \
+            "${{ needs.prerequisites.outputs.version }}" \
+            "${{ matrix.target }}" \
+            "target/${{ matrix.target }}/release/blobyard" \
+            dist
+          release/package-server-artifact.sh \
+            "${{ needs.prerequisites.outputs.version }}" \
+            "${{ matrix.target }}" \
+            "target/${{ matrix.target }}/release/blobyard-server" \
+            dist
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: blobyard-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  assemble:
+    name: Assemble signed release
+    needs: [prerequisites, macos, linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Download platform artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: blobyard-*
+          path: dist
+          merge-multiple: true
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22.22.2
+          package-manager-cache: false
+
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.10.0
+          pnpm --version
+
+      - name: Generate release manifest
+        run: >-
+          release/generate-release-manifest.sh "${{ needs.prerequisites.outputs.version }}" "${{
+          inputs.commit_sha }}" dist/blobyard-release-manifest.json
+
+      - name: Package Action, SDK, and conformance surfaces
+        run: >-
+          release/package-surface-assets.sh "${{ needs.prerequisites.outputs.version }}" "${{
+          inputs.commit_sha }}" dist
+
+      - name: Generate Homebrew formula
+        run: >-
+          release/generate-homebrew-formula.sh dist/blobyard-release-manifest.json dist
+          dist/blobyard.rb
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/blobyard-${{ needs.prerequisites.outputs.version }}.spdx.json
+          upload-artifact: false
+
+      - name: Upload assembled release
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: blobyard-assembled-${{ needs.prerequisites.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  containers:
+    name: Build, sign, and attest private ${{ matrix.surface }} image
+    needs: [prerequisites, assemble]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - surface: cli
+            image: ghcr.io/reliability-works/blobyard-core-cli
+            dockerfile: deploy/docker/cli.Dockerfile
+          - surface: server
+            image: ghcr.io/reliability-works/blobyard-core-server
+            dockerfile: deploy/docker/server-release.Dockerfile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Download assembled release
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: blobyard-assembled-${{ needs.prerequisites.outputs.version }}
+          path: dist
+
+      - name: Prepare verified image context
+        shell: bash
+        env:
+          SURFACE: ${{ matrix.surface }}
+        run: |
+          case "$SURFACE" in
+            cli) manifest_key=platforms ;;
+            server) manifest_key=serverPlatforms ;;
+            *) exit 2 ;;
+          esac
+          mapfile -t archives < <(
+            jq -er --arg key "$manifest_key" \
+              '.[$key][] | select(.os == "linux") | .archive' \
+              dist/blobyard-release-manifest.json
+          )
+          ((${#archives[@]} == 2))
+          (
+            cd dist || exit 1
+            : >SHA256SUMS
+            for archive in "${archives[@]}"; do
+              sha256sum "$archive" >>SHA256SUMS
+            done
+          )
+          release/prepare-docker-context.sh dist packaging/docker "$SURFACE"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Authenticate to private GitHub Container Registry
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - id: build
+        name: Build and push exact private candidate image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BLOBYARD_REVISION=${{ inputs.commit_sha }}
+            BLOBYARD_VERSION=${{ needs.prerequisites.outputs.version }}
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: >-
+            ${{ matrix.image }}:${{ needs.prerequisites.outputs.version }}-${{ inputs.commit_sha }}
+
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign exact candidate image with GitHub OIDC
+        run: cosign sign --yes "${{ matrix.image }}@${{ steps.build.outputs.digest }}"
+
+      - name: Attest exact candidate image with GitHub OIDC
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4
+        with:
+          subject-name: ${{ matrix.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Verify private visibility, signature, provenance, and binary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ matrix.image }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          package=${IMAGE##*/}
+          visibility=$(gh api "/orgs/$GITHUB_REPOSITORY_OWNER/packages/container/$package" --jq .visibility)
+          [[ "$visibility" == "private" ]]
+          reference="$IMAGE@$IMAGE_DIGEST"
+          identity="https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/heads/main"
+          cosign verify \
+            --certificate-identity "$identity" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-github-workflow-sha "${{ inputs.commit_sha }}" \
+            "$reference" >/dev/null
+          gh attestation verify "oci://$reference" \
+            --repo "$GITHUB_REPOSITORY" \
+            --cert-identity "$identity" \
+            --source-ref refs/heads/main \
+            --source-digest "${{ inputs.commit_sha }}" \
+            --signer-digest "${{ inputs.commit_sha }}" >/dev/null
+          output=$(docker run --rm --platform linux/amd64 "$reference" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+      - name: Record exact image digest
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          SURFACE: ${{ matrix.surface }}
+        run: |
+          mkdir -p container-metadata
+          jq -n --arg image "$IMAGE" --arg digest "$IMAGE_DIGEST" \
+            '{image: $image, digest: $digest}' >"container-metadata/$SURFACE.json"
+
+      - name: Upload exact image metadata
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: blobyard-container-${{ matrix.surface }}
+          path: container-metadata/${{ matrix.surface }}.json
+          if-no-files-found: error
+          retention-days: 1
+
+  verify:
+    name: Attest and stage signed release
+    needs: [prerequisites, assemble, containers]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Download assembled release
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: blobyard-assembled-${{ needs.prerequisites.outputs.version }}
+          path: dist
+
+      - name: Download exact container metadata
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: blobyard-container-*
+          path: container-metadata
+          merge-multiple: true
+
+      - name: Finalize and inspect exact candidate assets
+        run: |
+          release/generate-container-manifest.sh \
+            "${{ needs.prerequisites.outputs.version }}" \
+            "${{ inputs.commit_sha }}" \
+            container-metadata \
+            dist/blobyard-container-images.json
+          release/verify-surface-assets.sh dist
+          release/create-checksums.sh dist/blobyard-release-manifest.json dist
+
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign checksum manifest with GitHub OIDC
+        run: cosign sign-blob --yes --bundle dist/SHA256SUMS.sig dist/SHA256SUMS
+
+      - id: attest
+        name: Attest release assets with GitHub OIDC
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4
+        with:
+          subject-path: dist/*
+
+      - name: Preserve attestation bundle
+        run: cp "${{ steps.attest.outputs.bundle-path }}" dist/blobyard-provenance.intoto.jsonl
+
+      - name: Authenticate to private GitHub Container Registry
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Verify signed private candidate before staging
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release/verify-release.sh dist
+          release/verify-containers.sh dist
+
+      - name: Upload verified release bundle
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: blobyard-release-${{ needs.prerequisites.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release-smoke:
+    name: Verify and run ${{ matrix.target }} release
+    needs: [prerequisites, verify]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            installer: unix
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+            installer: unix
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            installer: unix
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            installer: unix
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      attestations: read
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Download verified release bundle
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: blobyard-release-${{ needs.prerequisites.outputs.version }}
+          path: dist
+
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Verify final release bundle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: release/verify-release.sh dist
+
+      - name: Install and run verified Unix release
+        if: ${{ matrix.installer == 'unix' }}
+        shell: bash
+        env:
+          BLOBYARD_RELEASE_BASE_URL: file://${{ github.workspace }}/dist
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/install.sh \
+            --version "${{ needs.prerequisites.outputs.version }}" \
+            --install-dir "$RUNNER_TEMP/blobyard-smoke"
+          output=$("$RUNNER_TEMP/blobyard-smoke/blobyard" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+      - name: Extract and run verified standalone server release
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          archive=$(jq -er --arg target "${{ matrix.target }}" \
+            '.serverPlatforms[] | select(.target == $target) | .archive' \
+            dist/blobyard-release-manifest.json)
+          [[ $(tar -tzf "dist/$archive") == blobyard-server ]]
+          tar -xzf "dist/$archive" -C "$RUNNER_TEMP" blobyard-server
+          output=$("$RUNNER_TEMP/blobyard-server" --version)
+          grep -Fq "${{ needs.prerequisites.outputs.version }}" <<<"$output"
+
+  stage-private-release:
+    name: Stage verified assets on private draft release
+    needs: [prerequisites, release-smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download smoke-tested release bundle
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: blobyard-release-${{ needs.prerequisites.outputs.version }}
+          path: dist
+
+      - name: Revalidate private draft and upload exact assets
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ needs.prerequisites.outputs.version }}
+        run: |
+          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PRIVATE" ]]
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,targetCommitish |
+            jq -e --arg sha "$COMMIT_SHA" \
+              '.isDraft == true and .targetCommitish == $sha' >/dev/null
+          mapfile -t assets < <(find dist -maxdepth 1 -type f -print | LC_ALL=C sort)
+          ((${#assets[@]} > 0))
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber \
+            --repo "$GITHUB_REPOSITORY"

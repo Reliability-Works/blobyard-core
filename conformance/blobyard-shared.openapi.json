@@ -1,0 +1,2939 @@
+{
+  "components": {
+    "responses": {
+      "ApiError": {
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorEnvelope" } }
+        },
+        "description": "The request was rejected."
+      }
+    },
+    "schemas": {
+      "AbortUploadRequest": {
+        "additionalProperties": false,
+        "properties": { "uploadId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["uploadId"],
+        "type": "object"
+      },
+      "AbortUploadResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "AbortUploadSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AbortUploadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "AccountDeletionRetryStatus": {
+        "const": "running",
+        "description": "Account deletion retry state at the time of the response.",
+        "type": "string"
+      },
+      "AccountDeletionState": {
+        "additionalProperties": false,
+        "properties": {
+          "errorCode": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "requestedAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "stage": {
+            "enum": [
+              "cancel_subscription",
+              "delete_object_storage",
+              "delete_preview_storage",
+              "delete_export_storage",
+              "revoke_credentials",
+              "delete_versions",
+              "delete_previews",
+              "delete_inboxes",
+              "delete_projects",
+              "delete_workspace_security",
+              "delete_workspaces",
+              "delete_external_memberships",
+              "delete_account_records",
+              "minimize_audit",
+              "await_identity"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "failed",
+              "awaiting_identity_deletion",
+              "identity_deleting",
+              "complete"
+            ],
+            "type": "string"
+          },
+          "updatedAt": { "$ref": "#/components/schemas/UnixMilliseconds" }
+        },
+        "required": ["errorCode", "requestedAt", "stage", "status", "updatedAt"],
+        "type": "object"
+      },
+      "AccountExportRequestStatus": {
+        "description": "Account export request state at the time of the response.",
+        "enum": ["queued", "running"],
+        "type": "string"
+      },
+      "AccountExportResult": {
+        "additionalProperties": false,
+        "properties": {
+          "exportId": { "$ref": "#/components/schemas/Identifier" },
+          "status": { "$ref": "#/components/schemas/AccountExportRequestStatus" }
+        },
+        "required": ["exportId", "status"],
+        "type": "object"
+      },
+      "AccountExportState": {
+        "additionalProperties": false,
+        "properties": {
+          "artifactCount": { "minimum": 0, "type": "integer" },
+          "errorCode": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "status": {
+            "enum": ["queued", "running", "ready", "failed", "expired"],
+            "type": "string"
+          }
+        },
+        "required": ["artifactCount", "errorCode", "expiresAt", "id", "status"],
+        "type": "object"
+      },
+      "ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": { "description": "Stable machine-readable error code.", "type": "string" },
+          "message": { "description": "Safe public error message.", "type": "string" }
+        },
+        "required": ["code", "message"],
+        "type": "object"
+      },
+      "ApiErrorEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "error": { "$ref": "#/components/schemas/ApiError" },
+          "ok": { "const": false, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["error", "ok", "requestId"],
+        "type": "object"
+      },
+      "ApiTokenList": {
+        "description": "API token metadata.",
+        "items": { "$ref": "#/components/schemas/ApiTokenSummary" },
+        "type": "array"
+      },
+      "ApiTokenSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "lastUsedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/UnixMilliseconds" }, { "type": "null" }]
+          },
+          "name": { "description": "Token name.", "type": "string" },
+          "projectId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          },
+          "scopes": {
+            "description": "Granted scopes.",
+            "items": { "description": "Granted scope.", "type": "string" },
+            "type": "array"
+          },
+          "status": { "description": "Token lifecycle state.", "type": "string" },
+          "tokenPrefix": { "description": "Non-secret token prefix.", "type": "string" },
+          "workspaceId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          }
+        },
+        "required": [
+          "createdAt",
+          "expiresAt",
+          "id",
+          "lastUsedAt",
+          "name",
+          "scopes",
+          "status",
+          "tokenPrefix"
+        ],
+        "type": "object"
+      },
+      "AuditEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "action": { "description": "Stable audit action.", "type": "string" },
+          "actor": { "description": "Safe actor label.", "type": "string" },
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "metadata": {
+            "additionalProperties": { "type": ["string", "number", "boolean", "null"] },
+            "description": "Redaction-safe operation metadata.",
+            "type": "object",
+            "x-blobyard-opaque": true
+          },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" },
+          "targetType": { "description": "Redaction-safe target class.", "type": "string" }
+        },
+        "required": ["action", "actor", "createdAt", "id", "requestId", "targetType"],
+        "type": "object"
+      },
+      "AuditPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Audit events.",
+            "items": { "$ref": "#/components/schemas/AuditEvent" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "BillingLimits": {
+        "additionalProperties": false,
+        "properties": {
+          "members": { "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }] },
+          "projects": { "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }] },
+          "storageBytes": { "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }] },
+          "workspaces": { "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }] }
+        },
+        "required": ["members", "projects", "storageBytes", "workspaces"],
+        "type": "object"
+      },
+      "BillingProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "canManageSubscription": { "type": "boolean" },
+          "canStartCheckout": { "type": "boolean" },
+          "customerConfigured": { "type": "boolean" },
+          "limits": { "$ref": "#/components/schemas/BillingLimits" },
+          "plan": { "enum": ["free", "solo", "team", "byo"], "type": "string" },
+          "status": { "enum": ["active", "restricted", "suspended"], "type": "string" },
+          "storageBlockMaximum": { "minimum": 0, "type": "integer" },
+          "storageSubscription": {
+            "anyOf": [{ "$ref": "#/components/schemas/StorageSubscription" }, { "type": "null" }]
+          },
+          "subscription": {
+            "anyOf": [{ "$ref": "#/components/schemas/BillingSubscription" }, { "type": "null" }]
+          },
+          "usage": { "$ref": "#/components/schemas/BillingUsage" }
+        },
+        "required": [
+          "canManageSubscription",
+          "canStartCheckout",
+          "customerConfigured",
+          "limits",
+          "plan",
+          "status",
+          "storageBlockMaximum",
+          "subscription",
+          "storageSubscription",
+          "usage"
+        ],
+        "type": "object"
+      },
+      "BillingSessionResult": {
+        "additionalProperties": false,
+        "properties": { "url": { "$ref": "#/components/schemas/Url" } },
+        "required": ["url"],
+        "type": "object"
+      },
+      "BillingSubscription": {
+        "additionalProperties": false,
+        "properties": {
+          "cancelAtPeriodEnd": { "type": "boolean" },
+          "currentPeriodEnd": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "plan": { "enum": ["solo", "team"], "type": "string" },
+          "seats": { "maximum": 100, "minimum": 1, "type": "integer" },
+          "status": { "$ref": "#/components/schemas/BillingSubscriptionStatus" }
+        },
+        "required": ["cancelAtPeriodEnd", "currentPeriodEnd", "plan", "seats", "status"],
+        "type": "object"
+      },
+      "BillingSubscriptionStatus": {
+        "description": "Stripe subscription lifecycle state.",
+        "enum": [
+          "incomplete",
+          "incomplete_expired",
+          "trialing",
+          "active",
+          "past_due",
+          "canceled",
+          "unpaid",
+          "paused"
+        ],
+        "type": "string"
+      },
+      "BillingUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "members": { "minimum": 0, "type": "integer" },
+          "objectCount": { "minimum": 0, "type": "integer" },
+          "projects": { "minimum": 0, "type": "integer" },
+          "readyBytes": { "minimum": 0, "type": "integer" },
+          "reservedUploadBytes": { "minimum": 0, "type": "integer" },
+          "versionCount": { "minimum": 0, "type": "integer" },
+          "workspaces": { "minimum": 0, "type": "integer" }
+        },
+        "required": [
+          "members",
+          "objectCount",
+          "projects",
+          "readyBytes",
+          "reservedUploadBytes",
+          "versionCount",
+          "workspaces"
+        ],
+        "type": "object"
+      },
+      "BlobyardUri": {
+        "description": "Canonical byd:// object URI.",
+        "pattern": "^byd://",
+        "type": "string"
+      },
+      "CapabilityToken": {
+        "description": "Opaque capability returned once.",
+        "minLength": 43,
+        "type": "string"
+      },
+      "CiAction": {
+        "description": "Short-lived action granted to a GitHub Actions machine session.",
+        "enum": ["upload", "share", "download", "yard:manage"],
+        "type": "string"
+      },
+      "CiTrustList": {
+        "description": "GitHub OIDC trusts.",
+        "items": { "$ref": "#/components/schemas/CiTrustSummary" },
+        "type": "array"
+      },
+      "CiTrustSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedActions": {
+            "description": "Allowed actions.",
+            "items": { "description": "Allowed CI action.", "type": "string" },
+            "type": "array"
+          },
+          "allowedRefGlob": { "description": "Allowed Git ref glob.", "type": "string" },
+          "createdAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "environment": {
+            "anyOf": [
+              { "description": "GitHub environment.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "projectId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          },
+          "repository": { "description": "GitHub owner/repository.", "type": "string" },
+          "revokedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/UnixMilliseconds" }, { "type": "null" }]
+          },
+          "workflowPath": { "description": "Workflow path.", "type": "string" },
+          "workflowRef": { "description": "Pinned workflow ref.", "type": "string" }
+        },
+        "required": [
+          "allowedActions",
+          "allowedRefGlob",
+          "createdAt",
+          "environment",
+          "id",
+          "projectId",
+          "repository",
+          "revokedAt",
+          "workflowPath",
+          "workflowRef"
+        ],
+        "type": "object"
+      },
+      "ClearRetentionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "workspace"],
+        "type": "object"
+      },
+      "ClearRetentionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "cleared": {
+            "const": true,
+            "description": "Retention is now disabled.",
+            "type": "boolean"
+          }
+        },
+        "required": ["cleared"],
+        "type": "object"
+      },
+      "ClearRetentionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ClearRetentionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CliSessionList": {
+        "description": "Active CLI sessions.",
+        "items": { "$ref": "#/components/schemas/CliSessionSummary" },
+        "type": "array"
+      },
+      "CliSessionSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "lastUsedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/UnixMilliseconds" }, { "type": "null" }]
+          },
+          "name": { "description": "Session name.", "type": "string" },
+          "platform": { "description": "Host platform.", "type": "string" },
+          "version": { "description": "CLI version.", "type": "string" }
+        },
+        "required": ["createdAt", "id", "lastUsedAt", "name", "platform", "version"],
+        "type": "object"
+      },
+      "CompleteAccountDeletionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmationToken": {
+            "description": "Short-lived deletion confirmation returned by prepare.",
+            "maxLength": 43,
+            "minLength": 43,
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": ["confirmationToken"],
+        "type": "object"
+      },
+      "CompleteAccountDeletionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "jobId": { "$ref": "#/components/schemas/Identifier" },
+          "status": { "const": "queued", "description": "Deletion job state.", "type": "string" }
+        },
+        "required": ["jobId", "status"],
+        "type": "object"
+      },
+      "CompleteAccountDeletionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CompleteAccountDeletionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CompleteUploadRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "parts": {
+            "description": "Completed multipart parts.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "etag": { "description": "Storage entity tag.", "type": "string" },
+                "partNumber": {
+                  "description": "Positive part number.",
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": ["etag", "partNumber"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "uploadId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["parts", "uploadId"],
+        "type": "object"
+      },
+      "CompleteUploadResult": {
+        "additionalProperties": false,
+        "properties": {
+          "checksumSha256": {
+            "description": "Verified SHA-256 digest.",
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "sizeBytes": { "description": "Verified object bytes.", "minimum": 0, "type": "integer" },
+          "uri": { "$ref": "#/components/schemas/BlobyardUri" }
+        },
+        "required": ["checksumSha256", "sizeBytes", "uri"],
+        "type": "object"
+      },
+      "CompleteUploadSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CompleteUploadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateApiTokenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresInDays": {
+            "description": "Token lifetime in days.",
+            "enum": [7, 30, 90],
+            "type": "integer"
+          },
+          "name": {
+            "description": "Token name.",
+            "maxLength": 80,
+            "minLength": 2,
+            "type": "string"
+          },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "scopes": {
+            "description": "Granted scopes.",
+            "items": { "description": "Granted user API scope.", "type": "string" },
+            "type": "array"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["expiresInDays", "name", "scopes"],
+        "type": "object"
+      },
+      "CreateApiTokenResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Token name.", "type": "string" },
+          "projectId": { "$ref": "#/components/schemas/Identifier" },
+          "rawToken": {
+            "description": "Raw API token returned once.",
+            "pattern": "^byd_pat_",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "Granted scopes.",
+            "items": { "description": "Granted scope.", "type": "string" },
+            "type": "array"
+          },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["expiresAt", "id", "name", "rawToken", "scopes"],
+        "type": "object"
+      },
+      "CreateApiTokenSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateApiTokenResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateBillingCheckoutRequest": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "plan": { "const": "solo", "description": "Solo plan checkout.", "type": "string" }
+            },
+            "required": ["plan"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "plan": { "const": "team", "description": "Team plan checkout.", "type": "string" },
+              "seats": {
+                "description": "Requested Team seats.",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": ["plan", "seats"],
+            "type": "object"
+          }
+        ]
+      },
+      "CreateBillingCheckoutResult": { "$ref": "#/components/schemas/BillingSessionResult" },
+      "CreateBillingCheckoutSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateBillingCheckoutResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateBillingPortalRequest": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "CreateBillingPortalResult": { "$ref": "#/components/schemas/BillingSessionResult" },
+      "CreateBillingPortalSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateBillingPortalResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateBillingSubscriptionUpdateRequest": {
+        "$ref": "#/components/schemas/CreateBillingCheckoutRequest"
+      },
+      "CreateBillingSubscriptionUpdateResult": {
+        "$ref": "#/components/schemas/BillingSessionResult"
+      },
+      "CreateBillingSubscriptionUpdateSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateBillingSubscriptionUpdateResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateCiTrustRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedActions": {
+            "description": "Allowed actions.",
+            "items": { "description": "Allowed CI action.", "type": "string" },
+            "type": "array"
+          },
+          "allowedRefGlob": { "description": "Allowed Git ref glob.", "type": "string" },
+          "environment": { "description": "Optional GitHub environment.", "type": "string" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "repository": { "description": "GitHub owner/repository.", "type": "string" },
+          "workflowPath": { "description": "Workflow path.", "type": "string" },
+          "workflowRef": { "description": "Pinned workflow ref.", "type": "string" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": [
+          "allowedActions",
+          "allowedRefGlob",
+          "repository",
+          "workflowPath",
+          "workflowRef",
+          "workspace"
+        ],
+        "type": "object"
+      },
+      "CreateCiTrustResult": { "$ref": "#/components/schemas/CiTrustSummary" },
+      "CreateCiTrustSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateCiTrustResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateInboxRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expires": {
+            "anyOf": [
+              { "description": "Requested lifetime.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "name": { "description": "Inbox display name.", "type": "string" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["expires", "name", "project", "workspace"],
+        "type": "object"
+      },
+      "CreateInboxResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "inboxUrl": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": ["expiresAt", "id", "inboxUrl"],
+        "type": "object"
+      },
+      "CreateInboxSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateInboxResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateInviteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": { "description": "Invite recipient.", "format": "email", "type": "string" },
+          "role": {
+            "description": "Workspace role.",
+            "enum": ["owner", "admin", "member"],
+            "type": "string"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["email", "role", "workspace"],
+        "type": "object"
+      },
+      "CreateInviteResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "inviteUrl": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": ["expiresAt", "id", "inviteUrl"],
+        "type": "object"
+      },
+      "CreateInviteSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateInviteResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateOneTimeSecretRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ciphertext": {
+            "description": "Client-encrypted ciphertext.",
+            "minLength": 22,
+            "type": "string"
+          },
+          "expiresIn": {
+            "description": "Secret lifetime.",
+            "enum": ["1h", "24h", "7d"],
+            "type": "string"
+          },
+          "initializationVector": {
+            "description": "Base64url AES-GCM IV.",
+            "maxLength": 16,
+            "minLength": 16,
+            "type": "string"
+          },
+          "tokenHash": {
+            "description": "SHA-256 capability hash.",
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "version": {
+            "const": "aes-gcm-256-v1",
+            "description": "Secret envelope version.",
+            "type": "string"
+          }
+        },
+        "required": ["ciphertext", "expiresIn", "initializationVector", "tokenHash", "version"],
+        "type": "object"
+      },
+      "CreateOneTimeSecretResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "version": {
+            "const": "aes-gcm-256-v1",
+            "description": "Secret envelope version.",
+            "type": "string"
+          }
+        },
+        "required": ["expiresAt", "version"],
+        "type": "object"
+      },
+      "CreateOneTimeSecretSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateOneTimeSecretResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreatePreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expires": {
+            "anyOf": [
+              { "description": "Requested lifetime.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "manifestId": { "$ref": "#/components/schemas/Identifier" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["expires", "manifestId", "project", "workspace"],
+        "type": "object"
+      },
+      "CreatePreviewResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "previewUrl": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": ["expiresAt", "id", "previewUrl"],
+        "type": "object"
+      },
+      "CreatePreviewSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreatePreviewResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateProjectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Project display name.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["name", "workspace"],
+        "type": "object"
+      },
+      "CreateProjectResult": { "$ref": "#/components/schemas/ProjectSummary" },
+      "CreateProjectSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateProjectResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateShareRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expires": {
+            "anyOf": [
+              { "description": "Requested lifetime.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "notify": {
+            "anyOf": [
+              {
+                "description": "Optional notification recipient.",
+                "format": "email",
+                "type": "string"
+              },
+              { "type": "null" }
+            ]
+          },
+          "target": { "$ref": "#/components/schemas/BlobyardUri" }
+        },
+        "required": ["expires", "notify", "target"],
+        "type": "object"
+      },
+      "CreateShareResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "notificationStatus": {
+            "description": "Notification capture or delivery result.",
+            "enum": ["captured", "deduplicated", "failed", "not_requested", "queued"],
+            "type": "string"
+          },
+          "shareUrl": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": ["expiresAt", "id", "notificationStatus", "shareUrl"],
+        "type": "object"
+      },
+      "CreateShareSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateShareResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateStorageCheckoutRequest": {
+        "additionalProperties": false,
+        "properties": { "storageBlockCount": { "minimum": 1, "type": "integer" } },
+        "required": ["storageBlockCount"],
+        "type": "object"
+      },
+      "CreateStorageCheckoutResult": { "$ref": "#/components/schemas/BillingSessionResult" },
+      "CreateStorageCheckoutSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateStorageCheckoutResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateStorageUpdateRequest": { "$ref": "#/components/schemas/CreateStorageCheckoutRequest" },
+      "CreateStorageUpdateResult": { "$ref": "#/components/schemas/BillingSessionResult" },
+      "CreateStorageUpdateSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateStorageUpdateResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateWorkspaceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Workspace display name.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "CreateWorkspaceResult": { "$ref": "#/components/schemas/WorkspaceSummary" },
+      "CreateWorkspaceSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateWorkspaceResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "Cursor": {
+        "description": "Opaque continuation cursor.",
+        "maxLength": 1024,
+        "minLength": 1,
+        "type": "string"
+      },
+      "DeleteObjectRequest": {
+        "additionalProperties": false,
+        "properties": { "uri": { "$ref": "#/components/schemas/BlobyardUri" } },
+        "required": ["uri"],
+        "type": "object"
+      },
+      "DeleteObjectResult": {
+        "additionalProperties": false,
+        "properties": {
+          "deleted": {
+            "const": true,
+            "description": "The object is now deleted.",
+            "type": "boolean"
+          },
+          "uri": { "$ref": "#/components/schemas/BlobyardUri" }
+        },
+        "required": ["deleted", "uri"],
+        "type": "object"
+      },
+      "DeleteObjectSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeleteObjectResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "DeleteWebYardRequest": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "DeleteWebYardResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "DeleteWebYardSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeleteWebYardResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "DevicePollResult": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "description": "Authorization state.",
+                "enum": ["pending", "slow_down", "denied", "expired"],
+                "type": "string"
+              }
+            },
+            "required": ["status"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "const": "approved",
+                "description": "Completed authorization state.",
+                "type": "string"
+              },
+              "tokens": { "$ref": "#/components/schemas/TokenPair" }
+            },
+            "required": ["status", "tokens"],
+            "type": "object"
+          }
+        ]
+      },
+      "DeviceStartResult": {
+        "additionalProperties": false,
+        "properties": {
+          "deviceCode": { "$ref": "#/components/schemas/CapabilityToken" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "pollIntervalSeconds": {
+            "description": "Minimum polling interval.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "userCode": { "description": "Code shown for browser approval.", "type": "string" },
+          "verificationUri": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": [
+          "deviceCode",
+          "expiresAt",
+          "pollIntervalSeconds",
+          "userCode",
+          "verificationUri"
+        ],
+        "type": "object"
+      },
+      "DownloadAccountExportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "exportId": { "maxLength": 128, "minLength": 1, "type": "string" },
+          "partNumber": { "minimum": 0, "type": "integer" }
+        },
+        "required": ["exportId", "partNumber"],
+        "type": "object"
+      },
+      "DownloadAccountExportResult": {
+        "additionalProperties": false,
+        "properties": {
+          "downloadUrl": { "$ref": "#/components/schemas/Url" },
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" }
+        },
+        "required": ["downloadUrl", "expiresAt"],
+        "type": "object"
+      },
+      "DownloadAccountExportSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DownloadAccountExportResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "DownloadResult": {
+        "additionalProperties": false,
+        "properties": {
+          "checksumSha256": {
+            "description": "Expected SHA-256 digest.",
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "downloadUrl": { "$ref": "#/components/schemas/TransferUrl" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "filename": { "description": "Download filename.", "type": "string" },
+          "sizeBytes": { "description": "Expected bytes.", "minimum": 0, "type": "integer" }
+        },
+        "required": ["checksumSha256", "downloadUrl", "expiresAt", "filename", "sizeBytes"],
+        "type": "object"
+      },
+      "DownloadShareRequest": {
+        "additionalProperties": false,
+        "properties": { "token": { "$ref": "#/components/schemas/CapabilityToken" } },
+        "required": ["token"],
+        "type": "object"
+      },
+      "DownloadShareResult": { "$ref": "#/components/schemas/DownloadResult" },
+      "DownloadShareSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DownloadShareResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "EmptyResult": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "ExchangeBootstrapTokenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Human-readable local credential name.",
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "platform": {
+            "description": "Host platform reported by the standalone CLI.",
+            "type": "string"
+          },
+          "token": { "$ref": "#/components/schemas/CapabilityToken" },
+          "version": { "description": "Standalone CLI semantic version.", "type": "string" }
+        },
+        "required": ["name", "platform", "token", "version"],
+        "type": "object"
+      },
+      "ExchangeBootstrapTokenResult": {
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": { "$ref": "#/components/schemas/CapabilityToken" },
+          "scopes": {
+            "description": "Scopes granted to the local operator token.",
+            "items": { "description": "Granted local operation scope.", "type": "string" },
+            "type": "array"
+          },
+          "webYardOrigin": {
+            "description": "Trusted root origin whose first-level subdomains serve public Web Yards.",
+            "format": "uri",
+            "type": "string"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["accessToken", "scopes", "webYardOrigin", "workspace"],
+        "type": "object"
+      },
+      "ExchangeBootstrapTokenSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ExchangeBootstrapTokenResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ExchangeGitHubOidcRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "description": "Exact short-lived actions requested by this workflow run.",
+            "items": { "$ref": "#/components/schemas/CiAction" },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["actions", "project"],
+        "type": "object"
+      },
+      "ExchangeGitHubOidcResult": { "$ref": "#/components/schemas/MachineTokenResult" },
+      "ExchangeGitHubOidcSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ExchangeGitHubOidcResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "FailWebYardDeployRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "deployId": { "$ref": "#/components/schemas/Identifier" },
+          "failureCode": { "description": "Redaction-safe failure code.", "type": "string" },
+          "failureMessage": { "description": "Redaction-safe failure message.", "type": "string" }
+        },
+        "required": ["deployId", "failureCode", "failureMessage"],
+        "type": "object"
+      },
+      "FailWebYardDeployResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "FailWebYardDeploySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/FailWebYardDeployResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "FinaliseWebYardDeployRequest": {
+        "additionalProperties": false,
+        "properties": { "deployId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["deployId"],
+        "type": "object"
+      },
+      "FinaliseWebYardDeployResult": { "$ref": "#/components/schemas/YardDeploymentResult" },
+      "FinaliseWebYardDeploySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/FinaliseWebYardDeployResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetAccountDeletionResult": {
+        "anyOf": [{ "$ref": "#/components/schemas/AccountDeletionState" }, { "type": "null" }]
+      },
+      "GetAccountDeletionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetAccountDeletionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetAccountExportResult": {
+        "anyOf": [{ "$ref": "#/components/schemas/AccountExportState" }, { "type": "null" }]
+      },
+      "GetAccountExportSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetAccountExportResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetBillingResult": { "$ref": "#/components/schemas/BillingProjection" },
+      "GetBillingSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetBillingResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetRetentionOverviewResult": { "$ref": "#/components/schemas/RetentionOverview" },
+      "GetRetentionOverviewSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetRetentionOverviewResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetRetentionQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "workspace"],
+        "type": "object"
+      },
+      "GetRetentionResult": { "$ref": "#/components/schemas/RetentionPolicy" },
+      "GetRetentionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetRetentionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GetUploadStatusQuery": {
+        "additionalProperties": false,
+        "properties": { "uploadId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["uploadId"],
+        "type": "object"
+      },
+      "GetUploadStatusResult": { "$ref": "#/components/schemas/UploadStatusResult" },
+      "GetUploadStatusSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetUploadStatusResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "HealthResult": {
+        "additionalProperties": false,
+        "properties": {
+          "status": { "const": "ok", "description": "Service readiness state.", "type": "string" },
+          "version": { "description": "Build version.", "type": "string" }
+        },
+        "required": ["status", "version"],
+        "type": "object"
+      },
+      "HealthSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/HealthResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "Identifier": {
+        "description": "Stable resource identifier.",
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "InboxMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "maxBytes": { "description": "Maximum accepted bytes.", "minimum": 0, "type": "integer" },
+          "maxFiles": { "description": "Maximum accepted files.", "minimum": 0, "type": "integer" },
+          "name": { "description": "Inbox display name.", "type": "string" },
+          "uploadAvailable": {
+            "description": "Whether another upload may be started.",
+            "type": "boolean"
+          }
+        },
+        "required": ["expiresAt", "maxBytes", "maxFiles", "name", "uploadAvailable"],
+        "type": "object"
+      },
+      "InboxPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/InboxSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "InboxSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Inbox display name.", "type": "string" },
+          "revoked": { "description": "Whether the inbox is revoked.", "type": "boolean" }
+        },
+        "required": ["expiresAt", "id", "name", "revoked"],
+        "type": "object"
+      },
+      "InviteList": {
+        "description": "Workspace invitations.",
+        "items": { "$ref": "#/components/schemas/InviteSummary" },
+        "type": "array"
+      },
+      "InviteSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "email": { "description": "Invite email.", "format": "email", "type": "string" },
+          "expiresAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "role": {
+            "description": "Workspace role.",
+            "enum": ["owner", "admin", "member"],
+            "type": "string"
+          },
+          "status": { "description": "Invite lifecycle state.", "type": "string" }
+        },
+        "required": ["createdAt", "email", "expiresAt", "id", "role", "status"],
+        "type": "object"
+      },
+      "IsoTimestamp": {
+        "description": "RFC 3339 timestamp.",
+        "format": "date-time",
+        "type": "string"
+      },
+      "ListApiTokensResult": { "$ref": "#/components/schemas/ApiTokenList" },
+      "ListApiTokensSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListApiTokensResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListAuditEventsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListAuditEventsResult": { "$ref": "#/components/schemas/AuditPage" },
+      "ListAuditEventsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListAuditEventsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListCiTrustsQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListCiTrustsResult": { "$ref": "#/components/schemas/CiTrustList" },
+      "ListCiTrustsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListCiTrustsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListCliSessionsResult": { "$ref": "#/components/schemas/CliSessionList" },
+      "ListCliSessionsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListCliSessionsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListInboxesQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "workspace"],
+        "type": "object"
+      },
+      "ListInboxesResult": { "$ref": "#/components/schemas/InboxPage" },
+      "ListInboxesSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListInboxesResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListInvitesQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListInvitesResult": { "$ref": "#/components/schemas/InviteList" },
+      "ListInvitesSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListInvitesResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListMembersQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListMembersResult": { "$ref": "#/components/schemas/MemberList" },
+      "ListMembersSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListMembersResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListObjectsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "prefix": { "description": "Optional logical path prefix.", "type": "string" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "versions": {
+            "description": "Include immutable historical versions.",
+            "type": "boolean"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "versions", "workspace"],
+        "type": "object"
+      },
+      "ListObjectsResult": { "$ref": "#/components/schemas/ObjectPage" },
+      "ListObjectsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListObjectsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListPreviewsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "workspace"],
+        "type": "object"
+      },
+      "ListPreviewsResult": { "$ref": "#/components/schemas/PreviewPage" },
+      "ListPreviewsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListPreviewsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListProjectsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListProjectsResult": { "$ref": "#/components/schemas/ProjectPage" },
+      "ListProjectsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListProjectsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListSharesQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListSharesResult": { "$ref": "#/components/schemas/SharePage" },
+      "ListSharesSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListSharesResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListWebYardDeploysQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListWebYardDeploysResult": { "$ref": "#/components/schemas/YardDeployPage" },
+      "ListWebYardDeploysSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListWebYardDeploysResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListWebYardsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["project", "workspace"],
+        "type": "object"
+      },
+      "ListWebYardsResult": { "$ref": "#/components/schemas/WebYardPage" },
+      "ListWebYardsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListWebYardsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListWorkspacesQuery": {
+        "additionalProperties": false,
+        "properties": { "cursor": { "$ref": "#/components/schemas/Cursor" } },
+        "required": [],
+        "type": "object"
+      },
+      "ListWorkspacesResult": { "$ref": "#/components/schemas/WorkspacePage" },
+      "ListWorkspacesSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListWorkspacesResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "LogoutCliSessionRequest": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "LogoutCliSessionResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "LogoutCliSessionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/LogoutCliSessionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "MachineTokenResult": {
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": { "$ref": "#/components/schemas/CapabilityToken" },
+          "expiresInSeconds": { "description": "Token lifetime.", "minimum": 1, "type": "integer" },
+          "scopes": {
+            "description": "Granted scopes.",
+            "items": { "description": "Granted scope.", "type": "string" },
+            "type": "array"
+          }
+        },
+        "required": ["accessToken", "expiresInSeconds", "scopes"],
+        "type": "object"
+      },
+      "MemberList": {
+        "additionalProperties": false,
+        "properties": {
+          "members": {
+            "description": "Workspace members.",
+            "items": { "$ref": "#/components/schemas/MemberSummary" },
+            "type": "array"
+          },
+          "seats": { "$ref": "#/components/schemas/SeatState" }
+        },
+        "required": ["members", "seats"],
+        "type": "object"
+      },
+      "MemberSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "anyOf": [
+              { "description": "Member display name.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "email": { "description": "Member email.", "format": "email", "type": "string" },
+          "joinedAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "role": {
+            "description": "Workspace role.",
+            "enum": ["owner", "admin", "member"],
+            "type": "string"
+          },
+          "userId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["displayName", "email", "joinedAt", "role", "userId"],
+        "type": "object"
+      },
+      "ObjectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/ObjectSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "ObjectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "description": "Current object-version availability.",
+            "enum": ["available", "deleted", "pending", "unavailable"],
+            "type": "string"
+          },
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "filename": { "description": "Original safe filename.", "type": "string" },
+          "sizeBytes": { "description": "Object bytes.", "minimum": 0, "type": "integer" },
+          "source": {
+            "description": "Object ingestion source.",
+            "enum": ["ci", "cli", "inbox", "preview", "web"],
+            "type": "string"
+          },
+          "uri": { "$ref": "#/components/schemas/BlobyardUri" }
+        },
+        "required": ["availability", "createdAt", "filename", "sizeBytes", "source", "uri"],
+        "type": "object"
+      },
+      "PollDeviceLoginRequest": {
+        "additionalProperties": false,
+        "properties": { "deviceCode": { "$ref": "#/components/schemas/CapabilityToken" } },
+        "required": ["deviceCode"],
+        "type": "object"
+      },
+      "PollDeviceLoginResult": { "$ref": "#/components/schemas/DevicePollResult" },
+      "PollDeviceLoginSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/PollDeviceLoginResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "PrepareAccountDeletionRequest": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "PrepareAccountDeletionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmationToken": { "$ref": "#/components/schemas/CapabilityToken" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "recoveryToken": {
+            "allOf": [{ "$ref": "#/components/schemas/CapabilityToken" }],
+            "description": "Deletion recovery capability returned once. Store it outside logs and model context until cleanup completes."
+          }
+        },
+        "required": ["confirmationToken", "expiresAt", "recoveryToken"],
+        "type": "object"
+      },
+      "PrepareAccountDeletionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/PrepareAccountDeletionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "PreviewPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/PreviewSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "PreviewSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "status": {
+            "description": "Preview lifecycle state.",
+            "enum": ["active", "expired", "exhausted", "revoked"],
+            "type": "string"
+          }
+        },
+        "required": ["createdAt", "expiresAt", "id", "status"],
+        "type": "object"
+      },
+      "ProjectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/ProjectSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "ProjectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Project display name.", "type": "string" },
+          "slug": { "$ref": "#/components/schemas/Slug" },
+          "workspaceSlug": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["id", "name", "slug", "workspaceSlug"],
+        "type": "object"
+      },
+      "RedeemOneTimeSecretRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "tokenHash": {
+            "description": "SHA-256 capability hash.",
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "version": {
+            "const": "aes-gcm-256-v1",
+            "description": "Secret envelope version.",
+            "type": "string"
+          }
+        },
+        "required": ["tokenHash", "version"],
+        "type": "object"
+      },
+      "RedeemOneTimeSecretResult": {
+        "additionalProperties": false,
+        "properties": {
+          "ciphertext": { "description": "Client-encrypted ciphertext.", "type": "string" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "initializationVector": { "description": "Base64url AES-GCM IV.", "type": "string" },
+          "version": {
+            "const": "aes-gcm-256-v1",
+            "description": "Secret envelope version.",
+            "type": "string"
+          }
+        },
+        "required": ["ciphertext", "expiresAt", "initializationVector", "version"],
+        "type": "object"
+      },
+      "RedeemOneTimeSecretSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RedeemOneTimeSecretResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RefreshCliSessionRequest": {
+        "additionalProperties": false,
+        "properties": { "refreshToken": { "$ref": "#/components/schemas/CapabilityToken" } },
+        "required": ["refreshToken"],
+        "type": "object"
+      },
+      "RefreshCliSessionResult": { "$ref": "#/components/schemas/TokenPair" },
+      "RefreshCliSessionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RefreshCliSessionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RemoveMemberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "targetUserId": { "$ref": "#/components/schemas/Identifier" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["targetUserId", "workspace"],
+        "type": "object"
+      },
+      "RemoveMemberResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RemoveMemberSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RemoveMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RenameWorkspaceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Replacement workspace name.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["name", "workspace"],
+        "type": "object"
+      },
+      "RenameWorkspaceResult": { "$ref": "#/components/schemas/WorkspaceSummary" },
+      "RenameWorkspaceSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RenameWorkspaceResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RequestAccountExportRequest": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "RequestAccountExportResult": { "$ref": "#/components/schemas/AccountExportResult" },
+      "RequestAccountExportSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RequestAccountExportResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RequestDownloadRequest": {
+        "additionalProperties": false,
+        "properties": { "uri": { "$ref": "#/components/schemas/BlobyardUri" } },
+        "required": ["uri"],
+        "type": "object"
+      },
+      "RequestDownloadResult": { "$ref": "#/components/schemas/DownloadResult" },
+      "RequestDownloadSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RequestDownloadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RequestUploadPartsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "partNumbers": {
+            "description": "Ordered part numbers.",
+            "items": { "description": "Positive part number.", "minimum": 1, "type": "integer" },
+            "type": "array"
+          },
+          "uploadId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["partNumbers", "uploadId"],
+        "type": "object"
+      },
+      "RequestUploadPartsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "parts": {
+            "description": "Signed part grants.",
+            "items": { "$ref": "#/components/schemas/UploadPartGrant" },
+            "type": "array"
+          }
+        },
+        "required": ["expiresAt", "parts"],
+        "type": "object"
+      },
+      "RequestUploadPartsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RequestUploadPartsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RequestUploadRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "checksumSha256": {
+            "description": "Lowercase SHA-256 digest.",
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "contentType": { "description": "Client content type hint.", "type": "string" },
+          "filename": { "description": "Original safe filename.", "type": "string" },
+          "gitBranch": { "description": "Source branch.", "type": "string" },
+          "gitCommit": { "description": "Source commit.", "type": "string" },
+          "gitRepository": { "description": "Source repository.", "type": "string" },
+          "path": { "description": "Normalized logical object path.", "type": "string" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "sizeBytes": { "description": "Exact byte length.", "minimum": 0, "type": "integer" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": [
+          "checksumSha256",
+          "contentType",
+          "filename",
+          "path",
+          "project",
+          "sizeBytes",
+          "workspace"
+        ],
+        "type": "object"
+      },
+      "RequestUploadResult": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "headers": {
+            "description": "Required upload headers.",
+            "items": { "$ref": "#/components/schemas/SignedHeader" },
+            "type": "array"
+          },
+          "partSizeBytes": {
+            "anyOf": [
+              { "description": "Multipart part size.", "minimum": 1, "type": "integer" },
+              { "type": "null" }
+            ]
+          },
+          "strategy": {
+            "description": "Upload strategy.",
+            "enum": ["single", "multipart"],
+            "type": "string"
+          },
+          "uploadId": { "$ref": "#/components/schemas/Identifier" },
+          "uploadUrl": {
+            "anyOf": [{ "$ref": "#/components/schemas/TransferUrl" }, { "type": "null" }]
+          }
+        },
+        "required": ["expiresAt", "headers", "partSizeBytes", "strategy", "uploadId", "uploadUrl"],
+        "type": "object"
+      },
+      "RequestUploadSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RequestUploadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ResolveInboxQuery": {
+        "additionalProperties": false,
+        "properties": { "token": { "$ref": "#/components/schemas/CapabilityToken" } },
+        "required": ["token"],
+        "type": "object"
+      },
+      "ResolveInboxResult": { "$ref": "#/components/schemas/InboxMetadata" },
+      "ResolveInboxSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ResolveInboxResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ResolveShareQuery": {
+        "additionalProperties": false,
+        "properties": { "token": { "$ref": "#/components/schemas/CapabilityToken" } },
+        "required": ["token"],
+        "type": "object"
+      },
+      "ResolveShareResult": { "$ref": "#/components/schemas/ShareMetadata" },
+      "ResolveShareSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ResolveShareResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RetentionOverview": {
+        "additionalProperties": false,
+        "properties": {
+          "lastRun": {
+            "anyOf": [{ "$ref": "#/components/schemas/RetentionRun" }, { "type": "null" }]
+          },
+          "policy": {
+            "anyOf": [{ "$ref": "#/components/schemas/RetentionPolicy" }, { "type": "null" }]
+          }
+        },
+        "required": ["lastRun", "policy"],
+        "type": "object"
+      },
+      "RetentionPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "branchGlob": {
+            "anyOf": [
+              { "description": "Optional branch glob.", "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "keepLatest": {
+            "description": "Newest matching versions to keep.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pathGlob": {
+            "anyOf": [
+              { "description": "Optional logical path glob.", "type": "string" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["branchGlob", "keepLatest", "pathGlob"],
+        "type": "object"
+      },
+      "RetentionRun": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateCount": { "minimum": 0, "type": "integer" },
+          "completedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/UnixMilliseconds" }, { "type": "null" }]
+          },
+          "deletedCount": { "minimum": 0, "type": "integer" },
+          "errorSummary": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "startedAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "status": { "enum": ["complete", "failed", "running"], "type": "string" }
+        },
+        "required": [
+          "candidateCount",
+          "completedAt",
+          "deletedCount",
+          "errorSummary",
+          "startedAt",
+          "status"
+        ],
+        "type": "object"
+      },
+      "RetryAccountDeletionRequest": {
+        "additionalProperties": false,
+        "properties": { "confirmation": { "const": "DELETE MY ACCOUNT", "type": "string" } },
+        "required": ["confirmation"],
+        "type": "object"
+      },
+      "RetryAccountDeletionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "jobId": { "$ref": "#/components/schemas/Identifier" },
+          "status": { "$ref": "#/components/schemas/AccountDeletionRetryStatus" }
+        },
+        "required": ["jobId", "status"],
+        "type": "object"
+      },
+      "RetryAccountDeletionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RetryAccountDeletionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevocationResult": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "description": "Operation result.",
+            "enum": ["revoked", "invalid", "already_revoked"],
+            "type": "string"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
+      "RevokeApiTokenRequest": {
+        "additionalProperties": false,
+        "properties": { "tokenId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["tokenId"],
+        "type": "object"
+      },
+      "RevokeApiTokenResult": { "$ref": "#/components/schemas/RevocationResult" },
+      "RevokeApiTokenSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeApiTokenResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeCiTrustRequest": {
+        "additionalProperties": false,
+        "properties": { "trustId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["trustId"],
+        "type": "object"
+      },
+      "RevokeCiTrustResult": {
+        "description": "CI trust revocation result.",
+        "enum": ["revoked", "already_revoked"],
+        "type": "string"
+      },
+      "RevokeCiTrustSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeCiTrustResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeCliSessionRequest": {
+        "additionalProperties": false,
+        "properties": { "sessionId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["sessionId"],
+        "type": "object"
+      },
+      "RevokeCliSessionResult": { "$ref": "#/components/schemas/RevocationResult" },
+      "RevokeCliSessionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeCliSessionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeInboxRequest": {
+        "additionalProperties": false,
+        "properties": { "inboxId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["inboxId"],
+        "type": "object"
+      },
+      "RevokeInboxResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeInboxSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeInboxResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeInviteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "inviteId": { "$ref": "#/components/schemas/Identifier" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["inviteId", "workspace"],
+        "type": "object"
+      },
+      "RevokeInviteResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeInviteSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeInviteResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokePreviewRequest": {
+        "additionalProperties": false,
+        "properties": { "previewId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["previewId"],
+        "type": "object"
+      },
+      "RevokePreviewResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokePreviewSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokePreviewResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeShareRequest": {
+        "additionalProperties": false,
+        "properties": { "shareId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["shareId"],
+        "type": "object"
+      },
+      "RevokeShareResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeShareSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeShareResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RollbackWebYardRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "deployId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "RollbackWebYardResult": { "$ref": "#/components/schemas/YardDeploymentResult" },
+      "RollbackWebYardSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RollbackWebYardResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "SeatState": {
+        "additionalProperties": false,
+        "description": "Server-derived seat state.",
+        "properties": {
+          "active": { "description": "Active seats.", "minimum": 0, "type": "integer" },
+          "limit": {
+            "anyOf": [
+              { "description": "Seat limit.", "minimum": 0, "type": "integer" },
+              { "type": "null" }
+            ]
+          },
+          "reserved": {
+            "description": "Seats reserved by pending invitations.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "used": { "description": "Active plus reserved seats.", "minimum": 0, "type": "integer" }
+        },
+        "required": ["active", "limit", "reserved", "used"],
+        "type": "object"
+      },
+      "SetRetentionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "branch": { "description": "Optional branch glob.", "type": "string" },
+          "keepLatest": {
+            "description": "Newest matching versions to keep.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "path": { "description": "Optional logical path glob.", "type": "string" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["keepLatest", "project", "workspace"],
+        "type": "object"
+      },
+      "SetRetentionResult": { "$ref": "#/components/schemas/RetentionPolicy" },
+      "SetRetentionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SetRetentionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ShareMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "contentTypeClass": { "description": "Coarse content class.", "type": "string" },
+          "downloadAvailable": {
+            "description": "Whether another download is available.",
+            "type": "boolean"
+          },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "filename": { "description": "Shared filename.", "type": "string" },
+          "sizeBytes": { "description": "Object bytes.", "minimum": 0, "type": "integer" }
+        },
+        "required": ["contentTypeClass", "downloadAvailable", "expiresAt", "filename", "sizeBytes"],
+        "type": "object"
+      },
+      "SharePage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/ShareSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "ShareSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "consumedCount": {
+            "description": "Completed downloads.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "maximumDownloads": {
+            "anyOf": [
+              { "description": "Maximum downloads.", "minimum": 1, "type": "integer" },
+              { "type": "null" }
+            ]
+          },
+          "status": {
+            "description": "Share lifecycle state.",
+            "enum": ["active", "expired", "exhausted", "revoked", "unavailable"],
+            "type": "string"
+          }
+        },
+        "required": ["consumedCount", "expiresAt", "id", "maximumDownloads", "status"],
+        "type": "object"
+      },
+      "SignedHeader": {
+        "additionalProperties": false,
+        "properties": {
+          "name": { "description": "HTTP header name.", "type": "string" },
+          "value": { "description": "Signed header value.", "type": "string" }
+        },
+        "required": ["name", "value"],
+        "type": "object"
+      },
+      "Slug": {
+        "description": "Lowercase Blob Yard resource slug.",
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+        "type": "string"
+      },
+      "StartDeviceLoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "CLI session label.",
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "platform": { "description": "Host platform.", "type": "string" },
+          "version": { "description": "CLI semantic version.", "type": "string" }
+        },
+        "required": ["name", "platform", "version"],
+        "type": "object"
+      },
+      "StartDeviceLoginResult": { "$ref": "#/components/schemas/DeviceStartResult" },
+      "StartDeviceLoginSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/StartDeviceLoginResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "StartWebYardDeployRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cleanUrls": { "description": "Enable clean HTML URLs.", "type": "boolean" },
+          "clientDeployId": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "$ref": "#/components/schemas/Slug" },
+          "project": { "$ref": "#/components/schemas/Slug" },
+          "public": { "description": "Acknowledge public file delivery.", "type": "boolean" },
+          "spa": { "description": "Enable SPA fallback.", "type": "boolean" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": [
+          "cleanUrls",
+          "clientDeployId",
+          "name",
+          "project",
+          "public",
+          "spa",
+          "workspace"
+        ],
+        "type": "object"
+      },
+      "StartWebYardDeployResult": {
+        "additionalProperties": false,
+        "properties": {
+          "deployId": { "$ref": "#/components/schemas/Identifier" },
+          "deploymentUrl": {
+            "$ref": "#/components/schemas/Url",
+            "description": "Immutable public URL reserved for this exact deploy."
+          },
+          "hostLabel": { "description": "Allocated host label.", "type": "string" },
+          "manifestRoot": { "description": "Reserved manifest root.", "type": "string" },
+          "status": {
+            "const": "uploading",
+            "description": "New deploy lifecycle state.",
+            "type": "string"
+          },
+          "url": { "$ref": "#/components/schemas/Url" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" },
+          "yardName": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": [
+          "deployId",
+          "deploymentUrl",
+          "hostLabel",
+          "manifestRoot",
+          "status",
+          "url",
+          "yardId",
+          "yardName"
+        ],
+        "type": "object"
+      },
+      "StartWebYardDeploySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/StartWebYardDeployResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "StorageSubscription": {
+        "additionalProperties": false,
+        "properties": {
+          "cancelAtPeriodEnd": { "type": "boolean" },
+          "currentPeriodEnd": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "status": { "$ref": "#/components/schemas/BillingSubscriptionStatus" },
+          "storageBlockCount": { "minimum": 1, "type": "integer" }
+        },
+        "required": ["cancelAtPeriodEnd", "currentPeriodEnd", "status", "storageBlockCount"],
+        "type": "object"
+      },
+      "TokenPair": {
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": { "$ref": "#/components/schemas/CapabilityToken" },
+          "expiresInSeconds": {
+            "description": "Access token lifetime.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "refreshToken": { "$ref": "#/components/schemas/CapabilityToken" }
+        },
+        "required": ["accessToken", "expiresInSeconds", "refreshToken"],
+        "type": "object"
+      },
+      "TransferUrl": {
+        "description": "Absolute HTTP or HTTPS URL for a short-lived byte-transfer capability.",
+        "format": "uri",
+        "pattern": "^https?://",
+        "type": "string"
+      },
+      "UnixMilliseconds": {
+        "description": "Unix timestamp in milliseconds.",
+        "minimum": 0,
+        "type": "integer"
+      },
+      "UpdateMemberRoleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "description": "Workspace role.",
+            "enum": ["owner", "admin", "member"],
+            "type": "string"
+          },
+          "targetUserId": { "$ref": "#/components/schemas/Identifier" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["role", "targetUserId", "workspace"],
+        "type": "object"
+      },
+      "UpdateMemberRoleResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "UpdateMemberRoleSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/UpdateMemberRoleResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "UploadPartGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "partNumber": { "description": "Positive part number.", "minimum": 1, "type": "integer" },
+          "uploadUrl": { "$ref": "#/components/schemas/TransferUrl" }
+        },
+        "required": ["partNumber", "uploadUrl"],
+        "type": "object"
+      },
+      "UploadStatusResult": {
+        "additionalProperties": false,
+        "properties": {
+          "completedParts": {
+            "description": "Completed parts.",
+            "items": { "description": "Completed part number.", "minimum": 1, "type": "integer" },
+            "type": "array"
+          },
+          "state": {
+            "description": "Upload lifecycle state.",
+            "enum": [
+              "requested",
+              "uploading",
+              "completing",
+              "complete",
+              "aborted",
+              "expired",
+              "failed"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["completedParts", "state"],
+        "type": "object"
+      },
+      "Url": {
+        "description": "Absolute HTTPS URL.",
+        "format": "uri",
+        "pattern": "^https://",
+        "type": "string"
+      },
+      "WebYardPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/WebYardSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "WebYardSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "currentDeployId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          },
+          "hostLabel": { "description": "Stable public alias host label.", "type": "string" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "$ref": "#/components/schemas/Slug" },
+          "projectId": { "$ref": "#/components/schemas/Identifier" },
+          "status": {
+            "description": "Yard status.",
+            "enum": ["active", "suspended"],
+            "type": "string"
+          },
+          "url": { "$ref": "#/components/schemas/Url" },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "currentDeployId",
+          "hostLabel",
+          "id",
+          "name",
+          "projectId",
+          "status",
+          "url",
+          "workspaceId"
+        ],
+        "type": "object"
+      },
+      "WhoAmIResult": {
+        "additionalProperties": false,
+        "properties": {
+          "defaultWorkspace": { "$ref": "#/components/schemas/WorkspaceSummary" },
+          "displayName": { "description": "Safe principal label.", "type": "string" },
+          "email": {
+            "description": "Verified user email, present for user credentials.",
+            "format": "email",
+            "type": "string"
+          },
+          "principalId": { "$ref": "#/components/schemas/Identifier" },
+          "principalType": {
+            "description": "Principal class.",
+            "enum": ["cli", "ci"],
+            "type": "string"
+          },
+          "scopes": {
+            "description": "Granted scopes.",
+            "items": { "description": "Granted scope.", "type": "string" },
+            "type": "array"
+          }
+        },
+        "required": ["defaultWorkspace", "displayName", "principalId", "principalType", "scopes"],
+        "type": "object"
+      },
+      "WhoAmISuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/WhoAmIResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "WorkspacePage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/WorkspaceSummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "WorkspaceSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Workspace display name.", "type": "string" },
+          "slug": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["id", "name", "slug"],
+        "type": "object"
+      },
+      "YardDeploymentResult": {
+        "additionalProperties": false,
+        "properties": {
+          "deployId": { "$ref": "#/components/schemas/Identifier" },
+          "deploymentUrl": {
+            "$ref": "#/components/schemas/Url",
+            "description": "Immutable public URL bound to the selected deploy while it is retained."
+          },
+          "status": {
+            "description": "Selected deploy lifecycle state.",
+            "enum": ["live", "superseded"],
+            "type": "string"
+          },
+          "url": {
+            "$ref": "#/components/schemas/Url",
+            "description": "Stable public Web Yard alias selected by the operation."
+          }
+        },
+        "required": ["deployId", "deploymentUrl", "status", "url"],
+        "type": "object"
+      },
+      "YardDeployPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "Resources in this page.",
+            "items": { "$ref": "#/components/schemas/YardDeploySummary" },
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "YardDeploySummary": {
+        "additionalProperties": false,
+        "properties": {
+          "cleanUrls": {
+            "description": "Whether extensionless HTML resolution is enabled.",
+            "type": "boolean"
+          },
+          "clientDeployId": { "$ref": "#/components/schemas/Identifier" },
+          "createdAt": { "$ref": "#/components/schemas/UnixMilliseconds" },
+          "deploymentUrl": {
+            "$ref": "#/components/schemas/Url",
+            "description": "Immutable public URL bound to this exact deploy while it is retained."
+          },
+          "fileCount": { "description": "Manifest file count.", "minimum": 0, "type": "integer" },
+          "finalisedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/UnixMilliseconds" }, { "type": "null" }]
+          },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "isCurrent": {
+            "description": "Whether the public alias selects this deploy.",
+            "type": "boolean"
+          },
+          "spa": { "description": "Whether SPA fallback is enabled.", "type": "boolean" },
+          "status": {
+            "description": "Deploy lifecycle state.",
+            "enum": ["uploading", "finalising", "live", "failed", "superseded", "pruned"],
+            "type": "string"
+          },
+          "totalBytes": { "description": "Manifest bytes.", "minimum": 0, "type": "integer" }
+        },
+        "required": [
+          "cleanUrls",
+          "clientDeployId",
+          "createdAt",
+          "deploymentUrl",
+          "fileCount",
+          "finalisedAt",
+          "id",
+          "isCurrent",
+          "spa",
+          "status",
+          "totalBytes"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": { "scheme": "bearer", "type": "http" },
+      "githubOidc": { "bearerFormat": "GitHub OIDC JWT", "scheme": "bearer", "type": "http" }
+    }
+  },
+  "info": {
+    "description": "The stable API for durable object storage and scoped access. Stored files do not expire when a transfer grant or public capability expires.",
+    "title": "Blob Yard API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {},
+  "security": [{ "bearerAuth": [] }],
+  "servers": [{ "url": "https://api.blobyard.com/v1" }],
+  "x-blobyard-classifications": {
+    "onboardingProgress": {
+      "classification": "ui-state",
+      "cli": "excluded",
+      "description": "Derived browser onboarding state, not a stable versioned API resource.",
+      "mcp": "excluded",
+      "sdk": "excluded"
+    }
+  },
+  "x-blobyard-path-order": [
+    "/health",
+    "/bootstrap/exchange",
+    "/cli/device/start",
+    "/cli/device/poll",
+    "/cli/token/refresh",
+    "/cli/logout",
+    "/cli/whoami",
+    "/workspaces",
+    "/projects",
+    "/ci/github/oidc/exchange",
+    "/uploads/request",
+    "/uploads/parts/request",
+    "/uploads/complete",
+    "/uploads/abort",
+    "/uploads/status",
+    "/objects",
+    "/downloads/request",
+    "/shares",
+    "/shares/resolve",
+    "/shares/download",
+    "/shares/revoke",
+    "/previews",
+    "/previews/revoke",
+    "/yards",
+    "/yards/deploys",
+    "/yards/deploys/start",
+    "/yards/deploys/finalise",
+    "/yards/deploys/fail",
+    "/yards/rollback",
+    "/yards/delete",
+    "/inboxes",
+    "/inboxes/resolve",
+    "/inboxes/revoke",
+    "/retention",
+    "/retention/overview",
+    "/audit",
+    "/members",
+    "/members/invites",
+    "/members/invites/revoke",
+    "/members/role",
+    "/members/remove",
+    "/api-tokens",
+    "/api-tokens/revoke",
+    "/ci/trusts",
+    "/ci/trusts/revoke",
+    "/cli/sessions",
+    "/cli/sessions/revoke",
+    "/secrets",
+    "/secrets/redeem",
+    "/workspaces/rename",
+    "/billing",
+    "/billing/checkout",
+    "/billing/portal",
+    "/billing/storage/checkout",
+    "/billing/storage/update",
+    "/billing/subscription/update",
+    "/account/exports",
+    "/account/exports/download",
+    "/account/deletion",
+    "/account/deletion/prepare",
+    "/account/deletion/complete",
+    "/account/deletion/retry"
+  ]
+}

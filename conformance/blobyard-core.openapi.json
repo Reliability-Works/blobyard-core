@@ -1,0 +1,1561 @@
+{
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "$ref": "./blobyard-shared.openapi.json#/components/securitySchemes/bearerAuth"
+      },
+      "githubOidc": {
+        "$ref": "./blobyard-shared.openapi.json#/components/securitySchemes/githubOidc"
+      }
+    }
+  },
+  "info": {
+    "description": "The stable API for durable object storage and scoped access. Stored files do not expire when a transfer grant or public capability expires.",
+    "title": "Blob Yard Core API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api-tokens": {
+      "get": {
+        "operationId": "listApiTokens",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListApiTokensSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["tokens", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_api_tokens" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createApiToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateApiTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateApiTokenSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["tokens", "create"] },
+        "x-blobyard-mcp": {
+          "excluded": "MCP must not return a newly created bearer credential to model context."
+        },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/api-tokens/revoke": {
+      "post": {
+        "operationId": "revokeApiToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeApiTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeApiTokenSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["tokens", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_api_token" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/audit": {
+      "get": {
+        "operationId": "listAuditEvents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListAuditEventsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["audit", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_audit" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/bootstrap/exchange": {
+      "post": {
+        "operationId": "exchangeBootstrapToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/ExchangeBootstrapTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ExchangeBootstrapTokenSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Bootstrap authority exchanged once for a scoped local API token."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "command": ["profiles", "add"] },
+        "x-blobyard-deployments": ["self-hosted"],
+        "x-blobyard-mcp": { "excluded": "Bootstrap credentials must never enter model context." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/ci/github/oidc/exchange": {
+      "post": {
+        "operationId": "exchangeGitHubOidc",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/ExchangeGitHubOidcRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ExchangeGitHubOidcSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [{ "githubOidc": [] }],
+        "x-blobyard-cli": { "excluded": "GitHub Actions exchanges its assertion directly." },
+        "x-blobyard-mcp": { "excluded": "GitHub Actions exchanges its assertion directly." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/ci/trusts": {
+      "get": {
+        "operationId": "listCiTrusts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListCiTrustsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["trusts", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_ci_trusts" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createCiTrust",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateCiTrustRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateCiTrustSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["trusts", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_ci_trust" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/ci/trusts/revoke": {
+      "post": {
+        "operationId": "revokeCiTrust",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeCiTrustRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeCiTrustSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["trusts", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_ci_trust" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/sessions": {
+      "get": {
+        "operationId": "listCliSessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListCliSessionsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["sessions", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_cli_sessions" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/sessions/revoke": {
+      "post": {
+        "operationId": "revokeCliSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeCliSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeCliSessionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["sessions", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_cli_session" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/cli/whoami": {
+      "get": {
+        "operationId": "whoAmI",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/WhoAmISuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["whoami"] },
+        "x-blobyard-mcp": { "tool": "blobyard_whoami" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/downloads/request": {
+      "post": {
+        "operationId": "requestDownload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestDownloadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestDownloadSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["download"] },
+        "x-blobyard-mcp": { "tool": "blobyard_download_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/HealthSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "excluded": "Service readiness probe has no user workflow." },
+        "x-blobyard-mcp": { "excluded": "Service readiness probe has no agent workflow." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/inboxes": {
+      "get": {
+        "operationId": "listInboxes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          },
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListInboxesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["inbox", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_inboxes" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createInbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateInboxRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateInboxSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["inbox", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_inbox" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/inboxes/resolve": {
+      "get": {
+        "operationId": "resolveInbox",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "$ref": "./blobyard-shared.openapi.json#/components/schemas/CapabilityToken"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResolveInboxSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "excluded": "The public capability URL resolves this operation." },
+        "x-blobyard-mcp": { "excluded": "The public capability URL resolves this operation." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/inboxes/revoke": {
+      "post": {
+        "operationId": "revokeInbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeInboxRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeInboxSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["inbox", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_inbox" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/objects": {
+      "delete": {
+        "operationId": "deleteObject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeleteObjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeleteObjectSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["rm"] },
+        "x-blobyard-mcp": { "tool": "blobyard_delete_object" },
+        "x-blobyard-sdk": true
+      },
+      "get": {
+        "operationId": "listObjects",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          },
+          {
+            "in": "query",
+            "name": "prefix",
+            "required": false,
+            "schema": { "description": "Optional logical path prefix.", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "versions",
+            "required": true,
+            "schema": { "description": "Include immutable historical versions.", "type": "boolean" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListObjectsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["ls"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_objects" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/previews": {
+      "get": {
+        "operationId": "listPreviews",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListPreviewsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["previews", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_previews" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createPreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreatePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreatePreviewSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["preview"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_preview" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/previews/revoke": {
+      "post": {
+        "operationId": "revokePreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokePreviewSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["previews", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_preview" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListProjectsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["projects", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_projects" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateProjectSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["projects", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_project" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/retention": {
+      "delete": {
+        "operationId": "clearRetention",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ClearRetentionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["retention", "clear"] },
+        "x-blobyard-mcp": { "tool": "blobyard_clear_retention" },
+        "x-blobyard-sdk": true
+      },
+      "get": {
+        "operationId": "getRetention",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetRetentionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["retention", "show"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_retention" },
+        "x-blobyard-sdk": true
+      },
+      "put": {
+        "operationId": "setRetention",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetRetentionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetRetentionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["retention", "set"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_retention" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/retention/overview": {
+      "get": {
+        "operationId": "getRetentionOverview",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetRetentionOverviewSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["retention", "overview"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_retention_overview" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/shares": {
+      "get": {
+        "operationId": "listShares",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListSharesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["shares", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_shares" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createShare",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateShareSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["share"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_share" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/shares/download": {
+      "post": {
+        "operationId": "downloadShare",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DownloadShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DownloadShareSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "excluded": "The public capability URL downloads this object." },
+        "x-blobyard-mcp": { "excluded": "The public capability URL downloads this object." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/shares/resolve": {
+      "get": {
+        "operationId": "resolveShare",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "$ref": "./blobyard-shared.openapi.json#/components/schemas/CapabilityToken"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResolveShareSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "security": [],
+        "x-blobyard-cli": { "excluded": "The public capability URL resolves this operation." },
+        "x-blobyard-mcp": { "excluded": "The public capability URL resolves this operation." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/shares/revoke": {
+      "post": {
+        "operationId": "revokeShare",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeShareSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["shares", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_share" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/uploads/abort": {
+      "post": {
+        "operationId": "abortUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/AbortUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/AbortUploadSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["upload"] },
+        "x-blobyard-mcp": { "tool": "blobyard_upload_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/uploads/complete": {
+      "post": {
+        "operationId": "completeUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CompleteUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CompleteUploadSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["upload"] },
+        "x-blobyard-mcp": { "tool": "blobyard_upload_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/uploads/parts/request": {
+      "post": {
+        "operationId": "requestUploadParts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestUploadPartsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestUploadPartsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["upload"] },
+        "x-blobyard-mcp": { "tool": "blobyard_upload_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/uploads/request": {
+      "post": {
+        "operationId": "requestUpload",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Required retry-stable upload request key.",
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RequestUploadSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["upload"] },
+        "x-blobyard-mcp": { "tool": "blobyard_upload_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/uploads/status": {
+      "get": {
+        "operationId": "getUploadStatus",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "uploadId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetUploadStatusSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["upload"] },
+        "x-blobyard-mcp": { "tool": "blobyard_upload_file" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/workspaces": {
+      "get": {
+        "operationId": "listWorkspaces",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListWorkspacesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["workspaces", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_workspaces" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "operationId": "createWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateWorkspaceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateWorkspaceSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["workspaces", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_workspace" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/workspaces/rename": {
+      "post": {
+        "operationId": "renameWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RenameWorkspaceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RenameWorkspaceSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["workspaces", "rename"] },
+        "x-blobyard-mcp": { "tool": "blobyard_rename_workspace" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards": {
+      "get": {
+        "description": "Lists active Web Yards for one workspace project.",
+        "operationId": "listWebYards",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListWebYardsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_web_yards" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/delete": {
+      "post": {
+        "description": "Deletes a Web Yard and schedules retained manifest objects for cleanup. Workspace administrator access is required.",
+        "operationId": "deleteWebYard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeleteWebYardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeleteWebYardSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard", "delete"] },
+        "x-blobyard-mcp": { "tool": "blobyard_delete_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/deploys": {
+      "get": {
+        "description": "Lists the current deploy followed by retained deploy history.",
+        "operationId": "listWebYardDeploys",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListWebYardDeploysSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard", "history"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_deploys" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/deploys/fail": {
+      "post": {
+        "description": "Marks an incomplete deploy as failed and schedules its manifest for cleanup.",
+        "operationId": "failWebYardDeploy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/FailWebYardDeployRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/FailWebYardDeploySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["deploy"] },
+        "x-blobyard-mcp": { "tool": "blobyard_deploy_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/deploys/finalise": {
+      "post": {
+        "description": "Snapshots a ready manifest and promotes it when no newer deploy has succeeded.",
+        "operationId": "finaliseWebYardDeploy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/FinaliseWebYardDeployRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/FinaliseWebYardDeploySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["deploy"] },
+        "x-blobyard-mcp": { "tool": "blobyard_deploy_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/deploys/start": {
+      "post": {
+        "description": "Creates or reuses a Web Yard and reserves a manifest root for a public deploy.",
+        "operationId": "startWebYardDeploy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/StartWebYardDeployRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/StartWebYardDeploySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["deploy"] },
+        "x-blobyard-mcp": { "tool": "blobyard_deploy_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/rollback": {
+      "post": {
+        "description": "Promotes a retained successful deploy. Workspace administrator access is required.",
+        "operationId": "rollbackWebYard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RollbackWebYardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RollbackWebYardSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard", "rollback"] },
+        "x-blobyard-mcp": { "tool": "blobyard_rollback_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "servers": [{ "url": "https://api.blobyard.com/v1" }],
+  "x-blobyard-contract": "core"
+}

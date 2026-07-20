@@ -1,0 +1,74 @@
+[workspace]
+members = [
+  "crates/blobyard-api-client",
+  "crates/blobyard-cli",
+  "crates/blobyard-contract",
+  "crates/blobyard-core",
+  "crates/blobyard-mcp",
+  "crates/blobyard-repository-sqlite",
+  "crates/blobyard-server",
+  "crates/blobyard-storage-filesystem",
+  "crates/blobyard-storage-s3",
+  "crates/blobyard-testkit",
+  "crates/xtask",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.12"
+edition = "2024"
+rust-version = "1.96"
+authors = ["Reliability Works Ltd."]
+publish = false
+license = "Apache-2.0"
+repository = "https://github.com/Reliability-Works/blobyard-core"
+
+[workspace.dependencies]
+axum = "=0.8.9"
+base64 = "=0.22.1"
+bytes = "=1.12.1"
+clap = { version = "=4.6.1", features = ["derive"] }
+clap_complete = "=4.6.7"
+directories = "=6.0.0"
+futures-util = "=0.3.32"
+http-body-util = "=0.1.3"
+http = "=1.4.2"
+indicatif = { version = "=0.18.6", features = ["tokio"] }
+keyring = "=4.1.4"
+percent-encoding = "=2.3.2"
+quick-xml = { version = "=0.41.0", features = ["serialize"] }
+reqwest = { version = "=0.13.4", default-features = false, features = ["json", "query", "rustls", "stream"] }
+rusqlite = { version = "=0.40.1", default-features = false, features = ["backup", "bundled"] }
+rustls-webpki = { version = "=0.103.13", default-features = false, features = ["aws-lc-rs"] }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.150"
+sha2 = "=0.10.9"
+tempfile = "=3.27.0"
+time = { version = "=0.3.53", features = ["formatting"] }
+tokio = { version = "=1.52.3", features = ["fs", "io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
+toml = "=1.1.2"
+tower = { version = "=0.5.3", features = ["util"] }
+tracing = "=0.1.44"
+url = "=2.5.8"
+uuid = { version = "=1.23.4", features = ["v4"] }
+zeroize = "=1.9.0"
+
+[workspace.lints.rust]
+missing_docs = "deny"
+unsafe_code = "forbid"
+unreachable_pub = "deny"
+warnings = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+cognitive_complexity = "deny"
+dbg_macro = "deny"
+excessive_nesting = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+too_many_lines = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

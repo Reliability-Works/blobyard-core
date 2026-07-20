@@ -1,0 +1,29 @@
+{
+  "name": "blobyard-core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "bootstrap": "./scripts/bootstrap.sh",
+    "build": "./scripts/check.sh build",
+    "check": "./scripts/check.sh all",
+    "contracts:check": "./scripts/check.sh contracts",
+    "dup:check": "./scripts/check.sh dup",
+    "format": "./scripts/check.sh fmt",
+    "lint": "./scripts/check.sh lint",
+    "openapi:check": "node scripts/openapi/generate.mjs --check",
+    "openapi:generate": "node scripts/openapi/generate.mjs",
+    "openapi:split": "node scripts/openapi/split-contract.mjs",
+    "test": "./scripts/check.sh test",
+    "typecheck": "./scripts/check.sh typecheck"
+  },
+  "devDependencies": {
+    "jscpd": "5.0.12",
+    "prettier": "3.9.4",
+    "yaml": "2.9.0"
+  }
+}

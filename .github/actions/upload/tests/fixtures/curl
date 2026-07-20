@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+printf '%s\n' "$*" >>"${CURL_ARGS_CAPTURE:?}"
+if [[ $* == *token.actions.test* ]]; then
+  printf '%s\n' '{"value":"oidc-fixture"}'
+  exit 0
+fi
+output=
+body=
+while (($#)); do
+  case $1 in
+  --output)
+    output=$2
+    shift 2
+    ;;
+  --data)
+    body=$2
+    shift 2
+    ;;
+  *) shift ;;
+  esac
+done
+printf '%s\n' "$body" >"${CURL_BODY_CAPTURE:?}"
+printf '%s\n' '{"ok":true,"data":{"accessToken":"machine-fixture","expiresInSeconds":300,"scopes":["upload"]},"requestId":"req_oidc"}' >"$output"
+printf '200'

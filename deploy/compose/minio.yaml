@@ -1,0 +1,89 @@
+name: blobyard-core-minio
+
+services:
+  minio:
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command:
+      - server
+      - /data
+      - --console-address
+      - :9001
+    environment:
+      MINIO_ROOT_USER: ${BLOBYARD_MINIO_ACCESS_KEY:-blobyardlocal}
+      MINIO_ROOT_PASSWORD: ${BLOBYARD_MINIO_SECRET_KEY:-blobyardlocalpassword}
+    volumes:
+      - minio-data:/data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  minio-ready:
+    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    environment:
+      MC_HOST_local: http://${BLOBYARD_MINIO_ACCESS_KEY:-blobyardlocal}:${BLOBYARD_MINIO_SECRET_KEY:-blobyardlocalpassword}@minio:9000
+    command:
+      - ready
+      - local
+    depends_on:
+      minio:
+        condition: service_started
+    restart: "no"
+
+  minio-bucket:
+    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    environment:
+      MC_HOST_local: http://${BLOBYARD_MINIO_ACCESS_KEY:-blobyardlocal}:${BLOBYARD_MINIO_SECRET_KEY:-blobyardlocalpassword}@minio:9000
+    command:
+      - mb
+      - --ignore-existing
+      - local/blobyard
+    depends_on:
+      minio-ready:
+        condition: service_completed_successfully
+    restart: "no"
+
+  core:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/server.Dockerfile
+    command:
+      - serve
+      - --listen
+      - 0.0.0.0:8787
+      - --data-dir
+      - /var/lib/blobyard/data
+      - --public-url
+      - http://localhost:8787
+      - --web-yard-origin
+      - http://localhost:8787
+      - --storage
+      - s3
+      - --s3-endpoint
+      - http://minio:9000
+      - --s3-bucket
+      - blobyard
+      - --s3-force-path-style
+    environment:
+      BLOBYARD_S3_ACCESS_KEY_ID: ${BLOBYARD_MINIO_ACCESS_KEY:-blobyardlocal}
+      BLOBYARD_S3_SECRET_ACCESS_KEY: ${BLOBYARD_MINIO_SECRET_KEY:-blobyardlocalpassword}
+    ports:
+      - "127.0.0.1:${BLOBYARD_CORE_PORT:-8787}:8787"
+    volumes:
+      - core-data:/var/lib/blobyard
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      minio-bucket:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  core-data:
+  minio-data:

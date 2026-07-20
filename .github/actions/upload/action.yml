@@ -1,0 +1,121 @@
+name: Upload or deploy with Blobyard
+description: Upload an artifact or deploy a Web Yard with the verified native Blobyard CLI.
+
+inputs:
+  operation:
+    description: Run an upload or Web Yard deploy.
+    required: false
+    default: upload
+  path:
+    description: File or directory to upload, or the Web Yard project directory to deploy.
+    required: true
+  project:
+    description: Destination project slug.
+    required: true
+  api-url:
+    description: Versioned Blobyard API base URL ending in /v1.
+    required: true
+  web-yard-origin:
+    description: Trusted root origin whose first-level subdomains serve public Web Yards.
+    required: false
+    default: https://blobyard.app
+  workspace:
+    description: Destination workspace slug.
+    required: false
+    default: ""
+  yard:
+    description: Web Yard name. Leave empty to deploy all configured Web Yards.
+    required: false
+    default: ""
+  spa:
+    description: Enable SPA fallback for a Web Yard deploy.
+    required: false
+    default: "false"
+  clean-urls:
+    description: Enable clean HTML URLs for a Web Yard deploy.
+    required: false
+    default: "false"
+  public:
+    description: Acknowledge that Web Yard deploys are public.
+    required: false
+    default: "false"
+  token:
+    description: Explicit scoped machine token fallback.
+    required: false
+    default: ""
+  share:
+    description: Create a share after uploading.
+    required: false
+    default: "false"
+  expires:
+    description: Share expiry duration.
+    required: false
+    default: 7d
+  comment-on-pr:
+    description: Comment the result on the current pull request.
+    required: false
+    default: "false"
+  pull-request-number:
+    description: Explicit pull request number when no pull_request event is available.
+    required: false
+    default: ""
+  github-token:
+    description: GitHub token used only for pull request comments. Defaults to the workflow token.
+    required: false
+    default: ""
+  local-cli-path:
+    description: Trusted local CLI path for repository tests.
+    required: false
+    default: ""
+
+outputs:
+  uri:
+    description: Immutable Blobyard object URI returned by the CLI.
+    value: ${{ steps.upload.outputs.uri }}
+  version:
+    description: Object version returned by the CLI.
+    value: ${{ steps.upload.outputs.version }}
+  share-url:
+    description: Share URL when share is enabled.
+    value: ${{ steps.upload.outputs.share-url }}
+  yard-url:
+    description: Stable public Web Yard URL for a single deploy.
+    value: ${{ steps.upload.outputs.yard-url }}
+  deployment-url:
+    description: Immutable public URL for a single Web Yard deploy.
+    value: ${{ steps.upload.outputs.deployment-url }}
+  deploy-id:
+    description: Stable immutable deploy identifier for a single Web Yard deploy.
+    value: ${{ steps.upload.outputs.deploy-id }}
+  status:
+    description: Web Yard deploy lifecycle status for a single deploy.
+    value: ${{ steps.upload.outputs.status }}
+  results:
+    description: Compact JSON array with one result per Web Yard.
+    value: ${{ steps.upload.outputs.results }}
+
+runs:
+  using: composite
+  steps:
+    - id: upload
+      name: Verify CLI, authenticate, and run operation
+      shell: bash
+      env:
+        BLOBYARD_ACTION_API_URL: ${{ inputs.api-url }}
+        BLOBYARD_ACTION_WEB_YARD_ORIGIN: ${{ inputs.web-yard-origin }}
+        BLOBYARD_ACTION_COMMENT: ${{ inputs.comment-on-pr }}
+        BLOBYARD_ACTION_EXPIRES: ${{ inputs.expires }}
+        BLOBYARD_ACTION_GITHUB_TOKEN: ${{ inputs.github-token || github.token }}
+        BLOBYARD_ACTION_LOCAL_CLI: ${{ inputs.local-cli-path }}
+        BLOBYARD_ACTION_OPERATION: ${{ inputs.operation }}
+        BLOBYARD_ACTION_PATH: ${{ inputs.path }}
+        BLOBYARD_ACTION_PR_NUMBER: ${{ inputs.pull-request-number }}
+        BLOBYARD_ACTION_PROJECT: ${{ inputs.project }}
+        BLOBYARD_ACTION_SHARE: ${{ inputs.share }}
+        BLOBYARD_ACTION_SPA: ${{ inputs.spa }}
+        BLOBYARD_ACTION_CLEAN_URLS: ${{ inputs.clean-urls }}
+        BLOBYARD_ACTION_PUBLIC: ${{ inputs.public }}
+        BLOBYARD_ACTION_TOKEN: ${{ inputs.token }}
+        BLOBYARD_ACTION_WORKSPACE: ${{ inputs.workspace }}
+        BLOBYARD_ACTION_YARD: ${{ inputs.yard }}
+      run: "$GITHUB_ACTION_PATH/run.sh"

@@ -1,0 +1,34 @@
+[advisories]
+yanked = "deny"
+
+[bans]
+allow-wildcard-paths = true
+multiple-versions = "deny"
+wildcards = "deny"
+highlight = "all"
+skip = [
+  { crate = "getrandom@0.2.17", reason = "Target-specific directories and keyring dependencies still require the 0.2 API while runtime crates use 0.4." },
+]
+
+[licenses]
+confidence-threshold = 0.93
+unused-allowed-license = "allow"
+allow = [
+  "Apache-2.0",
+  "BSD-3-Clause",
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Zlib",
+]
+
+[licenses.private]
+ignore = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

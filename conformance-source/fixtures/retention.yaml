@@ -1,0 +1,23 @@
+cases:
+  - expected:
+      action: keep
+    id: active-version-is-kept
+    input:
+      expiresAt: 2000
+      lockedUntil: null
+      now: 1000
+  - expected:
+      action: keep
+    id: retention-lock-wins-over-expiry
+    input:
+      expiresAt: 900
+      lockedUntil: 1100
+      now: 1000
+  - expected:
+      action: delete
+    id: expired-unlocked-version-is-deleted
+    input:
+      expiresAt: 900
+      lockedUntil: null
+      now: 1000
+schemaVersion: 1

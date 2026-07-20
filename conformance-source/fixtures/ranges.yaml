@@ -1,0 +1,29 @@
+cases:
+  - expected:
+      end: 9
+      length: 10
+      start: 0
+      status: 206
+    id: bounded-range
+    input:
+      end: 9
+      size: 100
+      start: 0
+  - expected:
+      end: 99
+      length: 10
+      start: 90
+      status: 206
+    id: suffix-range
+    input:
+      size: 100
+      suffixLength: 10
+  - expected:
+      code: RANGE_NOT_SATISFIABLE
+      status: 416
+    id: range-start-past-end
+    input:
+      end: 109
+      size: 100
+      start: 100
+schemaVersion: 1

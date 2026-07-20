@@ -1,0 +1,26 @@
+[package]
+name = "blobyard-repository-sqlite"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+test-seams = []
+
+[dependencies]
+blobyard-contract = { path = "../blobyard-contract" }
+blobyard-core = { path = "../blobyard-core" }
+rusqlite.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+blobyard-testkit = { path = "../blobyard-testkit" }
+rusqlite = { workspace = true, features = ["hooks"] }
+tempfile.workspace = true
+
+[lints]
+workspace = true

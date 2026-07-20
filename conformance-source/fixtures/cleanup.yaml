@@ -1,0 +1,20 @@
+cases:
+  - expected:
+      action: delete-bytes
+    id: expired-version-with-bytes-is-deleted
+    input:
+      bytes: present
+      metadata: expired
+  - expected:
+      action: report-missing-bytes
+    id: metadata-without-bytes-is-reported
+    input:
+      bytes: missing
+      metadata: active
+  - expected:
+      action: report-orphan
+    id: bytes-without-metadata-are-not-deleted-implicitly
+    input:
+      bytes: present
+      metadata: missing
+schemaVersion: 1

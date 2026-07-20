@@ -1,0 +1,6 @@
+name: Invalid package manager
+jobs:
+  invalid:
+    runs-on: ubuntu-latest
+    steps:
+      - run: yarn add lodash

@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "expected": { "code": "CONFLICT", "status": 409 },
+      "id": "completed-upload-cannot-complete-again",
+      "input": { "condition": "upload-already-complete" }
+    },
+    {
+      "expected": { "code": "RANGE_NOT_SATISFIABLE", "status": 416 },
+      "id": "range-past-object-end",
+      "input": { "condition": "range-invalid" }
+    },
+    {
+      "expected": { "code": "NOT_FOUND", "status": 404 },
+      "id": "unknown-object",
+      "input": { "condition": "object-missing" }
+    }
+  ],
+  "schemaVersion": 1
+}

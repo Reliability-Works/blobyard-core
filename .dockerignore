@@ -1,0 +1,14 @@
+*
+!.dockerignore
+!Cargo.lock
+!Cargo.toml
+!Dockerfile
+!rust-toolchain.toml
+!crates
+!crates/**
+!deploy
+!deploy/**
+!openapi
+!openapi/**
+!packaging
+!packaging/**

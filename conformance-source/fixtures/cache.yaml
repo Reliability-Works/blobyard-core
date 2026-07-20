@@ -1,0 +1,17 @@
+cases:
+  - expected:
+      cacheControl: public, max-age=31536000, immutable
+    id: immutable-yard-release-is-publicly-cacheable
+    input:
+      surface: yard-release
+  - expected:
+      cacheControl: private, no-store
+    id: private-object-download-is-never-shared-cacheable
+    input:
+      surface: authenticated-download
+  - expected:
+      cacheControl: private, no-store
+    id: capability-error-is-never-cacheable
+    input:
+      surface: capability-error
+schemaVersion: 1

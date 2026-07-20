@@ -1,0 +1,48 @@
+[package]
+name = "blobyard-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+test-seams = []
+
+[dependencies]
+blobyard-api-client = { path = "../blobyard-api-client" }
+blobyard-core = { path = "../blobyard-core" }
+blobyard-mcp = { path = "../blobyard-mcp" }
+clap.workspace = true
+clap_complete.workspace = true
+directories.workspace = true
+futures-util.workspace = true
+ignore = "=0.4.25"
+indicatif.workspace = true
+keyring.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "=0.10.9"
+tempfile.workspace = true
+tokio = { workspace = true, features = ["fs", "signal"] }
+toml.workspace = true
+tracing.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+http-body-util = "=0.1.3"
+keyring-core = "=1.0.0"
+
+[lib]
+name = "blobyard_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "blobyard"
+path = "src/main.rs"
+
+[lints]
+workspace = true

@@ -1,0 +1,6 @@
+{
+  "description": "npm and npx are forbidden; pnpm is required",
+  "scripts": {
+    "check": "pnpm check"
+  }
+}

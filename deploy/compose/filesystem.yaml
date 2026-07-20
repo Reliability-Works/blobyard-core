@@ -1,0 +1,32 @@
+name: blobyard-core-filesystem
+
+services:
+  core:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/server.Dockerfile
+    command:
+      - serve
+      - --listen
+      - 0.0.0.0:8787
+      - --data-dir
+      - /var/lib/blobyard/data
+      - --public-url
+      - http://localhost:8787
+      - --web-yard-origin
+      - http://localhost:8787
+    ports:
+      - "127.0.0.1:${BLOBYARD_CORE_PORT:-8787}:8787"
+    volumes:
+      - core-data:/var/lib/blobyard
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  core-data:

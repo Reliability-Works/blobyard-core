@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "vectors": [
+    {
+      "action": "share:manage",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-resource-is-concealed",
+      "principalScopes": ["share:manage"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "object:write",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "reader-cannot-write-object",
+      "principalScopes": ["object:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "object:read",
+      "expected": { "allowed": true },
+      "id": "workspace-reader-can-read-object",
+      "principalScopes": ["object:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    }
+  ]
+}

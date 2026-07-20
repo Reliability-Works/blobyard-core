@@ -1,0 +1,13 @@
+[package]
+name = "blobyard-contract"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+blobyard-core = { path = "../blobyard-core" }
+
+[lints]
+workspace = true

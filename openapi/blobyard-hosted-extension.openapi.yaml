@@ -1,0 +1,701 @@
+openapi: 3.1.0
+info:
+  title: Blob Yard Cloud Extensions API
+  version: 1.0.0
+  description:
+    The stable API for durable object storage and scoped access. Stored files do not expire when a
+    transfer grant or public capability expires.
+servers:
+  - url: https://api.blobyard.com/v1
+security:
+  - bearerAuth: []
+paths:
+  /cli/device/start:
+    post:
+      operationId: startDeviceLogin
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/StartDeviceLoginSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - login
+      x-blobyard-mcp:
+        excluded: MCP reuses an approved CLI session and never handles authentication secrets.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/StartDeviceLoginRequest
+  /cli/device/poll:
+    post:
+      operationId: pollDeviceLogin
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/PollDeviceLoginSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - login
+      x-blobyard-mcp:
+        excluded: MCP reuses an approved CLI session and never handles authentication secrets.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/PollDeviceLoginRequest
+  /cli/token/refresh:
+    post:
+      operationId: refreshCliSession
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RefreshCliSessionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - login
+      x-blobyard-mcp:
+        excluded: The CLI host rotates its session outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RefreshCliSessionRequest
+  /cli/logout:
+    post:
+      operationId: logoutCliSession
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/LogoutCliSessionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - logout
+      x-blobyard-mcp:
+        excluded: The CLI host owns session lifecycle outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/LogoutCliSessionRequest
+  /members:
+    get:
+      operationId: listMembers
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListMembersSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - members
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_members
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /members/invites:
+    get:
+      operationId: listInvites
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListInvitesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - invites
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_invites
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createInvite
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateInviteSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - invites
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_invite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateInviteRequest
+  /members/invites/revoke:
+    post:
+      operationId: revokeInvite
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeInviteSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - invites
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_invite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeInviteRequest
+  /members/role:
+    post:
+      operationId: updateMemberRole
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/UpdateMemberRoleSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - members
+          - role
+      x-blobyard-mcp:
+        tool: blobyard_update_member_role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/UpdateMemberRoleRequest
+  /members/remove:
+    post:
+      operationId: removeMember
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveMemberSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - members
+          - remove
+      x-blobyard-mcp:
+        tool: blobyard_remove_member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveMemberRequest
+  /secrets:
+    post:
+      operationId: createOneTimeSecret
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateOneTimeSecretSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli: &oneTimeSecretExcluded
+        excluded:
+          Secret material and encryption or decryption must remain in a human-controlled browser or
+          client and must not enter MCP model context.
+      x-blobyard-mcp: *oneTimeSecretExcluded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateOneTimeSecretRequest
+  /secrets/redeem:
+    post:
+      operationId: redeemOneTimeSecret
+      security: []
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RedeemOneTimeSecretSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli: *oneTimeSecretExcluded
+      x-blobyard-mcp: *oneTimeSecretExcluded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RedeemOneTimeSecretRequest
+  /billing:
+    get:
+      operationId: getBilling
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - show
+      x-blobyard-mcp:
+        tool: blobyard_get_billing
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetBillingSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - checkout
+      x-blobyard-mcp:
+        excluded:
+          Returns a Stripe hosted-session bearer capability URL that must not enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingCheckoutRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            description: Optional retry-stable request key.
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]{1,128}$
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingCheckoutSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /billing/portal:
+    post:
+      operationId: createBillingPortal
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - portal
+      x-blobyard-mcp:
+        excluded:
+          Returns a Stripe hosted-session bearer capability URL that must not enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingPortalRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            description: Optional retry-stable request key.
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]{1,128}$
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingPortalSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /billing/storage/checkout:
+    post:
+      operationId: createStorageCheckout
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - storage
+          - checkout
+      x-blobyard-mcp:
+        excluded:
+          Returns a Stripe hosted-session bearer capability URL that must not enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateStorageCheckoutRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateStorageCheckoutSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /billing/storage/update:
+    post:
+      operationId: createStorageUpdate
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - storage
+          - update
+      x-blobyard-mcp:
+        excluded:
+          Returns a Stripe hosted-session bearer capability URL that must not enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateStorageUpdateRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateStorageUpdateSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /billing/subscription/update:
+    post:
+      operationId: createBillingSubscriptionUpdate
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - billing
+          - update
+      x-blobyard-mcp:
+        excluded:
+          Returns a Stripe hosted-session bearer capability URL that must not enter model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingSubscriptionUpdateRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateBillingSubscriptionUpdateSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/exports:
+    get:
+      operationId: getAccountExport
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - export
+          - show
+      x-blobyard-mcp:
+        tool: blobyard_get_account_export
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetAccountExportSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+    post:
+      operationId: requestAccountExport
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - export
+          - request
+      x-blobyard-mcp:
+        tool: blobyard_request_account_export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestAccountExportRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            description: Optional retry-stable request key.
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]{1,128}$
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RequestAccountExportSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/exports/download:
+    post:
+      operationId: downloadAccountExport
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - export
+          - download
+      x-blobyard-mcp:
+        excluded: Signed export URLs must not enter model context. Use the CLI or SDK.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DownloadAccountExportRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DownloadAccountExportSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/deletion:
+    get:
+      operationId: getAccountDeletion
+      description:
+        Read deletion state with an active account credential or the deletion recovery capability
+        returned by prepare. The recovery capability expires with the deletion tombstone.
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - delete
+          - show
+      x-blobyard-mcp:
+        tool: blobyard_get_account_deletion
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetAccountDeletionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/deletion/prepare:
+    post:
+      operationId: prepareAccountDeletion
+      description:
+        Issue short-lived deletion confirmation and recovery capabilities. A later preparation
+        supersedes the earlier confirmation, so replaying its idempotency key returns a conflict
+        instead of a revoked capability.
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - delete
+          - prepare
+      x-blobyard-mcp:
+        excluded:
+          Deletion confirmation and recovery capabilities must not enter model context. Use the CLI
+          or SDK.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/PrepareAccountDeletionRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            description: Optional retry-stable request key.
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]{1,128}$
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/PrepareAccountDeletionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/deletion/complete:
+    post:
+      operationId: completeAccountDeletion
+      description:
+        Consume the one-time confirmation and queue deletion. A deletion recovery capability may
+        authenticate an idempotent replay after ordinary credentials are revoked.
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - delete
+          - complete
+      x-blobyard-mcp:
+        excluded:
+          Destructive completion requires explicit human-owned confirmation outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CompleteAccountDeletionRequest
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            description: Optional retry-stable request key.
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]{1,128}$
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CompleteAccountDeletionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+  /account/deletion/retry:
+    post:
+      operationId: retryAccountDeletion
+      description:
+        Retry failed cleanup with an active account credential or the unexpired deletion recovery
+        capability.
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - account
+          - delete
+          - retry
+      x-blobyard-mcp:
+        excluded:
+          Destructive retry requires explicit human-owned confirmation outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RetryAccountDeletionRequest
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RetryAccountDeletionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: ./blobyard-shared.openapi.yaml#/components/securitySchemes/bearerAuth
+    githubOidc:
+      $ref: ./blobyard-shared.openapi.yaml#/components/securitySchemes/githubOidc
+x-blobyard-contract: hosted-extension

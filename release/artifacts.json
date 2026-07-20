@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "repository": "Reliability-Works/blobyard-core",
+  "binary": "blobyard",
+  "releaseManifest": "blobyard-release-manifest.json",
+  "signing": {
+    "oidcIssuer": "https://token.actions.githubusercontent.com",
+    "workflow": ".github/workflows/release.yml",
+    "ref": "refs/heads/main"
+  },
+  "assets": {
+    "actionBundle": "blobyard-action-{version}.tar.gz",
+    "checksums": "SHA256SUMS",
+    "checksumsSignature": "SHA256SUMS.sig",
+    "conformanceBundle": "blobyard-conformance-{version}.tar.gz",
+    "containerImages": "blobyard-container-images.json",
+    "provenance": "blobyard-provenance.intoto.jsonl",
+    "sbom": "blobyard-{version}.spdx.json",
+    "sdkPackage": "blobyard-sdk-{version}.tgz",
+    "homebrewFormula": "blobyard.rb"
+  },
+  "containers": [
+    {
+      "surface": "cli",
+      "image": "ghcr.io/reliability-works/blobyard-core-cli"
+    },
+    {
+      "surface": "server",
+      "image": "ghcr.io/reliability-works/blobyard-core-server"
+    }
+  ],
+  "platforms": [
+    {
+      "key": "darwin-arm64",
+      "os": "darwin",
+      "arch": "arm64",
+      "target": "aarch64-apple-darwin",
+      "archive": "blobyard-{version}-{target}.tar.gz",
+      "executable": "blobyard"
+    },
+    {
+      "key": "darwin-amd64",
+      "os": "darwin",
+      "arch": "amd64",
+      "target": "x86_64-apple-darwin",
+      "archive": "blobyard-{version}-{target}.tar.gz",
+      "executable": "blobyard"
+    },
+    {
+      "key": "linux-arm64",
+      "os": "linux",
+      "arch": "arm64",
+      "target": "aarch64-unknown-linux-gnu",
+      "archive": "blobyard-{version}-{target}.tar.gz",
+      "executable": "blobyard"
+    },
+    {
+      "key": "linux-amd64",
+      "os": "linux",
+      "arch": "amd64",
+      "target": "x86_64-unknown-linux-gnu",
+      "archive": "blobyard-{version}-{target}.tar.gz",
+      "executable": "blobyard"
+    }
+  ],
+  "serverPlatforms": [
+    {
+      "key": "linux-arm64",
+      "os": "linux",
+      "arch": "arm64",
+      "target": "aarch64-unknown-linux-gnu",
+      "archive": "blobyard-server-{version}-{target}.tar.gz",
+      "executable": "blobyard-server"
+    },
+    {
+      "key": "linux-amd64",
+      "os": "linux",
+      "arch": "amd64",
+      "target": "x86_64-unknown-linux-gnu",
+      "archive": "blobyard-server-{version}-{target}.tar.gz",
+      "executable": "blobyard-server"
+    }
+  ]
+}

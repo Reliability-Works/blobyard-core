@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - command: static
+            gitleaks: true
+            name: Static, contract, and policy gates
+            node: true
+            rust: true
+            rust-coverage-tools: false
+            rust-static-tools: true
+            shell-tools: true
+            timeout: 45
+          - command: rust-coverage
+            gitleaks: false
+            name: Rust exact 100 percent coverage
+            node: false
+            rust: true
+            rust-coverage-tools: true
+            rust-static-tools: false
+            shell-tools: false
+            timeout: 35
+          - command: rust-build
+            gitleaks: false
+            name: Release CLI and server build
+            node: false
+            rust: true
+            rust-coverage-tools: false
+            rust-static-tools: false
+            shell-tools: false
+            timeout: 30
+          - command: operator-acceptance
+            gitleaks: false
+            name: Filesystem and MinIO operator acceptance
+            node: false
+            rust: false
+            rust-coverage-tools: false
+            rust-static-tools: false
+            shell-tools: false
+            timeout: 35
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        if: ${{ matrix.node }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22.22.2
+          package-manager-cache: false
+
+      - name: Activate pinned pnpm
+        if: ${{ matrix.node }}
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.10.0
+          pnpm --version
+
+      - name: Resolve pnpm store
+        if: ${{ matrix.node }}
+        id: pnpm-store
+        run: |
+          store_path=$(pnpm store path --silent)
+          printf 'path=%s\n' "$store_path" >>"$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store
+        if: ${{ matrix.node }}
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key:
+            pnpm-${{ runner.os }}-${{ runner.arch }}-node-22.22.2-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-${{ runner.arch }}-node-22.22.2-
+
+      - name: Install JavaScript dependencies
+        if: ${{ matrix.node }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Go quality tools
+        if: ${{ matrix.shell-tools }}
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          cache: false
+          go-version: 1.26.3
+
+      - name: Install shellcheck
+        if: ${{ matrix.shell-tools }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+
+      - name: Install pinned shell and workflow validators
+        if: ${{ matrix.shell-tools }}
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@v3.13.1
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          printf '%s\n' "$(go env GOPATH)/bin" >>"$GITHUB_PATH"
+
+      - name: Install pinned gitleaks
+        if: ${{ matrix.gitleaks }}
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          base_url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output checksums.txt "$base_url/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep "  $archive$" checksums.txt | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/bin" gitleaks
+          printf '%s\n' "$RUNNER_TEMP/bin" >>"$GITHUB_PATH"
+
+      - name: Set up pinned Rust
+        if: ${{ matrix.rust }}
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup default 1.96.0
+
+      - name: Install Rust static components
+        if: ${{ matrix.rust-static-tools }}
+        run: rustup component add clippy rustfmt
+
+      - name: Install Rust coverage component
+        if: ${{ matrix.rust-coverage-tools }}
+        run: rustup component add llvm-tools-preview
+
+      - name: Restore Rust build cache
+        if: ${{ matrix.rust }}
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key:
+            rust-${{ runner.os }}-${{ runner.arch }}-1.96.0-${{ matrix.command }}-${{
+            hashFiles('Cargo.lock') }}
+          restore-keys: |
+            rust-${{ runner.os }}-${{ runner.arch }}-1.96.0-${{ matrix.command }}-
+
+      - name: Install pinned Rust static tools
+        if: ${{ matrix.rust-static-tools }}
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
+        with:
+          fallback: none
+          tool: |
+            cargo-deny@0.19.9
+            cargo-audit@0.22.2
+
+      - name: Install pinned Rust coverage tools
+        if: ${{ matrix.rust-coverage-tools }}
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
+        with:
+          fallback: none
+          tool: |
+            cargo-nextest@0.9.140
+            cargo-llvm-cov@0.8.7
+
+      - name: Run repository domain gate
+        run: scripts/check.sh "${{ matrix.command }}"
+
+  required:
+    name: Required CI
+    if: ${{ always() }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every domain gate
+        env:
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: |
+          if [[ "$VALIDATE_RESULT" != "success" ]]; then
+            printf 'One or more CI domain gates did not succeed: %s\n' "$VALIDATE_RESULT" >&2
+            exit 1
+          fi
+          printf 'All CI domain gates succeeded.\n'

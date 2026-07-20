@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+printf '%s\n' "$*" >>"${GH_CAPTURE:?}"
+
+[[ -n ${GH_TOKEN:-} ]] || exit 88
+if [[ -n ${GH_EXPECTED_TOKEN:-} && $GH_TOKEN != "$GH_EXPECTED_TOKEN" ]]; then
+  exit 89
+fi
+
+if [[ ${1:-} != api ]]; then
+  exit 0
+fi
+shift
+if [[ ${1:-} == user ]]; then
+  printf '%s\n' 'github-actions[bot]'
+  exit 0
+fi
+if [[ ${1:-} == repos/*/pulls/* && ${GH_INVALID_PR:-false} == true ]]; then
+  exit 1
+fi
+if [[ ${1:-} == --paginate && ${2:-} == --slurp ]]; then
+  if [[ ${GH_EXISTING_COMMENT:-false} == true ]]; then
+    printf '%s\n' '[[{"id":91,"body":"<!-- blobyard-upload --> old","user":{"login":"github-actions[bot]"}}]]'
+  elif [[ ${GH_EXISTING_FOREIGN_COMMENT:-false} == true ]]; then
+    printf '%s\n' '[[{"id":92,"body":"<!-- blobyard-upload --> foreign","user":{"login":"other-user"}}]]'
+  else
+    printf '%s\n' '[[]]'
+  fi
+  exit 0
+fi
+printf '%s\n' '{}'

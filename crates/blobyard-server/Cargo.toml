@@ -1,0 +1,44 @@
+[package]
+name = "blobyard-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+test-seams = ["blobyard-repository-sqlite/test-seams"]
+
+[dependencies]
+axum.workspace = true
+base64.workspace = true
+blobyard-api-client = { path = "../blobyard-api-client" }
+blobyard-contract = { path = "../blobyard-contract" }
+blobyard-core = { path = "../blobyard-core" }
+blobyard-repository-sqlite = { path = "../blobyard-repository-sqlite" }
+blobyard-storage-filesystem = { path = "../blobyard-storage-filesystem" }
+blobyard-storage-s3 = { path = "../blobyard-storage-s3" }
+clap.workspace = true
+futures-util.workspace = true
+percent-encoding.workspace = true
+reqwest.workspace = true
+rustls-webpki.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+time.workspace = true
+tokio.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+blobyard-testkit = { path = "../blobyard-testkit" }
+http-body-util.workspace = true
+rusqlite.workspace = true
+tempfile.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true

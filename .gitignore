@@ -1,0 +1,28 @@
+# Secrets and local state
+.env
+.env.local
+.env.*.local
+.signing/
+.blobyard/
+
+# JavaScript
+node_modules/
+coverage/
+dist/
+out/
+report/
+*.tsbuildinfo
+
+# Rust
+target/
+lcov.info
+*.profraw
+
+# Release build output
+packaging/docker/bin/
+packaging/docker/SHA256SUMS
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
