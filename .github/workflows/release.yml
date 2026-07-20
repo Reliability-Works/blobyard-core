@@ -53,15 +53,22 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$COMMIT_SHA" ]]
           git rev-parse --verify 'refs/remotes/origin/main^{commit}' >/dev/null
           git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main
-          [[ "$(gh repo view --json visibility --jq .visibility)" == "PRIVATE" ]]
+          [[ "$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)" == "PRIVATE" ]]
           workspace_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
           [[ "$workspace_version" == "$RELEASE_VERSION" ]]
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release view "$RELEASE_TAG" --json isDraft,targetCommitish |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft |
+              jq -e '.isDraft == true' >/dev/null
+            gh release edit "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$COMMIT_SHA"
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --json isDraft,targetCommitish |
               jq -e --arg sha "$COMMIT_SHA" \
                 '.isDraft == true and .targetCommitish == $sha' >/dev/null
           else
             gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
               --draft \
               --target "$COMMIT_SHA" \
               --title "Blob Yard v$RELEASE_VERSION private candidate" \
