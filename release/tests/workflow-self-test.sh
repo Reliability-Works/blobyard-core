@@ -15,13 +15,13 @@ grep -Fq "git rev-parse --verify 'refs/remotes/origin/main^{commit}'" "$workflow
 grep -Fq "git merge-base --is-ancestor \"\$COMMIT_SHA\" refs/remotes/origin/main" "$workflow"
 
 prerequisites_job=$(sed -n '/^  prerequisites:/,/^  macos:/p' "$workflow")
-grep -Fq 'gh repo view "$GITHUB_REPOSITORY"' <<<"$prerequisites_job"
-grep -Fq 'gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft' \
+grep -Fq "gh repo view \"\$GITHUB_REPOSITORY\"" <<<"$prerequisites_job"
+grep -Fq "gh release view \"\$RELEASE_TAG\" --repo \"\$GITHUB_REPOSITORY\" --json isDraft" \
   <<<"$prerequisites_job"
-grep -Fq 'gh release edit "$RELEASE_TAG" \' <<<"$prerequisites_job"
-grep -Fq -- '--target "$COMMIT_SHA"' <<<"$prerequisites_job"
-grep -Fq 'gh release create "$RELEASE_TAG" \' <<<"$prerequisites_job"
-grep -Fq -- '--repo "$GITHUB_REPOSITORY"' <<<"$prerequisites_job"
+grep -Fq "gh release edit \"\$RELEASE_TAG\" \\" <<<"$prerequisites_job"
+grep -Fq -- "--target \"\$COMMIT_SHA\"" <<<"$prerequisites_job"
+grep -Fq "gh release create \"\$RELEASE_TAG\" \\" <<<"$prerequisites_job"
+grep -Fq -- "--repo \"\$GITHUB_REPOSITORY\"" <<<"$prerequisites_job"
 
 linux_job=$(sed -n '/^  linux:/,/^  assemble:/p' "$workflow")
 server_build="cargo build --locked --release --target \"\${{ matrix.target }}\" --package blobyard-server"
