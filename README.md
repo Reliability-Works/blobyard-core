@@ -158,4 +158,10 @@ negative controls for the gates themselves.
 ## License
 
 Blob Yard Core is licensed under the Apache License 2.0. See [LICENSE](LICENSE) and
-[NOTICE](NOTICE).
+[NOTICE](NOTICE). Contributions are accepted under the same license with a Developer Certificate
+of Origin sign-off, as described in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The Blob Yard name, the `blobyard` mark, and the Blob Yard logo are trademarks of
+Reliability Works Ltd. The Apache License 2.0 does not grant trademark rights (section 6). You may
+build and distribute forks of this code, but do not name or brand a fork, hosted service, or
+derived product in a way that suggests it is Blob Yard or is endorsed by Reliability Works Ltd.
