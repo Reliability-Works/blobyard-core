@@ -6,6 +6,9 @@ use blobyard_cli::{Cli, CompletionShell, generate_completion};
 use clap::{CommandFactory, Parser};
 
 const COMPLETE_COMMANDS: &[&[&str]] = &[
+    &["blobyard", "app", "init"],
+    &["blobyard", "app", "validate"],
+    &["blobyard", "app", "validate", "manifest.toml"],
     &[
         "blobyard",
         "profiles",
@@ -248,6 +251,7 @@ fn retry_keys_are_redacted_from_debug_output() {
 fn root_help_names_every_command_and_global_flag() {
     let help = Cli::command().render_long_help().to_string();
     let expected = [
+        "app",
         "profiles",
         "login",
         "logout",

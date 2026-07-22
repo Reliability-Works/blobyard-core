@@ -103,7 +103,7 @@ impl Runner {
             Command::Share(_) | Command::Preview(_) => self.execute_capability(command).await,
             Command::Deploy(arguments) => self.deploy(arguments).await,
             Command::Yard { command } => self.execute_yard(command).await,
-            Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
+            Command::App { .. } | Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
                 self.execute_local(command)
             }
             _ => self.execute_headless(command).await,

@@ -18,6 +18,9 @@ impl Runner {
 
     pub(super) fn execute_local(&self, command: &Command) -> Result<CommandResult, BlobyardError> {
         match command {
+            Command::App { command } => {
+                crate::app_manifest::execute(command, self.config.paths().cwd())
+            }
             Command::Init => self.init_project(),
             Command::Completion(arguments) => Ok(CommandResult::local(
                 serde_json::json!({ "shell": arguments.shell.to_string() }),

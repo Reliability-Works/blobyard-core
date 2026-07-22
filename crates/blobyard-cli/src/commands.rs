@@ -1,3 +1,4 @@
+use crate::AppCommand;
 use crate::account_commands::AccountCommand;
 use crate::billing_commands::BillingCommand;
 use crate::headless_commands::{
@@ -12,6 +13,12 @@ use std::{fmt, fmt::Formatter};
 /// Operations supported by the Blobyard CLI contract.
 #[derive(Clone, Debug, Subcommand)]
 pub enum Command {
+    /// Create or validate a local application manifest.
+    App {
+        /// The application manifest operation.
+        #[command(subcommand)]
+        command: AppCommand,
+    },
     /// Configure isolated Blob Yard Cloud or self-hosted connections.
     Profiles {
         /// The profile operation.

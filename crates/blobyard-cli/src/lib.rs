@@ -9,6 +9,8 @@ extern crate self as blobyard_cli;
 pub mod request_capture;
 
 mod account_commands;
+mod app_commands;
+pub(crate) mod app_manifest;
 mod application;
 mod args;
 mod billing_commands;
@@ -23,6 +25,7 @@ mod token_store;
 #[cfg(test)]
 mod runner_cases_tests;
 
+pub use app_commands::{AppCommand, AppValidateArgs};
 #[cfg(any(test, feature = "test-seams"))]
 #[doc(hidden)]
 pub use application::test_seams;
