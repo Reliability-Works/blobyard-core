@@ -24,14 +24,13 @@ fn jobs(validator: &mut Validator, root: &Map<String, Value>) {
 }
 
 fn job(validator: &mut Validator, value: &Value, path: &str) {
-    let Some(table) = validator.table(value, path, "an object") else {
-        return;
-    };
-    validator.unknown(
-        table,
+    let Some(table) = validator.object(
+        value,
         path,
         &["name", "function", "schedule", "timezone", "retry"],
-    );
+    ) else {
+        return;
+    };
     validator.required_pattern(table, path, "name", patterns::dns_label, "a DNS label");
     validator.required_pattern(table, path, "function", patterns::dns_label, "a DNS label");
     validator.required_pattern(
@@ -54,10 +53,9 @@ fn job(validator: &mut Validator, value: &Value, path: &str) {
 }
 
 fn retry(validator: &mut Validator, value: &Value, path: &str) {
-    let Some(table) = validator.table(value, path, "an object") else {
+    let Some(table) = validator.object(value, path, &["max_attempts", "backoff"]) else {
         return;
     };
-    validator.unknown(table, path, &["max_attempts", "backoff"]);
     if let Some(value) = table.get("max_attempts") {
         validator.integer(value, &format!("{path}.max_attempts"), 1, 10);
     }
@@ -80,10 +78,9 @@ fn routes(validator: &mut Validator, root: &Map<String, Value>) {
 }
 
 fn route(validator: &mut Validator, value: &Value, path: &str) {
-    let Some(table) = validator.table(value, path, "an object") else {
+    let Some(table) = validator.object(value, path, &["path", "method", "function", "auth"]) else {
         return;
     };
-    validator.unknown(table, path, &["path", "method", "function", "auth"]);
     validator.required_pattern(
         table,
         path,

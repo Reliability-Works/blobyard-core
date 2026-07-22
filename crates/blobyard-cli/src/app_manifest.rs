@@ -93,20 +93,15 @@ fn resolve(cwd: &Path, path: &Path) -> PathBuf {
 }
 
 fn open_new(path: &Path) -> Result<File, BlobyardError> {
-    OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|error| {
-            if error.kind() == std::io::ErrorKind::AlreadyExists {
-                BlobyardError::new(
-                    ErrorCode::Conflict,
-                    format!("{MANIFEST_NAME} already exists. Edit it instead of overwriting it."),
-                )
-            } else {
-                local_write_error()
-            }
-        })
+    match OpenOptions::new().write(true).create_new(true).open(path) {
+        Ok(file) => Ok(file),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let message =
+                format!("{MANIFEST_NAME} already exists. Edit it instead of overwriting it.");
+            Err(BlobyardError::new(ErrorCode::Conflict, message))
+        }
+        Err(_) => Err(local_write_error()),
+    }
 }
 
 fn read(path: &Path) -> Result<String, BlobyardError> {

@@ -1,7 +1,5 @@
-use super::patterns;
-use super::schema::Validator;
-use toml::Value;
-use toml::map::Map;
+use super::{patterns, schema::Validator};
+use toml::{Value, map::Map};
 
 pub(super) fn validate(validator: &mut Validator, root: &Map<String, Value>) {
     buckets(validator, root);
@@ -54,26 +52,22 @@ fn functions(validator: &mut Validator, root: &Map<String, Value>) {
 }
 
 fn function(validator: &mut Validator, value: &Value, path: &str) {
-    let Some(table) = validator.table(value, path, "an object") else {
+    let allowed = &[
+        "name",
+        "entry",
+        "type",
+        "permissions",
+        "database",
+        "buckets",
+        "secrets",
+        "network",
+        "email",
+        "event",
+        "queue",
+    ];
+    let Some(table) = validator.object(value, path, allowed) else {
         return;
     };
-    validator.unknown(
-        table,
-        path,
-        &[
-            "name",
-            "entry",
-            "type",
-            "permissions",
-            "database",
-            "buckets",
-            "secrets",
-            "network",
-            "email",
-            "event",
-            "queue",
-        ],
-    );
     validator.required_pattern(table, path, "name", patterns::dns_label, "a DNS label");
     validator.required_pattern(
         table,
