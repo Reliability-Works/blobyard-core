@@ -6,12 +6,13 @@ away from it needs an explicit decision recorded in this file, not a silent exce
 
 ## What Blob Yard Core is
 
-Blob Yard Core is the self-hostable storage layer for CI, agents, and release artifacts. Git keeps
-the source. CI and agents produce the output. Blob Yard Core gives every build, binary, dataset, log
-bundle, and generated file a durable, permissioned path to the person or system that needs it.
+Blob Yard Core is the self-hostable storage and application runtime for developers, CI, and agents.
+Git keeps the source. CI and agents produce the output. Blob Yard Core gives every build, binary,
+dataset, log bundle, and generated file a durable, permissioned path to the person or system that
+needs it, and runs complete Yards: from static sites to private, stateful small applications.
 
 It is the open half of one user contract. The core gives one developer durable storage, scoped
-automation, previews, Web Yards, recovery, and the canonical CLI without requiring a Blob Yard
+automation, previews, complete Yards, recovery, and the canonical CLI without requiring a Blob Yard
 account. Blob Yard Cloud is the managed service around the same contract and lives in a separate
 proprietary repository. The two integrate through a pinned, checksummed conformance bundle, never
 through copied editable source.
@@ -19,8 +20,10 @@ through copied editable source.
 ## North star
 
 A developer should go from nothing to a completed handoff in minutes: install one binary or start
-one container, upload a file, and hand it off with scoped, revocable access. If any step requires
-reading a cloud provider's IAM documentation, the product has failed that user.
+one container, upload a file or deploy an application, and hand it off with scoped, revocable
+access. If any step requires reading a cloud provider's IAM documentation, or assembling an external
+authentication provider, database, object store, scheduler, or secrets manager, the product has
+failed that user.
 
 Files are durable until the owner deletes them or a retention policy removes them. A share can
 expire without deleting its file. An upload inbox grants a bounded way to receive data without
@@ -35,8 +38,12 @@ Accept work that strengthens the self-hostable contract:
   migration tooling.
 - The native surfaces: the CLI, MCP server, typed API client, TypeScript SDK, and GitHub Action.
 - Scoped access: shares, previews, inboxes, retention, and the authorization model behind them.
-- Web Yards as static publishing backed by durable private storage, with immutable history and
-  inspectable rollback.
+- Yards as deployable software backed by durable private storage, with immutable history and
+  inspectable rollback: static publishing plus, behind explicit ports, per-environment relational
+  databases, buckets, sandboxed TypeScript/JavaScript server functions, durable jobs, schedules,
+  webhooks, events, secrets, and controlled outbound networking.
+- Identity for self-hosting: local users, groups, guest invitations, generic OIDC, and Yard-scoped
+  sessions that never expose operator credentials to application code.
 - Operator experience: simpler installation, clearer failure messages, better defaults, and
   documentation that leads with the user journey.
 - Conformance: anything that keeps the contract, the OpenAPI documents, and the conformance bundle
@@ -48,8 +55,10 @@ Decline or redirect work that pulls the core away from its shape:
 
 - Cloud-only concerns: hosted identity, billing, email delivery, collaboration, and production
   operations. Those belong to Blob Yard Cloud.
-- Server-side application execution, background job platforms, databases beyond the embedded
-  metadata store, or general-purpose compute for Web Yards.
+- Virtual machines, arbitrary containers, Kubernetes, raw cloud IAM, or customer-visible provider
+  credentials.
+- A second function language runtime, until it can receive the same tooling, security model, SDK,
+  observability, and conformance as TypeScript/JavaScript.
 - Desktop filesystem mounts, bidirectional sync, or native mobile applications.
 - Enterprise SAML/SCIM and organization-scale identity features.
 - Malware detection or a full secret-scanning service for uploaded bytes.
@@ -77,7 +86,7 @@ Review every change against this file first, then against correctness:
 4. The capability model: does the change preserve scoped, short-lived, revocable access with raw
    secrets returned once, stored as hashes, and never logged?
 5. Operator simplicity: can one developer still install, run, back up, and restore the result
-   without new mandatory infrastructure?
+   through the supported one-command operator path?
 
 Mechanics such as branch shape, gate requirements, and pull request expectations live in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). The working agreement for agent contributors lives in
