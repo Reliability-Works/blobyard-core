@@ -203,6 +203,22 @@ Human output labels the one-time result as `Share URL: https://blobyard.com/s/<c
 can be copied directly. `--json` keeps the typed `shareUrl` field, while `--quiet` suppresses the
 human line.
 
+## Application manifests
+
+Create a minimal static application manifest in the current directory, or validate a manifest before
+deployment work begins:
+
+```bash
+blobyard app init
+blobyard app validate
+blobyard app validate path/to/blobyard.toml
+```
+
+`blobyard app init` creates `blobyard.toml` and refuses to overwrite an existing file.
+`blobyard app validate` applies the complete versioned schema and cross-field contract, then reports
+the application name, runtime, and declared capability counts. Both commands are local-only and do
+not require a profile, credentials, or API connection.
+
 ## Web Yards
 
 Publish a prebuilt static directory to a stable public destination:

@@ -6,7 +6,7 @@ canonical written contract for entities that do not yet have OpenAPI operations.
 component schemas, conformance fixtures, and handlers land together, stage by stage, exactly as Web
 Yards did. The manifest schema in
 [`openapi/blobyard-application-manifest.v1.schema.json`](../openapi/blobyard-application-manifest.v1.schema.json)
-is normative today; validation tooling ships with the CLI manifest work.
+is normative today; `blobyard app validate` now provides the corresponding local validation tooling.
 
 ## The Yard model
 
