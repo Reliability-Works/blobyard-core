@@ -1262,7 +1262,8 @@ paths:
   /users:
     get:
       operationId: listLocalUsers
-      description: Lists local users in one workspace with active sign-in key prefixes. Human sessions only.
+      description:
+        Lists local users in one workspace with active sign-in key prefixes. Human sessions only.
       responses:
         "200":
           description: Operation completed successfully.
@@ -1313,7 +1314,9 @@ paths:
   /users/reset-key:
     post:
       operationId: resetLocalUserLoginKey
-      description: Revokes every active sign-in key for one user and returns the replacement key once. Human sessions only.
+      description:
+        Revokes every active sign-in key for one user and returns the replacement key once. Human
+        sessions only.
       responses:
         "200":
           description: Operation completed successfully.
@@ -1339,7 +1342,8 @@ paths:
   /users/deactivate:
     post:
       operationId: deactivateLocalUser
-      description: Deactivates one local user and revokes every active sign-in key. Human sessions only.
+      description:
+        Deactivates one local user and revokes every active sign-in key. Human sessions only.
       responses:
         "200":
           description: Operation completed successfully.

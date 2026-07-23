@@ -142,6 +142,22 @@ blobyard sessions revoke session_123
 new bearer credential is never returned to model context. Use `blobyard trusts create --help` for
 the repository, workflow, ref, environment, and allowed-action fields.
 
+## Local users
+
+Local users are the self-hosted identities behind non-public Yard access. Creation and key reset
+print the raw `byuk_` sign-in key once; MCP intentionally excludes both so raw sign-in keys never
+enter model context. Listing and deactivation are available over MCP as `blobyard_list_local_users`
+and `blobyard_deactivate_local_user`.
+
+```bash
+blobyard users create "Ada Lovelace" --email ada@example.test --workspace team
+blobyard users list --workspace team
+blobyard users reset-key user_123
+blobyard users deactivate user_123
+```
+
+Deactivation tombstones the user and revokes every active sign-in key in the same transaction.
+
 ## Billing and account lifecycle
 
 Create hosted Stripe sessions without opening the dashboard first:

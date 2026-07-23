@@ -207,3 +207,70 @@ vectors:
     resource:
       project: demo
       workspace: default
+  - action: users:manage
+    expected:
+      allowed: true
+    id: users-manager-can-create-local-user
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: users:manage
+    expected:
+      allowed: true
+    id: users-manager-can-list-local-users
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: users:manage
+    expected:
+      allowed: true
+    id: users-manager-can-reset-login-key
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: users:manage
+    expected:
+      allowed: true
+    id: users-manager-can-deactivate-local-user
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: users:manage
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: cross-workspace-local-users-are-concealed
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: other
+  - action: users:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: object-reader-cannot-manage-local-users
+    principalScopes:
+      - object:read
+    resource:
+      project: demo
+      workspace: default
+  - action: users:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: machine-cannot-manage-local-users
+    principalKind: machine
+    principalScopes:
+      - users:manage
+    resource:
+      project: demo
+      workspace: default

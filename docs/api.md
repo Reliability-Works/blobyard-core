@@ -5,7 +5,7 @@ through the edge Worker.
 
 The currently deployed machine-readable route and authentication inventory is available at
 [`https://blobyard.com/openapi.json`](https://blobyard.com/openapi.json). The checked-in release
-candidate contract contains 78 public operations. It remains a candidate until deployment and hosted
+candidate contract contains 82 public operations. It remains a candidate until deployment and hosted
 acceptance pass, so it must not be assumed to match the hosted contract yet. Internal provider
 webhooks and production-acceptance routes are intentionally excluded. Edge-only preview and Web Yard
 resolution routes are also not customer operations.
@@ -80,7 +80,7 @@ outside the caller's authority.
 | Retention           | read, replace, and remove project policy                                                                        |
 | Web Yards           | start/finalise/fail deploy, list Yards and history, rollback, and delete                                        |
 | Automation          | GitHub OIDC exchange                                                                                            |
-| Administration      | audit, members, invites, API tokens, CI trusts, and CLI sessions                                                |
+| Administration      | audit, members, invites, API tokens, local users, CI trusts, and CLI sessions                                   |
 | Billing             | hosted paid-plan checkout and billing portal sessions                                                           |
 | Account lifecycle   | portable export plus two-phase account deletion                                                                 |
 | Public utility      | client-encrypted one-time secret create and redeem                                                              |
@@ -168,6 +168,22 @@ that classification explicitly and excludes it from SDK, CLI, and MCP generation
 | POST   | `/v1/yards/access/revoke`     | Revoke one access grant (human sessions only)           |
 | POST   | `/v1/yards/rollback`          | Repoint the stable host to an earlier ready deployment  |
 | POST   | `/v1/yards/delete`            | Delete a Yard and schedule its retained bytes           |
+
+## Local user routes
+
+| Method | Route                  | Purpose                                                           |
+| ------ | ---------------------- | ----------------------------------------------------------------- |
+| GET    | `/v1/users`            | List local users with sign-in key prefixes (human sessions only)  |
+| POST   | `/v1/users`            | Create a local user, returning the key once (human sessions only) |
+| POST   | `/v1/users/reset-key`  | Replace every active sign-in key at once (human sessions only)    |
+| POST   | `/v1/users/deactivate` | Deactivate a user and revoke its keys (human sessions only)       |
+
+Local users are the self-hosted identities behind non-public Yard access. All four operations
+require the operator scope `users:manage` and reject machine principals. Raw `byuk_` sign-in keys
+are returned exactly once from create and reset-key, stored only as SHA-256 digests, and never
+appear in listings, audit events, or logs; listings expose only the non-secret key prefix.
+Deactivation is a tombstone: it revokes every active sign-in key in the same transaction and repeat
+deactivation answers `CONFLICT`.
 
 `GET /v1/yards/resolve` is reserved for the Cloudflare edge and requires the server-only edge
 credential. It is not a customer API. User HTML is returned only from isolated `blobyard.app` hosts,
