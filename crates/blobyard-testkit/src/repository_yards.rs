@@ -1,6 +1,6 @@
 use blobyard_contract::{
     NewAuditEvent, NewYardFile, RepositoryError, TransferRepository, WebYardRepository,
-    WebYardStatus, YardDeployStatus,
+    WebYardStatus, YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -76,6 +76,10 @@ pub fn yard_conformance(
         .version
         .id;
     let first = assert_initial_deployment(repository, fixture, &version_id)?;
+    assert_production_environment(repository, &first.yard.id)?;
+    if !repository.list_yard_environments("yard_unknown")?.is_empty() {
+        return Err(RepositoryError::Unavailable);
+    }
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
     assert_yard_deletion(repository, &first)
@@ -103,6 +107,28 @@ fn assert_initial_deployment(
         version_id,
     )?;
     Ok(first)
+}
+
+fn assert_production_environment(
+    repository: &dyn YardConformanceRepository,
+    yard_id: &str,
+) -> Result<(), RepositoryError> {
+    let environments = repository.list_yard_environments(yard_id)?;
+    let production_only = matches!(
+        environments.as_slice(),
+        [environment]
+            if environment.yard_id == yard_id
+                && !environment.id.is_empty()
+                && environment.name.as_str() == "production"
+                && environment.kind == YardEnvironmentKind::Production
+                && environment.status == YardEnvironmentStatus::Active
+                && environment.updated_at_ms == environment.created_at_ms
+    );
+    if production_only {
+        Ok(())
+    } else {
+        Err(RepositoryError::Unavailable)
+    }
 }
 
 fn assert_replacement_and_rollback(

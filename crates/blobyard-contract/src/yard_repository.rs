@@ -1,6 +1,7 @@
 use crate::{
     DeletionPlan, NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError,
-    WebYardRecord, YardDeployRecord, YardDeploymentRecord, YardFileTarget, YardStartRecord,
+    WebYardRecord, YardDeployRecord, YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget,
+    YardStartRecord,
 };
 
 /// One durable byte-cleanup plan created when a Web Yard deploy is pruned.
@@ -50,6 +51,18 @@ pub trait WebYardRepository: Send + Sync {
     ///
     /// Returns validation or provider failures.
     fn list_yard_deploys(&self, yard_id: &str) -> Result<Vec<YardDeployRecord>, RepositoryError>;
+
+    /// Lists active environments for one Yard, production first then by name.
+    ///
+    /// An unknown Yard produces an empty list.
+    ///
+    /// # Errors
+    ///
+    /// Returns validation or provider failures.
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError>;
 
     /// Reads one deploy by stable identifier.
     ///

@@ -48,6 +48,10 @@ fn public_yard_adapter_rejects_invalid_required_ids_before_database_access() {
         Err(RepositoryError::InvalidInput)
     );
     assert_eq!(
+        repository.list_yard_environments(""),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
         repository.yard_deploy_by_id(""),
         Err(RepositoryError::InvalidInput)
     );
@@ -108,6 +112,13 @@ fn yard_query_collectors_propagate_parameter_binding_failures() {
     ));
     assert_eq!(
         yard_queries::list_deploys(&mut deploys, "yard"),
+        Err(RepositoryError::Unavailable)
+    );
+    let mut environments = success(connection.prepare(
+        "SELECT 'yardenv_yard', 'yard', 'production', 'production', 'active', 1, 1",
+    ));
+    assert_eq!(
+        yard_queries::list_environments(&mut environments, "yard"),
         Err(RepositoryError::Unavailable)
     );
 }

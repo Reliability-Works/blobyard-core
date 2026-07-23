@@ -106,6 +106,7 @@ pub(crate) enum Corruption {
     PreviewSecondRevoke,
     PreviewRevokedResolution,
     YardInitialList,
+    YardEnvironmentList,
     YardFixtureObjectList,
     YardReusedStart,
     YardReplacementStatus,

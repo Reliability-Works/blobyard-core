@@ -1,8 +1,8 @@
 use super::FaultingRepository;
 use blobyard_contract::{
     NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
-    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord, YardFileTarget,
-    YardStartRecord,
+    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord,
+    YardEnvironmentRecord, YardFileTarget, YardStartRecord,
 };
 
 impl WebYardRepository for FaultingRepository {
@@ -34,6 +34,14 @@ impl WebYardRepository for FaultingRepository {
     fn yard_deploy_by_id(&self, deploy_id: &str) -> Result<YardDeployRecord, RepositoryError> {
         self.check()?;
         self.inner.yard_deploy_by_id(deploy_id)
+    }
+
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+        self.check()?;
+        self.inner.list_yard_environments(yard_id)
     }
 
     fn finalise_yard_deploy(

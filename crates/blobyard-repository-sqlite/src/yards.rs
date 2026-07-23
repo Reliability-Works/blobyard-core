@@ -4,8 +4,8 @@ use super::{
 };
 use blobyard_contract::{
     NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
-    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord, YardFileTarget,
-    YardStartRecord, is_valid_yard_request_path,
+    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord,
+    YardEnvironmentRecord, YardFileTarget, YardStartRecord, is_valid_yard_request_path,
 };
 
 impl WebYardRepository for SqliteRepository {
@@ -51,6 +51,24 @@ impl WebYardRepository for SqliteRepository {
             ))
             .map_err(map_error)?;
         let result = yard_queries::list_deploys(&mut statement, yard_id);
+        drop(statement);
+        drop(connection);
+        result
+    }
+
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+        rows::validate_text(yard_id)?;
+        let connection = self.connection()?;
+        let mut statement = connection
+            .prepare(&format!(
+                "SELECT {} FROM yard_environments WHERE yard_id = ?1 AND status != 'deleted' ORDER BY kind != 'production', name",
+                super::yard_rows::ENVIRONMENT_COLUMNS
+            ))
+            .map_err(map_error)?;
+        let result = yard_queries::list_environments(&mut statement, yard_id);
         drop(statement);
         drop(connection);
         result

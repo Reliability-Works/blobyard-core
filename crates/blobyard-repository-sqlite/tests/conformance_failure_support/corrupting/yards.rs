@@ -2,7 +2,7 @@ use super::{Corrupting, Corruption};
 use blobyard_contract::{
     NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
     WebYardRepository, WebYardStatus, YardCleanupPlan, YardDeployRecord, YardDeployStatus,
-    YardDeploymentRecord, YardFileTarget, YardStartRecord,
+    YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget, YardStartRecord,
 };
 use blobyard_core::Slug;
 
@@ -54,6 +54,17 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
 
     fn yard_deploy_by_id(&self, deploy_id: &str) -> Result<YardDeployRecord, RepositoryError> {
         self.inner.yard_deploy_by_id(deploy_id)
+    }
+
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+        let mut records = self.inner.list_yard_environments(yard_id)?;
+        if matches!(self.corruption, Corruption::YardEnvironmentList) && !records.is_empty() {
+            records.clear();
+        }
+        Ok(records)
     }
 
     fn finalise_yard_deploy(

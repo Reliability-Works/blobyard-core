@@ -10,6 +10,7 @@ mod repository;
 mod sharing;
 mod storage;
 mod transfers;
+mod yard_environments;
 mod yard_repository;
 mod yards;
 
@@ -62,6 +63,7 @@ pub use transfers::{
     ReservationStrategy, StoredObjectRecord, TransferRepository, UploadPartRecord,
     UploadReservationRecord,
 };
+pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};
 pub use yards::{
     MAXIMUM_YARD_PATH_BYTES, NewWebYard, NewYardDeploy, NewYardFile, WebYardRecord, WebYardStatus,

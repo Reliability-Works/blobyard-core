@@ -25,6 +25,7 @@ pub(super) fn start(
         existing
     } else {
         insert_yard(transaction, yard, yard_created)?;
+        insert_production_environment(transaction, &yard.id, yard_created)?;
         lifecycle_audit::insert(transaction, event)?;
         yard_queries::yard_by_id(transaction, &yard.id)?
     };
@@ -83,6 +84,20 @@ fn insert_yard(
     } else {
         Err(RepositoryError::NotFound)
     }
+}
+
+fn insert_production_environment(
+    transaction: &Transaction<'_>,
+    yard_id: &str,
+    created_at: i64,
+) -> Result<(), RepositoryError> {
+    transaction
+        .execute(
+            "INSERT INTO yard_environments (id, yard_id, name, kind, status, created_at_ms, updated_at_ms, deleted_at_ms) VALUES ('yardenv_' || ?1, ?1, 'production', 'production', 'active', ?2, ?2, NULL)",
+            params![yard_id, created_at],
+        )
+        .map(|_changed| ())
+        .map_err(map_error)
 }
 
 fn insert_deploy(

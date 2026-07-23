@@ -13,6 +13,8 @@ fn present<T>(value: Option<T>) -> T {
 
 #[path = "yards_tests/adapter_edges.rs"]
 mod adapter_edges;
+#[path = "yards_tests/environments.rs"]
+mod environments;
 #[path = "yards_tests/transaction_edges.rs"]
 mod transaction_edges;
 #[path = "yards_tests/validation_finish.rs"]

@@ -7,7 +7,8 @@ pub(super) use blobyard_contract::{
 };
 use blobyard_core::Slug;
 
-pub(super) fn repository() -> (tempfile::TempDir, SqliteRepository, String, u64) {
+pub(in crate::adapter::yards::tests) fn repository() -> (tempfile::TempDir, SqliteRepository, String, u64)
+{
     let temporary = success(tempfile::tempdir());
     let repository = success(SqliteRepository::open(
         &temporary.path().join("metadata.sqlite3"),

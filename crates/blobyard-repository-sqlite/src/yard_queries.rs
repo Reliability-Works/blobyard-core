@@ -1,5 +1,7 @@
 use super::{collect, map_error, rows, yard_rows};
-use blobyard_contract::{RepositoryError, WebYardRecord, YardDeployRecord, YardFileTarget};
+use blobyard_contract::{
+    RepositoryError, WebYardRecord, YardDeployRecord, YardEnvironmentRecord, YardFileTarget,
+};
 use rusqlite::{Connection, OptionalExtension, Statement, params};
 
 pub(super) fn yard_by_id(
@@ -87,6 +89,17 @@ pub(super) fn list_deploys(
     collect(
         statement
             .query_map([yard_id], yard_rows::deploy)
+            .map_err(map_error)?,
+    )
+}
+
+pub(super) fn list_environments(
+    statement: &mut Statement<'_>,
+    yard_id: &str,
+) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+    collect(
+        statement
+            .query_map([yard_id], yard_rows::environment)
             .map_err(map_error)?,
     )
 }

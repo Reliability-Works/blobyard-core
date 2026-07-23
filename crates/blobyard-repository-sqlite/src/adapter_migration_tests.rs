@@ -184,6 +184,41 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
 }
 
 #[test]
+fn environment_migration_backfills_one_production_environment_per_active_yard() {
+    use blobyard_contract::{MetadataRepository, WebYardRepository};
+
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let path = temporary.path().join("metadata.sqlite3");
+    let mut connection = Connection::open(&path).expect("version sixteen connection");
+    super::super::migrations::apply_through(&mut connection, 16).expect("version sixteen schema");
+    connection
+        .execute_batch(
+            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');
+             INSERT INTO projects (id, workspace_id, name, slug) VALUES ('project', 'workspace', 'Project', 'project');
+             INSERT INTO web_yards VALUES ('yard_live', 'workspace', 'project', 'docs', 'docs-123456789-team', NULL, 'active', 1, 1, NULL);
+             INSERT INTO web_yards VALUES ('yard_gone', 'workspace', 'project', 'gone', 'gone-123456789-team', NULL, 'deleted', 1, 2, 2);",
+        )
+        .expect("version sixteen fixture");
+    drop(connection);
+
+    let repository = SqliteRepository::open(&path).expect("migrated repository");
+    assert_eq!(repository.schema_version().expect("schema version"), 17);
+    let environments = repository
+        .list_yard_environments("yard_live")
+        .expect("environments");
+    assert_eq!(environments.len(), 1);
+    assert_eq!(environments[0].id, "yardenv_yard_live");
+    assert_eq!(environments[0].name.as_str(), "production");
+    assert!(
+        repository
+            .list_yard_environments("yard_gone")
+            .expect("deleted Yard environments")
+            .is_empty()
+    );
+    assert_tables(&repository, &["yard_environments"]);
+}
+
+#[test]
 fn partial_migration_rejects_newer_targets_and_maps_each_database_failure() {
     assert_eq!(
         super::super::migrations::apply_through(
