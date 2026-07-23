@@ -417,6 +417,32 @@
       "risk": "read"
     },
     {
+      "id": "getYardAccess",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/access",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:read"],
+      "risk": "read"
+    },
+    {
+      "id": "grantYardAccess",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/access/grant",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
+    },
+    {
       "id": "health",
       "idempotency": {
         "required": false,
@@ -898,6 +924,19 @@
       "risk": "destructive"
     },
     {
+      "id": "revokeYardAccess",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/access/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "destructive"
+    },
+    {
       "id": "rollbackWebYard",
       "idempotency": {
         "required": false,
@@ -922,6 +961,19 @@
       "requiredCiActions": [],
       "requiredUserScopes": ["retention:manage"],
       "risk": "write"
+    },
+    {
+      "id": "setYardVisibility",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/access/visibility",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
     },
     {
       "id": "startDeviceLogin",

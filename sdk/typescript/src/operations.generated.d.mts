@@ -624,6 +624,62 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly YardVisibility:
+    "public" | "owner" | "selected" | "workspace" | "authenticated-link" | "any-authenticated";
+  readonly YardAccessPrincipalKind: "user" | "group" | "guest-invite" | "link";
+  readonly YardAccessGrantSummary: Readonly<{
+    readonly appRoles: readonly string[];
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly environmentId?: Schemas["Identifier"];
+    readonly expiresAt?: Schemas["IsoTimestamp"];
+    readonly id: Schemas["Identifier"];
+    readonly principalId: string;
+    readonly principalKind: Schemas["YardAccessPrincipalKind"];
+  }>;
+  readonly GetYardAccessQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly GetYardAccessResult: Readonly<{
+    readonly grants: readonly Schemas["YardAccessGrantSummary"][];
+    readonly visibility: Schemas["YardVisibility"];
+  }>;
+  readonly GetYardAccessSuccessEnvelope: Readonly<{
+    readonly data: Schemas["GetYardAccessResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly SetYardVisibilityRequest: Readonly<{
+    readonly visibility: Schemas["YardVisibility"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly SetYardVisibilityResult: Readonly<{ readonly visibility: Schemas["YardVisibility"] }>;
+  readonly SetYardVisibilitySuccessEnvelope: Readonly<{
+    readonly data: Schemas["SetYardVisibilityResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly GrantYardAccessRequest: Readonly<{
+    readonly appRoles: readonly string[];
+    readonly environmentId?: Schemas["Identifier"];
+    readonly expiresAt?: Schemas["IsoTimestamp"];
+    readonly principalId: string;
+    readonly principalKind: Schemas["YardAccessPrincipalKind"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly GrantYardAccessResult: Readonly<{ readonly grant: Schemas["YardAccessGrantSummary"] }>;
+  readonly GrantYardAccessSuccessEnvelope: Readonly<{
+    readonly data: Schemas["GrantYardAccessResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RevokeYardAccessRequest: Readonly<{
+    readonly grantId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly RevokeYardAccessResult: Schemas["EmptyResult"];
+  readonly RevokeYardAccessSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RevokeYardAccessResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly ListWebYardDeploysQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly ListWebYardDeploysResult: Schemas["YardDeployPage"];
   readonly ListWebYardDeploysSuccessEnvelope: Readonly<{
@@ -1243,6 +1299,14 @@ export type GetUploadStatusInput = Readonly<{
   readonly query: Readonly<{ readonly uploadId: Schemas["Identifier"] }>;
   readonly signal?: AbortSignal;
 }>;
+export type GetYardAccessInput = Readonly<{
+  readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly signal?: AbortSignal;
+}>;
+export type GrantYardAccessInput = Readonly<{
+  readonly body: Schemas["GrantYardAccessRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type HealthInput = Readonly<{ readonly signal?: AbortSignal }>;
 export type ListApiTokensInput = Readonly<{ readonly signal?: AbortSignal }>;
 export type ListAuditEventsInput = Readonly<{
@@ -1407,12 +1471,20 @@ export type RevokeShareInput = Readonly<{
   readonly body: Schemas["RevokeShareRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type RevokeYardAccessInput = Readonly<{
+  readonly body: Schemas["RevokeYardAccessRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type RollbackWebYardInput = Readonly<{
   readonly body: Schemas["RollbackWebYardRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type SetRetentionInput = Readonly<{
   readonly body: Schemas["SetRetentionRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type SetYardVisibilityInput = Readonly<{
+  readonly body: Schemas["SetYardVisibilityRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type StartDeviceLoginInput = Readonly<{
@@ -1811,6 +1883,30 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly ["upload"];
     requiredUserScopes: readonly ["object:write"];
     risk: "read";
+    successStatus: 200;
+  }>;
+  readonly getYardAccess: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/access";
+    public: false;
+    requiredCiActions: readonly ["yard:manage"];
+    requiredUserScopes: readonly ["yard:read"];
+    risk: "read";
+    successStatus: 200;
+  }>;
+  readonly grantYardAccess: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/access/grant";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
     successStatus: 200;
   }>;
   readonly health: Readonly<{
@@ -2257,6 +2353,18 @@ export declare const operations: Readonly<{
     risk: "destructive";
     successStatus: 200;
   }>;
+  readonly revokeYardAccess: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/access/revoke";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "destructive";
+    successStatus: 200;
+  }>;
   readonly rollbackWebYard: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2279,6 +2387,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["retention:manage"];
     risk: "write";
+    successStatus: 200;
+  }>;
+  readonly setYardVisibility: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/access/visibility";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
     successStatus: 200;
   }>;
   readonly startDeviceLogin: Readonly<{
@@ -2361,6 +2481,8 @@ export type RequiredOperationId =
   | "getRetention"
   | "getRetentionOverview"
   | "getUploadStatus"
+  | "getYardAccess"
+  | "grantYardAccess"
   | "listAuditEvents"
   | "listCiTrusts"
   | "listInboxes"
@@ -2394,8 +2516,10 @@ export type RequiredOperationId =
   | "revokeInvite"
   | "revokePreview"
   | "revokeShare"
+  | "revokeYardAccess"
   | "rollbackWebYard"
   | "setRetention"
+  | "setYardVisibility"
   | "startDeviceLogin"
   | "startWebYardDeploy"
   | "updateMemberRole";
@@ -2441,6 +2565,8 @@ export interface OperationInputs {
   readonly getRetention: GetRetentionInput;
   readonly getRetentionOverview: GetRetentionOverviewInput;
   readonly getUploadStatus: GetUploadStatusInput;
+  readonly getYardAccess: GetYardAccessInput;
+  readonly grantYardAccess: GrantYardAccessInput;
   readonly health: HealthInput;
   readonly listApiTokens: ListApiTokensInput;
   readonly listAuditEvents: ListAuditEventsInput;
@@ -2478,8 +2604,10 @@ export interface OperationInputs {
   readonly revokeInvite: RevokeInviteInput;
   readonly revokePreview: RevokePreviewInput;
   readonly revokeShare: RevokeShareInput;
+  readonly revokeYardAccess: RevokeYardAccessInput;
   readonly rollbackWebYard: RollbackWebYardInput;
   readonly setRetention: SetRetentionInput;
+  readonly setYardVisibility: SetYardVisibilityInput;
   readonly startDeviceLogin: StartDeviceLoginInput;
   readonly startWebYardDeploy: StartWebYardDeployInput;
   readonly updateMemberRole: UpdateMemberRoleInput;
@@ -2518,6 +2646,8 @@ export interface OperationOutputs {
   readonly getRetention: Schemas["GetRetentionResult"];
   readonly getRetentionOverview: Schemas["GetRetentionOverviewResult"];
   readonly getUploadStatus: Schemas["GetUploadStatusResult"];
+  readonly getYardAccess: Schemas["GetYardAccessResult"];
+  readonly grantYardAccess: Schemas["GrantYardAccessResult"];
   readonly health: Schemas["HealthResult"];
   readonly listApiTokens: Schemas["ListApiTokensResult"];
   readonly listAuditEvents: Schemas["ListAuditEventsResult"];
@@ -2555,8 +2685,10 @@ export interface OperationOutputs {
   readonly revokeInvite: Schemas["RevokeInviteResult"];
   readonly revokePreview: Schemas["RevokePreviewResult"];
   readonly revokeShare: Schemas["RevokeShareResult"];
+  readonly revokeYardAccess: Schemas["RevokeYardAccessResult"];
   readonly rollbackWebYard: Schemas["RollbackWebYardResult"];
   readonly setRetention: Schemas["SetRetentionResult"];
+  readonly setYardVisibility: Schemas["SetYardVisibilityResult"];
   readonly startDeviceLogin: Schemas["StartDeviceLoginResult"];
   readonly startWebYardDeploy: Schemas["StartWebYardDeployResult"];
   readonly updateMemberRole: Schemas["UpdateMemberRoleResult"];
@@ -2645,6 +2777,12 @@ export interface OperationBindings {
   readonly getUploadStatus: (
     options: GetUploadStatusInput,
   ) => Promise<OperationOutputs["getUploadStatus"]>;
+  readonly getYardAccess: (
+    options: GetYardAccessInput,
+  ) => Promise<OperationOutputs["getYardAccess"]>;
+  readonly grantYardAccess: (
+    options: GrantYardAccessInput,
+  ) => Promise<OperationOutputs["grantYardAccess"]>;
   readonly health: (options?: HealthInput) => Promise<OperationOutputs["health"]>;
   readonly listApiTokens: (
     options?: ListApiTokensInput,
@@ -2724,10 +2862,16 @@ export interface OperationBindings {
     options: RevokePreviewInput,
   ) => Promise<OperationOutputs["revokePreview"]>;
   readonly revokeShare: (options: RevokeShareInput) => Promise<OperationOutputs["revokeShare"]>;
+  readonly revokeYardAccess: (
+    options: RevokeYardAccessInput,
+  ) => Promise<OperationOutputs["revokeYardAccess"]>;
   readonly rollbackWebYard: (
     options: RollbackWebYardInput,
   ) => Promise<OperationOutputs["rollbackWebYard"]>;
   readonly setRetention: (options: SetRetentionInput) => Promise<OperationOutputs["setRetention"]>;
+  readonly setYardVisibility: (
+    options: SetYardVisibilityInput,
+  ) => Promise<OperationOutputs["setYardVisibility"]>;
   readonly startDeviceLogin: (
     options: StartDeviceLoginInput,
   ) => Promise<OperationOutputs["startDeviceLogin"]>;

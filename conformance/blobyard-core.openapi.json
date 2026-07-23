@@ -1364,6 +1364,132 @@
         "x-blobyard-sdk": true
       }
     },
+    "/yards/access": {
+      "get": {
+        "description": "Reads one Yard's effective visibility and active access grants.",
+        "operationId": "getYardAccess",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/grant": {
+      "post": {
+        "description": "Grants one principal scoped access to a Yard. Human sessions only.",
+        "operationId": "grantYardAccess",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/GrantYardAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GrantYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "grant"] },
+        "x-blobyard-mcp": { "tool": "blobyard_grant_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/revoke": {
+      "post": {
+        "description": "Revokes one Yard access grant. Human sessions only.",
+        "operationId": "revokeYardAccess",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/visibility": {
+      "post": {
+        "description": "Sets one Yard's visibility policy. Human sessions only.",
+        "operationId": "setYardVisibility",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardVisibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardVisibilitySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "set-visibility"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_yard_visibility" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/yards/delete": {
       "post": {
         "description": "Deletes a Web Yard and schedules retained manifest objects for cleanup. Workspace administrator access is required.",

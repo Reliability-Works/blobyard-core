@@ -2359,6 +2359,208 @@ components:
         - data
         - ok
         - requestId
+    YardVisibility:
+      type: string
+      description: Audience allowed to open one Yard.
+      enum:
+        - public
+        - owner
+        - selected
+        - workspace
+        - authenticated-link
+        - any-authenticated
+    YardAccessPrincipalKind:
+      type: string
+      description: Kind of principal one access grant covers.
+      enum:
+        - user
+        - group
+        - guest-invite
+        - link
+    YardAccessGrantSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 16
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        environmentId:
+          $ref: "#/components/schemas/Identifier"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        principalId:
+          type: string
+          minLength: 1
+          maxLength: 256
+        principalKind:
+          $ref: "#/components/schemas/YardAccessPrincipalKind"
+      required:
+        - appRoles
+        - createdAt
+        - id
+        - principalId
+        - principalKind
+    GetYardAccessQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    GetYardAccessResult:
+      type: object
+      additionalProperties: false
+      properties:
+        grants:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardAccessGrantSummary"
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+      required:
+        - grants
+        - visibility
+    GetYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetYardVisibilityRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - visibility
+        - yardId
+    SetYardVisibilityResult:
+      type: object
+      additionalProperties: false
+      properties:
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+      required:
+        - visibility
+    SetYardVisibilitySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetYardVisibilityResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    GrantYardAccessRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 16
+        environmentId:
+          $ref: "#/components/schemas/Identifier"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        principalId:
+          type: string
+          minLength: 1
+          maxLength: 256
+        principalKind:
+          $ref: "#/components/schemas/YardAccessPrincipalKind"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - appRoles
+        - principalId
+        - principalKind
+        - yardId
+    GrantYardAccessResult:
+      type: object
+      additionalProperties: false
+      properties:
+        grant:
+          $ref: "#/components/schemas/YardAccessGrantSummary"
+      required:
+        - grant
+    GrantYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GrantYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeYardAccessRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        grantId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - grantId
+        - yardId
+    RevokeYardAccessResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     ListWebYardDeploysQuery:
       type: object
       additionalProperties: false
@@ -4009,6 +4211,10 @@ x-blobyard-path-order:
   - /previews/revoke
   - /yards
   - /yards/environments
+  - /yards/access
+  - /yards/access/visibility
+  - /yards/access/grant
+  - /yards/access/revoke
   - /yards/deploys
   - /yards/deploys/start
   - /yards/deploys/finalise

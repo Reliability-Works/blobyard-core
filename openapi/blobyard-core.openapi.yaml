@@ -680,6 +680,110 @@ paths:
           required: true
           schema:
             $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/access:
+    get:
+      operationId: getYardAccess
+      description: Reads one Yard's effective visibility and active access grants.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_get_yard_access
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/access/visibility:
+    post:
+      operationId: setYardVisibility
+      description: Sets one Yard's visibility policy. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardVisibilitySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - set-visibility
+      x-blobyard-mcp:
+        tool: blobyard_set_yard_visibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardVisibilityRequest
+  /yards/access/grant:
+    post:
+      operationId: grantYardAccess
+      description: Grants one principal scoped access to a Yard. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GrantYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - grant
+      x-blobyard-mcp:
+        tool: blobyard_grant_yard_access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GrantYardAccessRequest
+  /yards/access/revoke:
+    post:
+      operationId: revokeYardAccess
+      description: Revokes one Yard access grant. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_yard_access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessRequest
   /yards/deploys:
     get:
       operationId: listWebYardDeploys

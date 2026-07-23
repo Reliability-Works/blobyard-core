@@ -1143,6 +1143,158 @@
         ]
       }
     },
+    "/yards/access": {
+      "get": {
+        "operationId": "getYardAccess",
+        "description": "Reads one Yard's effective visibility and active access grants.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetYardAccessSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["access", "list"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_get_yard_access"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ]
+      }
+    },
+    "/yards/access/visibility": {
+      "post": {
+        "operationId": "setYardVisibility",
+        "description": "Sets one Yard's visibility policy. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetYardVisibilitySuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["access", "set-visibility"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_set_yard_visibility"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetYardVisibilityRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yards/access/grant": {
+      "post": {
+        "operationId": "grantYardAccess",
+        "description": "Grants one principal scoped access to a Yard. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantYardAccessSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["access", "grant"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_grant_yard_access"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantYardAccessRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yards/access/revoke": {
+      "post": {
+        "operationId": "revokeYardAccess",
+        "description": "Revokes one Yard access grant. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeYardAccessSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["access", "revoke"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_revoke_yard_access"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeYardAccessRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/yards/deploys": {
       "get": {
         "operationId": "listWebYardDeploys",
@@ -5690,6 +5842,239 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/ListYardEnvironmentsResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "YardVisibility": {
+        "type": "string",
+        "description": "Audience allowed to open one Yard.",
+        "enum": [
+          "public",
+          "owner",
+          "selected",
+          "workspace",
+          "authenticated-link",
+          "any-authenticated"
+        ]
+      },
+      "YardAccessPrincipalKind": {
+        "type": "string",
+        "description": "Kind of principal one access grant covers.",
+        "enum": ["user", "group", "guest-invite", "link"]
+      },
+      "YardAccessGrantSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 16
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "environmentId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "principalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "principalKind": {
+            "$ref": "#/components/schemas/YardAccessPrincipalKind"
+          }
+        },
+        "required": ["appRoles", "createdAt", "id", "principalId", "principalKind"]
+      },
+      "GetYardAccessQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["yardId"]
+      },
+      "GetYardAccessResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YardAccessGrantSummary"
+            }
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/YardVisibility"
+          }
+        },
+        "required": ["grants", "visibility"]
+      },
+      "GetYardAccessSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GetYardAccessResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "SetYardVisibilityRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "visibility": {
+            "$ref": "#/components/schemas/YardVisibility"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["visibility", "yardId"]
+      },
+      "SetYardVisibilityResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "visibility": {
+            "$ref": "#/components/schemas/YardVisibility"
+          }
+        },
+        "required": ["visibility"]
+      },
+      "SetYardVisibilitySuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetYardVisibilityResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "GrantYardAccessRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 16
+          },
+          "environmentId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "principalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "principalKind": {
+            "$ref": "#/components/schemas/YardAccessPrincipalKind"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["appRoles", "principalId", "principalKind", "yardId"]
+      },
+      "GrantYardAccessResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/YardAccessGrantSummary"
+          }
+        },
+        "required": ["grant"]
+      },
+      "GrantYardAccessSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GrantYardAccessResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "RevokeYardAccessRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grantId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["grantId", "yardId"]
+      },
+      "RevokeYardAccessResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "RevokeYardAccessSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevokeYardAccessResult"
           },
           "ok": {
             "type": "boolean",

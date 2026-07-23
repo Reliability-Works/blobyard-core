@@ -157,6 +157,16 @@
       "requiredCiActions": ["upload"],
       "risk": "read"
     },
+    "getYardAccess": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
+    "grantYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "health": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "read" },
     "listApiTokens": {
       "requiredUserScopes": ["tokens:manage"],
@@ -322,6 +332,11 @@
       "requiredCiActions": [],
       "risk": "destructive"
     },
+    "revokeYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
     "rollbackWebYard": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": ["yard:manage"],
@@ -331,6 +346,11 @@
       "requiredUserScopes": ["retention:manage"],
       "requiredCiActions": [],
       "risk": "write"
+    },
+    "setYardVisibility": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
     },
     "startDeviceLogin": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
     "startWebYardDeploy": {

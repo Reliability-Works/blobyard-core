@@ -1306,6 +1306,67 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "GetYardAccessQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "GetYardAccessResult": {
+        "additionalProperties": false,
+        "properties": {
+          "grants": {
+            "items": { "$ref": "#/components/schemas/YardAccessGrantSummary" },
+            "type": "array"
+          },
+          "visibility": { "$ref": "#/components/schemas/YardVisibility" }
+        },
+        "required": ["grants", "visibility"],
+        "type": "object"
+      },
+      "GetYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GrantYardAccessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "items": { "maxLength": 64, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "environmentId": { "$ref": "#/components/schemas/Identifier" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
+          "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["appRoles", "principalId", "principalKind", "yardId"],
+        "type": "object"
+      },
+      "GrantYardAccessResult": {
+        "additionalProperties": false,
+        "properties": { "grant": { "$ref": "#/components/schemas/YardAccessGrantSummary" } },
+        "required": ["grant"],
+        "type": "object"
+      },
+      "GrantYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GrantYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "HealthResult": {
         "additionalProperties": false,
         "properties": {
@@ -2370,6 +2431,26 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RevokeYardAccessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "grantId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["grantId", "yardId"],
+        "type": "object"
+      },
+      "RevokeYardAccessResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RollbackWebYardRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2432,6 +2513,31 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/SetRetentionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "SetYardVisibilityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "visibility": { "$ref": "#/components/schemas/YardVisibility" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["visibility", "yardId"],
+        "type": "object"
+      },
+      "SetYardVisibilityResult": {
+        "additionalProperties": false,
+        "properties": { "visibility": { "$ref": "#/components/schemas/YardVisibility" } },
+        "required": ["visibility"],
+        "type": "object"
+      },
+      "SetYardVisibilitySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SetYardVisibilityResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2796,6 +2902,29 @@
         "required": ["id", "name", "slug"],
         "type": "object"
       },
+      "YardAccessGrantSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "items": { "maxLength": 64, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "environmentId": { "$ref": "#/components/schemas/Identifier" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
+          "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" }
+        },
+        "required": ["appRoles", "createdAt", "id", "principalId", "principalKind"],
+        "type": "object"
+      },
+      "YardAccessPrincipalKind": {
+        "description": "Kind of principal one access grant covers.",
+        "enum": ["user", "group", "guest-invite", "link"],
+        "type": "string"
+      },
       "YardDeploymentResult": {
         "additionalProperties": false,
         "properties": {
@@ -2886,6 +3015,18 @@
         },
         "required": ["createdAt", "id", "kind", "name", "updatedAt"],
         "type": "object"
+      },
+      "YardVisibility": {
+        "description": "Audience allowed to open one Yard.",
+        "enum": [
+          "public",
+          "owner",
+          "selected",
+          "workspace",
+          "authenticated-link",
+          "any-authenticated"
+        ],
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -2937,6 +3078,10 @@
     "/previews/revoke",
     "/yards",
     "/yards/environments",
+    "/yards/access",
+    "/yards/access/visibility",
+    "/yards/access/grant",
+    "/yards/access/revoke",
     "/yards/deploys",
     "/yards/deploys/start",
     "/yards/deploys/finalise",
