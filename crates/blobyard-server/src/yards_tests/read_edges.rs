@@ -119,6 +119,15 @@ fn environment_reads_conceal_foreign_yards_and_propagate_failures() {
     }
     let _ = read::list_environments(&fixture.state, &principal, &environment_query)
         .expect("backfilled environments");
+    fixture.corrupt_environment_timestamps();
+    assert_eq!(
+        error_status(read::list_environments(
+            &fixture.state,
+            &principal,
+            &environment_query,
+        )),
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }
 
 #[test]

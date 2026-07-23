@@ -53,6 +53,22 @@ fn category_mappers_fail_closed_for_wrong_call_kinds() {
 }
 
 #[test]
+fn web_yard_calls_dispatch_to_the_yard_mapper() {
+    let (_, list) = mcp_command(ToolCall::WebYard(
+        blobyard_mcp::WebYardToolCall::ListWebYards {
+            scope: Scope::default(),
+        },
+    ))
+    .expect("yard dispatch");
+    assert!(matches!(
+        list,
+        Command::Yard {
+            command: crate::yard_commands::YardCommand::List
+        }
+    ));
+}
+
+#[test]
 fn agent_object_and_preview_calls_map_to_existing_cli_contracts() {
     let scope = Scope::default();
     let (_, delete) = mcp_command(ToolCall::DeleteObject {

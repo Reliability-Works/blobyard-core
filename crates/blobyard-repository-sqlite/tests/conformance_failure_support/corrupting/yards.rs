@@ -61,8 +61,12 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         yard_id: &str,
     ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
         let mut records = self.inner.list_yard_environments(yard_id)?;
-        if matches!(self.corruption, Corruption::YardEnvironmentList) && !records.is_empty() {
-            records.clear();
+        match self.corruption {
+            Corruption::YardEnvironmentList if !records.is_empty() => records.clear(),
+            Corruption::YardUnknownEnvironmentList if records.is_empty() => {
+                records.push(unexpected_environment(yard_id)?);
+            }
+            _ => {}
         }
         Ok(records)
     }
@@ -170,6 +174,18 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
             _ => result,
         }
     }
+}
+
+fn unexpected_environment(yard_id: &str) -> Result<YardEnvironmentRecord, RepositoryError> {
+    Ok(YardEnvironmentRecord {
+        id: "yardenv_unexpected".to_owned(),
+        yard_id: yard_id.to_owned(),
+        name: Slug::new("production").map_err(|_error| RepositoryError::InvalidInput)?,
+        kind: blobyard_contract::YardEnvironmentKind::Production,
+        status: blobyard_contract::YardEnvironmentStatus::Active,
+        created_at_ms: 0,
+        updated_at_ms: 0,
+    })
 }
 
 fn unexpected_yard(project_id: &str) -> Result<WebYardRecord, RepositoryError> {

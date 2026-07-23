@@ -26,6 +26,7 @@ fn yard_conformance_rejects_each_inconsistent_record() {
     for corruption in [
         Corruption::YardInitialList,
         Corruption::YardEnvironmentList,
+        Corruption::YardUnknownEnvironmentList,
         Corruption::YardFixtureObjectList,
         Corruption::YardReusedStart,
         Corruption::YardReplacementStatus,

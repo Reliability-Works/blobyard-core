@@ -57,6 +57,17 @@ impl TransferFixture {
     }
 
     /// Removes CI trust storage to force a trust provider failure.
+    /// Corrupts persisted environment timestamps to force a presentation failure.
+    pub fn corrupt_environment_timestamps(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "UPDATE yard_environments SET created_at_ms = 9223372036854775807, updated_at_ms = 9223372036854775807",
+            )
+            .expect("corrupt environment timestamps");
+    }
+
     pub fn break_ci_trusts(&self) {
         self.repository
             .test_connection()
