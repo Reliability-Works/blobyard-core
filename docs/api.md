@@ -5,7 +5,7 @@ through the edge Worker.
 
 The currently deployed machine-readable route and authentication inventory is available at
 [`https://blobyard.com/openapi.json`](https://blobyard.com/openapi.json). The checked-in release
-candidate contract contains 73 public operations. It remains a candidate until deployment and hosted
+candidate contract contains 74 public operations. It remains a candidate until deployment and hosted
 acceptance pass, so it must not be assumed to match the hosted contract yet. Internal provider
 webhooks and production-acceptance routes are intentionally excluded. Edge-only preview and Web Yard
 resolution routes are also not customer operations.
@@ -161,6 +161,7 @@ that classification explicitly and excludes it from SDK, CLI, and MCP generation
 | POST   | `/v1/yards/deploys/fail`     | Record a bounded deployment failure                    |
 | GET    | `/v1/yards`                  | List named Yards in the authorized project             |
 | GET    | `/v1/yards/deploys`          | List immutable deployment history for one Yard         |
+| GET    | `/v1/yards/environments`     | List active environments for one Yard                  |
 | POST   | `/v1/yards/rollback`         | Repoint the stable host to an earlier ready deployment |
 | POST   | `/v1/yards/delete`           | Delete a Yard and schedule its retained bytes          |
 

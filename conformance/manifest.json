@@ -3,8 +3,8 @@
   "members": [
     {
       "path": "authorization/vectors.json",
-      "sha256": "6afbb01e9735a980e96b95e450ed0273bc7484e8c0dfdb3f9ada713296e2ae9f",
-      "size": 799
+      "sha256": "dd744df45297808efa1f46c7deb691c15d79137aa01af1fac8ccf2361f301c9b",
+      "size": 1564
     },
     {
       "path": "behavior/cache.json",

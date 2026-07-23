@@ -9,6 +9,20 @@
       "resource": { "project": "demo", "workspace": "other" }
     },
     {
+      "action": "yard:read",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-yard-environments-are-concealed",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "yard:read",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "object-reader-cannot-list-environments",
+      "principalScopes": ["object:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
       "action": "object:write",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "reader-cannot-write-object",
@@ -20,6 +34,13 @@
       "expected": { "allowed": true },
       "id": "workspace-reader-can-read-object",
       "principalScopes": ["object:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:read",
+      "expected": { "allowed": true },
+      "id": "yard-reader-can-list-environments",
+      "principalScopes": ["yard:read"],
       "resource": { "project": "demo", "workspace": "default" }
     }
   ]

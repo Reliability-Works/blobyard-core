@@ -275,6 +275,13 @@ blobyard yard rollback marketing <deploy-id>
 blobyard yard delete marketing --force
 ```
 
+List the active environments of one Web Yard. Every Yard has a `production` environment, and the
+Yard name may be omitted when the project contains exactly one Yard:
+
+```bash
+blobyard env list marketing
+```
+
 See [web-yards.md](web-yards.md) for routing behavior, API and MCP automation, retention, plan
 limits, public-content isolation, and recovery guidance.
 
