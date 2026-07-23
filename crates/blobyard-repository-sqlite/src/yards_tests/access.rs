@@ -55,7 +55,6 @@ fn access_mutations_conceal_unknown_and_deleted_yards() {
 fn grants_validate_roles_and_conceal_foreign_yards() {
     let (_temporary, repository, _version, _size) = repository();
     let docs = started(&repository, "docs", 1);
-    let blog = started(&repository, "blog", 2);
     let oversized = "role".repeat(17);
     let invalid_roles: [&[&str]; 4] = [
         &["viewer", "viewer"],
@@ -81,8 +80,39 @@ fn grants_validate_roles_and_conceal_foreign_yards() {
             Err(RepositoryError::InvalidInput)
         );
     }
+}
+
+#[test]
+fn grants_validate_expiries_environments_and_audit_events() {
+    let (_temporary, repository, _version, _size) = repository();
+    let docs = started(&repository, "docs", 1);
+    let blog = started(&repository, "blog", 2);
+    let mut unbounded_expiry = new_grant("grant_invalid", &docs.id, None, Some(u64::MAX), 3);
+    unbounded_expiry.created_at_ms = 3;
+    let unnamed_environment = new_grant("grant_invalid", &docs.id, Some(""), None, 3);
+    for invalid in [unbounded_expiry, unnamed_environment] {
+        assert_eq!(
+            repository.insert_yard_access_grant(&invalid, &granted_event(&docs.id, &invalid, 3)),
+            Err(RepositoryError::InvalidInput)
+        );
+    }
     let granted = new_grant("grant_docs", &docs.id, None, None, 3);
+    assert_eq!(
+        repository.insert_yard_access_grant(&granted, &revoked_event(&docs.id, &granted.id, 3)),
+        Err(RepositoryError::InvalidInput),
+        "a mismatched grant audit event must be rejected"
+    );
     success(repository.insert_yard_access_grant(&granted, &granted_event(&docs.id, &granted, 3)));
+    assert_eq!(
+        repository.revoke_yard_access_grant(
+            &docs.id,
+            "grant_docs",
+            4,
+            &granted_event(&docs.id, &granted, 4),
+        ),
+        Err(RepositoryError::InvalidInput),
+        "a mismatched revocation audit event must be rejected"
+    );
     assert_eq!(
         repository.revoke_yard_access_grant(
             &blog.id,

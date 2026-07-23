@@ -212,64 +212,7 @@ fn rejects_malformed_web_yard_management_calls() {
     assert!(crate::yard_call::parse_yard_call("unknown", &Map::new(), Scope::default()).is_err());
 }
 
-#[test]
-fn rejects_malformed_yard_access_calls() {
-    assert_invalid([
-        ("blobyard_get_yard_access", json!({}), "missing required"),
-        (
-            "blobyard_set_yard_visibility",
-            json!({ "yard": "site" }),
-            "missing required",
-        ),
-        (
-            "blobyard_grant_yard_access",
-            json!({ "yard": "site", "principal_kind": "user" }),
-            "missing required",
-        ),
-        (
-            "blobyard_grant_yard_access",
-            json!({
-                "yard": "site",
-                "principal_kind": "user",
-                "principal_id": "user_1",
-                "roles": "viewer"
-            }),
-            "must be an array",
-        ),
-        (
-            "blobyard_grant_yard_access",
-            json!({
-                "yard": "site",
-                "principal_kind": "user",
-                "principal_id": "user_1",
-                "roles": [1]
-            }),
-            "non-empty strings",
-        ),
-        (
-            "blobyard_grant_yard_access",
-            json!({
-                "yard": "site",
-                "principal_kind": "user",
-                "principal_id": "user_1",
-                "roles": [""]
-            }),
-            "non-empty strings",
-        ),
-        (
-            "blobyard_revoke_yard_access",
-            json!({ "yard": "site" }),
-            "missing required",
-        ),
-        (
-            "blobyard_revoke_yard_access",
-            json!({ "yard": "site", "grant_id": "yardgrant_1", "extra": true }),
-            "unexpected argument",
-        ),
-    ]);
-}
-
-fn assert_invalid<const N: usize>(cases: [(&str, serde_json::Value, &str); N]) {
+pub(super) fn assert_invalid<const N: usize>(cases: [(&str, serde_json::Value, &str); N]) {
     for (name, arguments, message) in cases {
         let error = ToolCall::parse(name, &arguments).expect_err("invalid fixture must fail");
         assert!(error.contains(message), "unexpected error: {error}");

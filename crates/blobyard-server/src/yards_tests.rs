@@ -19,6 +19,8 @@ use tower::ServiceExt;
 mod access_edge_tests;
 #[path = "yards_tests/access_journey.rs"]
 mod access_journey_tests;
+#[path = "yards_tests/access_seams.rs"]
+mod access_seam_tests;
 #[path = "yards_tests/contracts.rs"]
 mod contract_tests;
 #[path = "yards_tests/deploy_edges.rs"]

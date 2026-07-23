@@ -67,6 +67,7 @@ fn grant_rows_reject_every_malformed_column_and_value() {
             (6, "'invalid'"),
             (7, "-1"),
             (9, "-1"),
+            (10, "-1"),
         ],
         grant,
     );

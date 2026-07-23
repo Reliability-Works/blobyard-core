@@ -135,12 +135,15 @@ pub(crate) enum Corruption {
     YardMissingGrantRevoke,
     YardFirstRevoke,
     YardSecondRevoke,
+    YardGrantListOrder,
+    YardAccessEnvironmentSeed,
 }
 
 pub(crate) struct Corrupting<'a, T> {
     inner: &'a T,
     corruption: Corruption,
     inbox_list_calls: AtomicUsize,
+    environment_list_calls: AtomicUsize,
 }
 
 impl<'a, T> Corrupting<'a, T> {
@@ -149,6 +152,7 @@ impl<'a, T> Corrupting<'a, T> {
             inner,
             corruption,
             inbox_list_calls: AtomicUsize::new(0),
+            environment_list_calls: AtomicUsize::new(0),
         }
     }
 }

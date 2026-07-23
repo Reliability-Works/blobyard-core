@@ -62,11 +62,19 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         yard_id: &str,
     ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
         let mut records = self.inner.list_yard_environments(yard_id)?;
+        let populated_calls = if records.is_empty() {
+            0
+        } else {
+            self.environment_list_calls
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                + 1
+        };
         match self.corruption {
             Corruption::YardEnvironmentList if !records.is_empty() => records.clear(),
             Corruption::YardUnknownEnvironmentList if records.is_empty() => {
                 records.push(unexpected_environment(yard_id)?);
             }
+            Corruption::YardAccessEnvironmentSeed if populated_calls > 1 => records.clear(),
             _ => {}
         }
         Ok(records)

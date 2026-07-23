@@ -56,6 +56,28 @@ impl TransferFixture {
             .expect("remove audit table");
     }
 
+    /// Corrupts persisted access-grant timestamps to force a presentation failure.
+    pub fn corrupt_grant_timestamps(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "UPDATE yard_access_grants SET created_at_ms = 9223372036854775807, expires_at_ms = NULL",
+            )
+            .expect("corrupt grant timestamps");
+    }
+
+    /// Corrupts every future grant insert to force a response-mapping failure.
+    pub fn corrupt_future_grant_inserts(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "CREATE TRIGGER corrupt_grant_inserts AFTER INSERT ON yard_access_grants BEGIN UPDATE yard_access_grants SET created_at_ms = 9223372036854775807, expires_at_ms = NULL WHERE id = NEW.id; END;",
+            )
+            .expect("corrupt future grant inserts");
+    }
+
     /// Removes CI trust storage to force a trust provider failure.
     /// Corrupts persisted environment timestamps to force a presentation failure.
     pub fn corrupt_environment_timestamps(&self) {

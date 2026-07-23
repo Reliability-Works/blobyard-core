@@ -6,6 +6,8 @@
 use crate::{Scope, ToolCall};
 use serde_json::json;
 
+#[path = "tool_call_access_error_tests.rs"]
+mod access_error_tests;
 #[path = "dashboard_call_tests.rs"]
 mod dashboard_tests;
 #[path = "tool_call_error_tests.rs"]

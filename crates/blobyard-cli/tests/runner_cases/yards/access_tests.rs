@@ -5,14 +5,14 @@ use super::yard;
 use blobyard_api_client::Endpoint;
 use blobyard_core::ErrorCode;
 
-fn documentation_yard_page() -> blobyard_api_client::RawResponse {
+pub(super) fn documentation_yard_page() -> blobyard_api_client::RawResponse {
     ok(
         serde_json::json!({ "items": [yard("documentation", Some("deploy_1"))], "nextCursor": null }),
         "req_yards",
     )
 }
 
-fn grant(id: &str) -> serde_json::Value {
+pub(super) fn grant(id: &str) -> serde_json::Value {
     serde_json::json!({
         "appRoles": ["viewer"],
         "createdAt": "1970-01-01T00:00:00.001Z",
@@ -33,7 +33,10 @@ fn scoped(arguments: &[&str]) -> Vec<String> {
         .collect()
 }
 
-fn access_fixture(arguments: &[&str], responses: Vec<blobyard_api_client::RawResponse>) -> Fixture {
+pub(super) fn access_fixture(
+    arguments: &[&str],
+    responses: Vec<blobyard_api_client::RawResponse>,
+) -> Fixture {
     let owned = scoped(arguments);
     let borrowed = owned.iter().map(String::as_str).collect::<Vec<_>>();
     Fixture::new(&borrowed, responses, Some("ci-token"), None)

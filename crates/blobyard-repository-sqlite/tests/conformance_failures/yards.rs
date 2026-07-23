@@ -41,6 +41,8 @@ fn yard_conformance_rejects_each_inconsistent_record() {
         Corruption::YardMissingGrantRevoke,
         Corruption::YardFirstRevoke,
         Corruption::YardSecondRevoke,
+        Corruption::YardGrantListOrder,
+        Corruption::YardAccessEnvironmentSeed,
         Corruption::YardFixtureObjectList,
         Corruption::YardReusedStart,
         Corruption::YardReplacementStatus,

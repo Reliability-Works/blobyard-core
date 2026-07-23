@@ -14,7 +14,7 @@ use blobyard_api_client::{
     YardAccessPrincipalKind, YardVisibility,
 };
 
-fn grant_request(yard_id: &str) -> GrantYardAccessRequest {
+pub(super) fn grant_request(yard_id: &str) -> GrantYardAccessRequest {
     GrantYardAccessRequest {
         yard_id: yard_id.to_owned(),
         principal_kind: YardAccessPrincipalKind::User,
@@ -25,7 +25,10 @@ fn grant_request(yard_id: &str) -> GrantYardAccessRequest {
     }
 }
 
-fn started_yard_id(fixture: &test_seams::TransferFixture, principal: &Principal) -> String {
+pub(super) fn started_yard_id(
+    fixture: &test_seams::TransferFixture,
+    principal: &Principal,
+) -> String {
     let _ = super::super::deploy::start(
         &fixture.state,
         principal,
@@ -44,6 +47,13 @@ fn started_yard_id(fixture: &test_seams::TransferFixture, principal: &Principal)
         .id
 }
 
+pub(super) fn manager_fixture() -> (test_seams::TransferFixture, Principal, String) {
+    let fixture = test_seams::fixture(&["yard:manage"]);
+    let principal = Principal(fixture.principal.clone());
+    let yard_id = started_yard_id(&fixture, &principal);
+    (fixture, principal, yard_id)
+}
+
 #[test]
 fn access_mutations_require_human_yard_managers() {
     let fixture = test_seams::fixture(&["yard:manage"]);
@@ -60,9 +70,7 @@ fn access_mutations_require_human_yard_managers() {
 
 #[test]
 fn grant_validation_rejects_unbounded_principals_roles_and_expiries() {
-    let fixture = test_seams::fixture(&["yard:manage"]);
-    let principal = Principal(fixture.principal.clone());
-    let yard_id = started_yard_id(&fixture, &principal);
+    let (fixture, principal, yard_id) = manager_fixture();
     let invalid_principals = ["", " padded ", "line\nbreak"];
     for principal_id in invalid_principals {
         let mut invalid = grant_request(&yard_id);
@@ -108,9 +116,7 @@ fn grant_validation_rejects_unbounded_principals_roles_and_expiries() {
 
 #[test]
 fn access_operations_propagate_repository_failures() {
-    let fixture = test_seams::fixture(&["yard:manage"]);
-    let principal = Principal(fixture.principal.clone());
-    let yard_id = started_yard_id(&fixture, &principal);
+    let (fixture, principal, yard_id) = manager_fixture();
     let query = GetYardAccessQuery {
         yard_id: yard_id.clone(),
     };
@@ -146,9 +152,7 @@ fn access_operations_propagate_repository_failures() {
 
 #[test]
 fn access_mutations_propagate_repository_failures() {
-    let fixture = test_seams::fixture(&["yard:manage"]);
-    let principal = Principal(fixture.principal.clone());
-    let yard_id = started_yard_id(&fixture, &principal);
+    let (fixture, principal, yard_id) = manager_fixture();
     let mut scoped = grant_request(&yard_id);
     scoped.environment_id = Some(format!("yardenv_{yard_id}"));
     for failure_index in 0..=2 {
@@ -181,9 +185,8 @@ fn access_mutations_propagate_repository_failures() {
     }
 }
 
-#[test]
-fn grant_summaries_reject_unrepresentable_timestamps() {
-    let mut record = blobyard_contract::YardAccessGrantRecord {
+pub(super) fn grant_record() -> blobyard_contract::YardAccessGrantRecord {
+    blobyard_contract::YardAccessGrantRecord {
         id: "yardgrant_edge".to_owned(),
         yard_id: "yard_edge".to_owned(),
         environment_id: None,
@@ -191,11 +194,17 @@ fn grant_summaries_reject_unrepresentable_timestamps() {
         principal_id: "user_edge".to_owned(),
         app_roles: vec!["viewer".to_owned()],
         status: blobyard_contract::RevocableStatus::Active,
-        created_at_ms: u64::MAX,
+        created_at_ms: 1,
         created_by_principal: "fixture".to_owned(),
         expires_at_ms: None,
         revoked_at_ms: None,
-    };
+    }
+}
+
+#[test]
+fn grant_summaries_reject_unrepresentable_timestamps() {
+    let mut record = grant_record();
+    record.created_at_ms = u64::MAX;
     assert_eq!(
         error_status(presentation::grant_summary(record.clone())),
         StatusCode::INTERNAL_SERVER_ERROR

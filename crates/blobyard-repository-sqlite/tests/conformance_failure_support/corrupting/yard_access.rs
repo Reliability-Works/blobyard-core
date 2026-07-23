@@ -85,6 +85,7 @@ pub(super) fn corrupt_grant_list(
         Corruption::YardUnknownGrantList if yard_id == "yard_unknown" => {
             records.push(phantom_grant(yard_id));
         }
+        Corruption::YardGrantListOrder if now_ms == 9 && records.len() == 2 => records.reverse(),
         Corruption::YardExpiredGrantList if now_ms == 1_000 => records.push(phantom_grant(yard_id)),
         Corruption::YardRevokedGrantList if now_ms == 16 => records.push(phantom_grant(yard_id)),
         _ => {}
