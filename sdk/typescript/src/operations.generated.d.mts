@@ -894,6 +894,57 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly LocalUserStatus: "active" | "deactivated";
+  readonly LocalUserSummary: Readonly<{
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly displayName: string;
+    readonly email: string | null;
+    readonly id: Schemas["Identifier"];
+    readonly loginKeyPrefix: string | null;
+    readonly status: Schemas["LocalUserStatus"];
+    readonly workspaceId: Schemas["Identifier"];
+  }>;
+  readonly ListLocalUsersQuery: Readonly<{ readonly workspace: Schemas["Slug"] }>;
+  readonly ListLocalUsersResult: Readonly<{
+    readonly users: readonly Schemas["LocalUserSummary"][];
+  }>;
+  readonly ListLocalUsersSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListLocalUsersResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly CreateLocalUserRequest: Readonly<{
+    readonly displayName: string;
+    readonly email?: string | null;
+    readonly workspace: Schemas["Slug"];
+  }>;
+  readonly CreateLocalUserResult: Readonly<{
+    readonly loginKey: string;
+    readonly loginKeyPrefix: string;
+    readonly user: Schemas["LocalUserSummary"];
+  }>;
+  readonly CreateLocalUserSuccessEnvelope: Readonly<{
+    readonly data: Schemas["CreateLocalUserResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly ResetLocalUserLoginKeyRequest: Readonly<{ readonly userId: Schemas["Identifier"] }>;
+  readonly ResetLocalUserLoginKeyResult: Readonly<{
+    readonly loginKey: string;
+    readonly loginKeyPrefix: string;
+  }>;
+  readonly ResetLocalUserLoginKeySuccessEnvelope: Readonly<{
+    readonly data: Schemas["ResetLocalUserLoginKeyResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly DeactivateLocalUserRequest: Readonly<{ readonly userId: Schemas["Identifier"] }>;
+  readonly DeactivateLocalUserResult: Schemas["EmptyResult"];
+  readonly DeactivateLocalUserSuccessEnvelope: Readonly<{
+    readonly data: Schemas["DeactivateLocalUserResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly ListCiTrustsQuery: Readonly<{ readonly workspace: Schemas["Slug"] }>;
   readonly ListCiTrustsResult: Schemas["CiTrustList"];
   readonly ListCiTrustsSuccessEnvelope: Readonly<{
@@ -1218,6 +1269,10 @@ export type CreateInviteInput = Readonly<{
   readonly body: Schemas["CreateInviteRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type CreateLocalUserInput = Readonly<{
+  readonly body: Schemas["CreateLocalUserRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type CreateOneTimeSecretInput = Readonly<{
   readonly body: Schemas["CreateOneTimeSecretRequest"];
   readonly signal?: AbortSignal;
@@ -1244,6 +1299,10 @@ export type CreateStorageUpdateInput = Readonly<{
 }>;
 export type CreateWorkspaceInput = Readonly<{
   readonly body: Schemas["CreateWorkspaceRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type DeactivateLocalUserInput = Readonly<{
+  readonly body: Schemas["DeactivateLocalUserRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type DeleteObjectInput = Readonly<{
@@ -1330,6 +1389,10 @@ export type ListInboxesInput = Readonly<{
   readonly signal?: AbortSignal;
 }>;
 export type ListInvitesInput = Readonly<{
+  readonly query: Readonly<{ readonly workspace: Schemas["Slug"] }>;
+  readonly signal?: AbortSignal;
+}>;
+export type ListLocalUsersInput = Readonly<{
   readonly query: Readonly<{ readonly workspace: Schemas["Slug"] }>;
   readonly signal?: AbortSignal;
 }>;
@@ -1429,6 +1492,10 @@ export type RequestUploadInput = Readonly<{
 }>;
 export type RequestUploadPartsInput = Readonly<{
   readonly body: Schemas["RequestUploadPartsRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type ResetLocalUserLoginKeyInput = Readonly<{
+  readonly body: Schemas["ResetLocalUserLoginKeyRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type ResolveInboxInput = Readonly<{
@@ -1633,6 +1700,18 @@ export declare const operations: Readonly<{
     risk: "sensitive";
     successStatus: 200;
   }>;
+  readonly createLocalUser: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/users";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
   readonly createOneTimeSecret: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -1715,6 +1794,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["project:write"];
     risk: "write";
+    successStatus: 200;
+  }>;
+  readonly deactivateLocalUser: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/users/deactivate";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "destructive";
     successStatus: 200;
   }>;
   readonly deleteObject: Readonly<{
@@ -1993,6 +2084,18 @@ export declare const operations: Readonly<{
     risk: "sensitive";
     successStatus: 200;
   }>;
+  readonly listLocalUsers: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/users";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "read";
+    successStatus: 200;
+  }>;
   readonly listMembers: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2233,6 +2336,18 @@ export declare const operations: Readonly<{
     risk: "write";
     successStatus: 200;
   }>;
+  readonly resetLocalUserLoginKey: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/users/reset-key";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
   readonly resolveInbox: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2463,6 +2578,7 @@ export type RequiredOperationId =
   | "createCiTrust"
   | "createInbox"
   | "createInvite"
+  | "createLocalUser"
   | "createOneTimeSecret"
   | "createPreview"
   | "createProject"
@@ -2470,6 +2586,7 @@ export type RequiredOperationId =
   | "createStorageCheckout"
   | "createStorageUpdate"
   | "createWorkspace"
+  | "deactivateLocalUser"
   | "deleteObject"
   | "deleteWebYard"
   | "downloadAccountExport"
@@ -2487,6 +2604,7 @@ export type RequiredOperationId =
   | "listCiTrusts"
   | "listInboxes"
   | "listInvites"
+  | "listLocalUsers"
   | "listMembers"
   | "listObjects"
   | "listPreviews"
@@ -2506,6 +2624,7 @@ export type RequiredOperationId =
   | "requestDownload"
   | "requestUpload"
   | "requestUploadParts"
+  | "resetLocalUserLoginKey"
   | "resolveInbox"
   | "resolveShare"
   | "retryAccountDeletion"
@@ -2544,6 +2663,7 @@ export interface OperationInputs {
   readonly createCiTrust: CreateCiTrustInput;
   readonly createInbox: CreateInboxInput;
   readonly createInvite: CreateInviteInput;
+  readonly createLocalUser: CreateLocalUserInput;
   readonly createOneTimeSecret: CreateOneTimeSecretInput;
   readonly createPreview: CreatePreviewInput;
   readonly createProject: CreateProjectInput;
@@ -2551,6 +2671,7 @@ export interface OperationInputs {
   readonly createStorageCheckout: CreateStorageCheckoutInput;
   readonly createStorageUpdate: CreateStorageUpdateInput;
   readonly createWorkspace: CreateWorkspaceInput;
+  readonly deactivateLocalUser: DeactivateLocalUserInput;
   readonly deleteObject: DeleteObjectInput;
   readonly deleteWebYard: DeleteWebYardInput;
   readonly downloadAccountExport: DownloadAccountExportInput;
@@ -2574,6 +2695,7 @@ export interface OperationInputs {
   readonly listCliSessions: ListCliSessionsInput;
   readonly listInboxes: ListInboxesInput;
   readonly listInvites: ListInvitesInput;
+  readonly listLocalUsers: ListLocalUsersInput;
   readonly listMembers: ListMembersInput;
   readonly listObjects: ListObjectsInput;
   readonly listPreviews: ListPreviewsInput;
@@ -2594,6 +2716,7 @@ export interface OperationInputs {
   readonly requestDownload: RequestDownloadInput;
   readonly requestUpload: RequestUploadInput;
   readonly requestUploadParts: RequestUploadPartsInput;
+  readonly resetLocalUserLoginKey: ResetLocalUserLoginKeyInput;
   readonly resolveInbox: ResolveInboxInput;
   readonly resolveShare: ResolveShareInput;
   readonly retryAccountDeletion: RetryAccountDeletionInput;
@@ -2625,6 +2748,7 @@ export interface OperationOutputs {
   readonly createCiTrust: Schemas["CreateCiTrustResult"];
   readonly createInbox: Schemas["CreateInboxResult"];
   readonly createInvite: Schemas["CreateInviteResult"];
+  readonly createLocalUser: Schemas["CreateLocalUserResult"];
   readonly createOneTimeSecret: Schemas["CreateOneTimeSecretResult"];
   readonly createPreview: Schemas["CreatePreviewResult"];
   readonly createProject: Schemas["CreateProjectResult"];
@@ -2632,6 +2756,7 @@ export interface OperationOutputs {
   readonly createStorageCheckout: Schemas["CreateStorageCheckoutResult"];
   readonly createStorageUpdate: Schemas["CreateStorageUpdateResult"];
   readonly createWorkspace: Schemas["CreateWorkspaceResult"];
+  readonly deactivateLocalUser: Schemas["DeactivateLocalUserResult"];
   readonly deleteObject: Schemas["DeleteObjectResult"];
   readonly deleteWebYard: Schemas["DeleteWebYardResult"];
   readonly downloadAccountExport: Schemas["DownloadAccountExportResult"];
@@ -2655,6 +2780,7 @@ export interface OperationOutputs {
   readonly listCliSessions: Schemas["ListCliSessionsResult"];
   readonly listInboxes: Schemas["ListInboxesResult"];
   readonly listInvites: Schemas["ListInvitesResult"];
+  readonly listLocalUsers: Schemas["ListLocalUsersResult"];
   readonly listMembers: Schemas["ListMembersResult"];
   readonly listObjects: Schemas["ListObjectsResult"];
   readonly listPreviews: Schemas["ListPreviewsResult"];
@@ -2675,6 +2801,7 @@ export interface OperationOutputs {
   readonly requestDownload: Schemas["RequestDownloadResult"];
   readonly requestUpload: Schemas["RequestUploadResult"];
   readonly requestUploadParts: Schemas["RequestUploadPartsResult"];
+  readonly resetLocalUserLoginKey: Schemas["ResetLocalUserLoginKeyResult"];
   readonly resolveInbox: Schemas["ResolveInboxResult"];
   readonly resolveShare: Schemas["ResolveShareResult"];
   readonly retryAccountDeletion: Schemas["RetryAccountDeletionResult"];
@@ -2722,6 +2849,9 @@ export interface OperationBindings {
   ) => Promise<OperationOutputs["createCiTrust"]>;
   readonly createInbox: (options: CreateInboxInput) => Promise<OperationOutputs["createInbox"]>;
   readonly createInvite: (options: CreateInviteInput) => Promise<OperationOutputs["createInvite"]>;
+  readonly createLocalUser: (
+    options: CreateLocalUserInput,
+  ) => Promise<OperationOutputs["createLocalUser"]>;
   readonly createOneTimeSecret: (
     options: CreateOneTimeSecretInput,
   ) => Promise<OperationOutputs["createOneTimeSecret"]>;
@@ -2741,6 +2871,9 @@ export interface OperationBindings {
   readonly createWorkspace: (
     options: CreateWorkspaceInput,
   ) => Promise<OperationOutputs["createWorkspace"]>;
+  readonly deactivateLocalUser: (
+    options: DeactivateLocalUserInput,
+  ) => Promise<OperationOutputs["deactivateLocalUser"]>;
   readonly deleteObject: (options: DeleteObjectInput) => Promise<OperationOutputs["deleteObject"]>;
   readonly deleteWebYard: (
     options: DeleteWebYardInput,
@@ -2796,6 +2929,9 @@ export interface OperationBindings {
   ) => Promise<OperationOutputs["listCliSessions"]>;
   readonly listInboxes: (options: ListInboxesInput) => Promise<OperationOutputs["listInboxes"]>;
   readonly listInvites: (options: ListInvitesInput) => Promise<OperationOutputs["listInvites"]>;
+  readonly listLocalUsers: (
+    options: ListLocalUsersInput,
+  ) => Promise<OperationOutputs["listLocalUsers"]>;
   readonly listMembers: (options: ListMembersInput) => Promise<OperationOutputs["listMembers"]>;
   readonly listObjects: (options: ListObjectsInput) => Promise<OperationOutputs["listObjects"]>;
   readonly listPreviews: (options: ListPreviewsInput) => Promise<OperationOutputs["listPreviews"]>;
@@ -2842,6 +2978,9 @@ export interface OperationBindings {
   readonly requestUploadParts: (
     options: RequestUploadPartsInput,
   ) => Promise<OperationOutputs["requestUploadParts"]>;
+  readonly resetLocalUserLoginKey: (
+    options: ResetLocalUserLoginKeyInput,
+  ) => Promise<OperationOutputs["resetLocalUserLoginKey"]>;
   readonly resolveInbox: (options: ResolveInboxInput) => Promise<OperationOutputs["resolveInbox"]>;
   readonly resolveShare: (options: ResolveShareInput) => Promise<OperationOutputs["resolveShare"]>;
   readonly retryAccountDeletion: (

@@ -3270,6 +3270,193 @@ components:
         - data
         - ok
         - requestId
+    LocalUserStatus:
+      type: string
+      description: Lifecycle state of one local user.
+      enum:
+        - active
+        - deactivated
+    LocalUserSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        email:
+          anyOf:
+            - type: string
+            - type: "null"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        loginKeyPrefix:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Non-secret prefix of the active sign-in key when one exists.
+        status:
+          $ref: "#/components/schemas/LocalUserStatus"
+        workspaceId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - createdAt
+        - displayName
+        - email
+        - id
+        - loginKeyPrefix
+        - status
+        - workspaceId
+    ListLocalUsersQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListLocalUsersResult:
+      type: object
+      additionalProperties: false
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalUserSummary"
+      required:
+        - users
+    ListLocalUsersSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListLocalUsersResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateLocalUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        email:
+          anyOf:
+            - type: string
+            - type: "null"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - displayName
+        - workspace
+    CreateLocalUserResult:
+      type: object
+      additionalProperties: false
+      properties:
+        loginKey:
+          type: string
+          description: Raw sign-in key returned once.
+          pattern: ^byuk_
+        loginKeyPrefix:
+          type: string
+          description: Non-secret prefix shown in listings.
+        user:
+          $ref: "#/components/schemas/LocalUserSummary"
+      required:
+        - loginKey
+        - loginKeyPrefix
+        - user
+    CreateLocalUserSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateLocalUserResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ResetLocalUserLoginKeyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - userId
+    ResetLocalUserLoginKeyResult:
+      type: object
+      additionalProperties: false
+      properties:
+        loginKey:
+          type: string
+          description: Raw sign-in key returned once.
+          pattern: ^byuk_
+        loginKeyPrefix:
+          type: string
+          description: Non-secret prefix shown in listings.
+      required:
+        - loginKey
+        - loginKeyPrefix
+    ResetLocalUserLoginKeySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ResetLocalUserLoginKeyResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DeactivateLocalUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - userId
+    DeactivateLocalUserResult:
+      $ref: "#/components/schemas/EmptyResult"
+    DeactivateLocalUserSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DeactivateLocalUserResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     ListCiTrustsQuery:
       type: object
       additionalProperties: false
@@ -4240,6 +4427,9 @@ x-blobyard-path-order:
   - /members/remove
   - /api-tokens
   - /api-tokens/revoke
+  - /users
+  - /users/reset-key
+  - /users/deactivate
   - /ci/trusts
   - /ci/trusts/revoke
   - /cli/sessions

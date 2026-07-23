@@ -1239,6 +1239,130 @@
         "x-blobyard-sdk": true
       }
     },
+    "/users": {
+      "get": {
+        "description": "Lists local users in one workspace with active sign-in key prefixes. Human sessions only.",
+        "operationId": "listLocalUsers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListLocalUsersSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_local_users" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Creates one local user and returns the raw sign-in key once. Human sessions only.",
+        "operationId": "createLocalUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateLocalUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateLocalUserSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "create"] },
+        "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/users/deactivate": {
+      "post": {
+        "description": "Deactivates one local user and revokes every active sign-in key. Human sessions only.",
+        "operationId": "deactivateLocalUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateLocalUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateLocalUserSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "deactivate"] },
+        "x-blobyard-mcp": { "tool": "blobyard_deactivate_local_user" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/users/reset-key": {
+      "post": {
+        "description": "Revokes every active sign-in key for one user and returns the replacement key once. Human sessions only.",
+        "operationId": "resetLocalUserLoginKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResetLocalUserLoginKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResetLocalUserLoginKeySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "reset-key"] },
+        "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
+        "x-blobyard-sdk": true
+      }
+    },
     "/workspaces": {
       "get": {
         "operationId": "listWorkspaces",

@@ -27,6 +27,8 @@ pub enum GeneratedSecretKind {
     InboxCapability,
     /// Upload capability.
     UploadCapability,
+    /// Local-user sign-in key returned once at creation or reset.
+    UserLoginKey,
 }
 
 impl GeneratedSecretKind {
@@ -41,6 +43,7 @@ impl GeneratedSecretKind {
             Self::ShareCapability => "bysh",
             Self::InboxCapability => "byin",
             Self::UploadCapability => "byu",
+            Self::UserLoginKey => "byuk",
         }
     }
 }

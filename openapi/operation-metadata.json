@@ -56,6 +56,11 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "createLocalUser": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "createOneTimeSecret": {
       "requiredUserScopes": [],
       "requiredCiActions": [],
@@ -90,6 +95,11 @@
       "requiredUserScopes": ["project:write"],
       "requiredCiActions": [],
       "risk": "write"
+    },
+    "deactivateLocalUser": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
     },
     "deleteObject": {
       "requiredUserScopes": ["object:write"],
@@ -198,6 +208,11 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "listLocalUsers": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
     "listMembers": {
       "requiredUserScopes": ["workspace:read"],
       "requiredCiActions": [],
@@ -289,6 +304,11 @@
       "requiredUserScopes": ["object:write"],
       "requiredCiActions": ["upload"],
       "risk": "write"
+    },
+    "resetLocalUserLoginKey": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
     },
     "resolveInbox": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
     "resolveShare": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },

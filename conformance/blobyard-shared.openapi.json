@@ -718,6 +718,43 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "CreateLocalUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": { "maxLength": 80, "minLength": 2, "type": "string" },
+          "email": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["displayName", "workspace"],
+        "type": "object"
+      },
+      "CreateLocalUserResult": {
+        "additionalProperties": false,
+        "properties": {
+          "loginKey": {
+            "description": "Raw sign-in key returned once.",
+            "pattern": "^byuk_",
+            "type": "string"
+          },
+          "loginKeyPrefix": {
+            "description": "Non-secret prefix shown in listings.",
+            "type": "string"
+          },
+          "user": { "$ref": "#/components/schemas/LocalUserSummary" }
+        },
+        "required": ["loginKey", "loginKeyPrefix", "user"],
+        "type": "object"
+      },
+      "CreateLocalUserSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateLocalUserResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "CreateOneTimeSecretRequest": {
         "additionalProperties": false,
         "properties": {
@@ -942,6 +979,23 @@
         "maxLength": 1024,
         "minLength": 1,
         "type": "string"
+      },
+      "DeactivateLocalUserRequest": {
+        "additionalProperties": false,
+        "properties": { "userId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["userId"],
+        "type": "object"
+      },
+      "DeactivateLocalUserResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "DeactivateLocalUserSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeactivateLocalUserResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
       },
       "DeleteObjectRequest": {
         "additionalProperties": false,
@@ -1555,6 +1609,30 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "ListLocalUsersQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListLocalUsersResult": {
+        "additionalProperties": false,
+        "properties": {
+          "users": { "items": { "$ref": "#/components/schemas/LocalUserSummary" }, "type": "array" }
+        },
+        "required": ["users"],
+        "type": "object"
+      },
+      "ListLocalUsersSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListLocalUsersResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "ListMembersQuery": {
         "additionalProperties": false,
         "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
@@ -1735,6 +1813,36 @@
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
         "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "LocalUserStatus": {
+        "description": "Lifecycle state of one local user.",
+        "enum": ["active", "deactivated"],
+        "type": "string"
+      },
+      "LocalUserSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "displayName": { "maxLength": 80, "minLength": 2, "type": "string" },
+          "email": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "loginKeyPrefix": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "description": "Non-secret prefix of the active sign-in key when one exists."
+          },
+          "status": { "$ref": "#/components/schemas/LocalUserStatus" },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "createdAt",
+          "displayName",
+          "email",
+          "id",
+          "loginKeyPrefix",
+          "status",
+          "workspaceId"
+        ],
         "type": "object"
       },
       "LogoutCliSessionRequest": {
@@ -2169,6 +2277,38 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/RequestUploadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeyRequest": {
+        "additionalProperties": false,
+        "properties": { "userId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["userId"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "loginKey": {
+            "description": "Raw sign-in key returned once.",
+            "pattern": "^byuk_",
+            "type": "string"
+          },
+          "loginKeyPrefix": {
+            "description": "Non-secret prefix shown in listings.",
+            "type": "string"
+          }
+        },
+        "required": ["loginKey", "loginKeyPrefix"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ResetLocalUserLoginKeyResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -3113,6 +3253,9 @@
     "/members/remove",
     "/api-tokens",
     "/api-tokens/revoke",
+    "/users",
+    "/users/reset-key",
+    "/users/deactivate",
     "/ci/trusts",
     "/ci/trusts/revoke",
     "/cli/sessions",

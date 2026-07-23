@@ -144,6 +144,19 @@
       "risk": "sensitive"
     },
     {
+      "id": "createLocalUser",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/users",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "sensitive"
+    },
+    {
       "id": "createOneTimeSecret",
       "idempotency": {
         "required": false,
@@ -233,6 +246,19 @@
       "requiredCiActions": [],
       "requiredUserScopes": ["project:write"],
       "risk": "write"
+    },
+    {
+      "id": "deactivateLocalUser",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/users/deactivate",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "destructive"
     },
     {
       "id": "deleteObject",
@@ -534,6 +560,19 @@
       "risk": "sensitive"
     },
     {
+      "id": "listLocalUsers",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/users",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "read"
+    },
+    {
       "id": "listMembers",
       "idempotency": {
         "required": false,
@@ -792,6 +831,19 @@
       "requiredCiActions": ["upload"],
       "requiredUserScopes": ["object:write"],
       "risk": "write"
+    },
+    {
+      "id": "resetLocalUserLoginKey",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/users/reset-key",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "sensitive"
     },
     {
       "id": "resolveInbox",
