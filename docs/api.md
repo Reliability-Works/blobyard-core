@@ -5,7 +5,7 @@ through the edge Worker.
 
 The currently deployed machine-readable route and authentication inventory is available at
 [`https://blobyard.com/openapi.json`](https://blobyard.com/openapi.json). The checked-in release
-candidate contract contains 74 public operations. It remains a candidate until deployment and hosted
+candidate contract contains 78 public operations. It remains a candidate until deployment and hosted
 acceptance pass, so it must not be assumed to match the hosted contract yet. Internal provider
 webhooks and production-acceptance routes are intentionally excluded. Edge-only preview and Web Yard
 resolution routes are also not customer operations.
@@ -154,16 +154,20 @@ that classification explicitly and excludes it from SDK, CLI, and MCP generation
 
 ## Web Yard routes
 
-| Method | Route                        | Purpose                                                |
-| ------ | ---------------------------- | ------------------------------------------------------ |
-| POST   | `/v1/yards/deploys/start`    | Reserve a deployment and its immutable manifest        |
-| POST   | `/v1/yards/deploys/finalise` | Verify uploaded files and make the deployment live     |
-| POST   | `/v1/yards/deploys/fail`     | Record a bounded deployment failure                    |
-| GET    | `/v1/yards`                  | List named Yards in the authorized project             |
-| GET    | `/v1/yards/deploys`          | List immutable deployment history for one Yard         |
-| GET    | `/v1/yards/environments`     | List active environments for one Yard                  |
-| POST   | `/v1/yards/rollback`         | Repoint the stable host to an earlier ready deployment |
-| POST   | `/v1/yards/delete`           | Delete a Yard and schedule its retained bytes          |
+| Method | Route                         | Purpose                                                 |
+| ------ | ----------------------------- | ------------------------------------------------------- |
+| POST   | `/v1/yards/deploys/start`     | Reserve a deployment and its immutable manifest         |
+| POST   | `/v1/yards/deploys/finalise`  | Verify uploaded files and make the deployment live      |
+| POST   | `/v1/yards/deploys/fail`      | Record a bounded deployment failure                     |
+| GET    | `/v1/yards`                   | List named Yards in the authorized project              |
+| GET    | `/v1/yards/deploys`           | List immutable deployment history for one Yard          |
+| GET    | `/v1/yards/environments`      | List active environments for one Yard                   |
+| GET    | `/v1/yards/access`            | Read one Yard's effective visibility and active grants  |
+| POST   | `/v1/yards/access/visibility` | Set one Yard's visibility policy (human sessions only)  |
+| POST   | `/v1/yards/access/grant`      | Grant one principal scoped access (human sessions only) |
+| POST   | `/v1/yards/access/revoke`     | Revoke one access grant (human sessions only)           |
+| POST   | `/v1/yards/rollback`          | Repoint the stable host to an earlier ready deployment  |
+| POST   | `/v1/yards/delete`            | Delete a Yard and schedule its retained bytes           |
 
 `GET /v1/yards/resolve` is reserved for the Cloudflare edge and requires the server-only edge
 credential. It is not a customer API. User HTML is returned only from isolated `blobyard.app` hosts,

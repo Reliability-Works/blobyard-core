@@ -282,6 +282,22 @@ Yard name may be omitted when the project contains exactly one Yard:
 blobyard env list marketing
 ```
 
+Inspect and control who may open one Web Yard. `access list` shows the effective visibility and
+active grants, `set-visibility` accepts `public`, `owner`, `selected`, `workspace`,
+`authenticated-link`, or `any-authenticated`, and grants admit one principal with optional
+application roles, an optional environment restriction, and an optional RFC 3339 expiry. The three
+mutations require a signed-in human session; CI tokens cannot change access policy. Until Yard
+sessions ship, only `public` Yards are served: any other visibility answers exactly like an unknown
+host.
+
+```bash
+blobyard access list marketing
+blobyard access set-visibility marketing owner
+blobyard access grant marketing --principal-kind user --principal-id user_123 \
+  --role editor --role viewer --expires 2027-01-01T00:00:00Z
+blobyard access revoke marketing <grant-id>
+```
+
 See [web-yards.md](web-yards.md) for routing behavior, API and MCP automation, retention, plan
 limits, public-content isolation, and recovery guidance.
 

@@ -50,7 +50,8 @@ policy:
 
 Visibility modes: owner only, selected people and groups, workspace, authenticated link, any
 authenticated user, public. Access changes are explicit policy operations with audit evidence, and
-revocation is enforced promptly.
+revocation is enforced promptly. Until Yard sessions land, non-public Yards are not served: every
+visibility other than public answers public requests exactly like an unknown host.
 
 Two permission planes stay distinct everywhere. The management plane (owner, admin, developer,
 auditor) controls who configures and operates the Yard. The application plane (roles the manifest

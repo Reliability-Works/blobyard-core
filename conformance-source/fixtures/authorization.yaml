@@ -58,3 +58,152 @@ vectors:
     resource:
       project: demo
       workspace: default
+  - action: yard:read
+    expected:
+      allowed: true
+    id: yard-reader-can-read-access-policy
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:read
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: cross-workspace-yard-access-is-concealed
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:read
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: object-reader-cannot-read-access-policy
+    principalScopes:
+      - object:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: true
+    id: yard-manager-can-set-visibility
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: cross-workspace-visibility-change-is-concealed
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: yard-reader-cannot-set-visibility
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: machine-cannot-set-visibility
+    principalKind: machine
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: true
+    id: yard-manager-can-grant-access
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: cross-workspace-access-grant-is-concealed
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: yard-reader-cannot-grant-access
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: machine-cannot-grant-access
+    principalKind: machine
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: true
+    id: yard-manager-can-revoke-access
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: cross-workspace-access-revocation-is-concealed
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: yard-reader-cannot-revoke-access
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: machine-cannot-revoke-access
+    principalKind: machine
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
