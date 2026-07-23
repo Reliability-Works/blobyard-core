@@ -2,7 +2,7 @@
 
 use super::{SqliteRepository, ci_test_fixtures as ci_fixtures, configure};
 use blobyard_contract::{
-    CiRepository, CredentialRepository, InboxRepository, LifecycleRepository,
+    CiRepository, CredentialRepository, InboxRepository, LifecycleRepository, LocalUserRepository,
     MachineSessionMintResult, MetadataRepository, NewAuditEvent, NewDownloadGrant, NewInbox,
     NewInboxUpload, NewObjectDeletion, NewObjectVersion, NewPreview, NewPreviewFile, NewShare,
     NewUploadReservation, ObjectDeletionTarget, PreviewRepository, ProjectRecord, RepositoryError,
@@ -58,6 +58,7 @@ fn run_contract(repository: &SqliteRepository) -> Result<(), RepositoryError> {
         .pop()
         .ok_or(RepositoryError::Unavailable)?;
     blobyard_testkit::credential_conformance(repository, &workspace.id)?;
+    blobyard_testkit::local_user_conformance(repository, &workspace.id)?;
     run_ci_contract(repository)?;
     blobyard_testkit::transfer_conformance(repository, "project_fixture")?;
     blobyard_testkit::sharing_conformance(repository)?;
@@ -263,6 +264,9 @@ mod transfer_behavior;
 
 #[path = "adapter_token_tests.rs"]
 mod token_behavior;
+
+#[path = "adapter_local_user_tests.rs"]
+mod local_user_behavior;
 
 #[path = "adapter_workspace_tests.rs"]
 mod workspace_behavior;

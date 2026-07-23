@@ -34,6 +34,8 @@ mod lifecycle_operation;
 mod lifecycle_retention;
 #[path = "lifecycle_retention_plan.rs"]
 mod lifecycle_retention_plan;
+#[path = "local_users.rs"]
+mod local_users;
 #[path = "metadata.rs"]
 mod metadata;
 #[path = "migration.rs"]

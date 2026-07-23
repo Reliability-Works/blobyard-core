@@ -254,6 +254,37 @@ fn access_migration_adds_empty_policy_and_grant_tables() {
 }
 
 #[test]
+fn local_user_migration_adds_empty_user_and_key_tables() {
+    use blobyard_contract::{LocalUserRepository, MetadataRepository};
+
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let path = temporary.path().join("metadata.sqlite3");
+    let mut connection = Connection::open(&path).expect("version eighteen connection");
+    super::super::migrations::apply_through(&mut connection, 18).expect("version eighteen schema");
+    connection
+        .execute_batch(
+            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');",
+        )
+        .expect("version eighteen fixture");
+    drop(connection);
+
+    let repository = SqliteRepository::open(&path).expect("migrated repository");
+    assert_eq!(repository.schema_version().expect("schema version"), 19);
+    assert!(
+        repository
+            .list_local_users("workspace")
+            .expect("users")
+            .is_empty()
+    );
+    assert_eq!(
+        repository.authenticate_local_user_key(&"ab".repeat(32), 1),
+        Err(RepositoryError::NotFound),
+        "empty tables must admit nobody"
+    );
+    assert_tables(&repository, &["local_users", "local_user_login_keys"]);
+}
+
+#[test]
 fn partial_migration_rejects_newer_targets_and_maps_each_database_failure() {
     assert_eq!(
         super::super::migrations::apply_through(

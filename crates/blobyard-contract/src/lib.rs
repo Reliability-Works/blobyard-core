@@ -4,6 +4,7 @@ mod auth;
 mod ci;
 mod inboxes;
 mod lifecycle;
+mod local_users;
 mod migration;
 mod previews;
 mod repository;
@@ -40,6 +41,10 @@ pub use lifecycle::{
     AuditEventRecord, AuditPage, AuditValue, DeletionItem, DeletionPlan, LifecycleRepository,
     NewAuditEvent, NewObjectDeletion, ObjectDeletionTarget, RetentionOverview,
     RetentionPolicyRecord, RetentionRunRecord,
+};
+pub use local_users::{
+    LocalUserListing, LocalUserLoginKeyRecord, LocalUserRecord, LocalUserRepository,
+    LocalUserStatus,
 };
 pub use migration::{
     MigrationObjectRecord, MigrationRepository, MigrationRetentionRecord, MigrationShareRecord,

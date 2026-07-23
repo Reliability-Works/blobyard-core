@@ -10,6 +10,8 @@ mod ci;
 mod credentials;
 #[path = "repository_fault_inboxes.rs"]
 mod inboxes;
+#[path = "repository_fault_local_users.rs"]
+mod local_users;
 #[path = "repository_fault_previews.rs"]
 mod previews;
 #[path = "repository_fault_sharing.rs"]

@@ -61,6 +61,8 @@ fn sqlite_satisfies_the_metadata_contract() {
         .expect("fixture workspace");
     blobyard_testkit::credential_conformance(&repository, &workspace.id)
         .expect("credential conformance");
+    blobyard_testkit::local_user_conformance(&repository, &workspace.id)
+        .expect("local user conformance");
     blobyard_testkit::transfer_conformance(&repository, "project_fixture")
         .expect("transfer conformance");
     blobyard_testkit::yard_conformance(&repository, &yard_fixture()).expect("Web Yard conformance");

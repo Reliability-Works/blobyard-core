@@ -134,6 +134,7 @@ impl<T> RuntimeStorage for T where
 pub(crate) trait Repository:
     blobyard_contract::MetadataRepository
     + blobyard_contract::CredentialRepository
+    + blobyard_contract::LocalUserRepository
     + blobyard_contract::CiRepository
     + blobyard_contract::TransferRepository
     + blobyard_contract::LifecycleRepository
@@ -147,6 +148,7 @@ pub(crate) trait Repository:
 impl<T> Repository for T where
     T: blobyard_contract::MetadataRepository
         + blobyard_contract::CredentialRepository
+        + blobyard_contract::LocalUserRepository
         + blobyard_contract::CiRepository
         + blobyard_contract::TransferRepository
         + blobyard_contract::LifecycleRepository

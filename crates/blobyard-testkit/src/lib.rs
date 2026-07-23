@@ -7,6 +7,7 @@ mod ci;
 mod credentials;
 mod fault_forwarders;
 mod lifecycle;
+mod local_users;
 mod repository;
 mod storage;
 
@@ -14,6 +15,7 @@ pub use ci::{CI_REPOSITORY, ci_trust, github_oidc_identity};
 pub use credentials::{cli_session_record, cli_session_revoked_event, credential_conformance};
 pub use fault_forwarders::FailureCounter;
 pub use lifecycle::lifecycle_conformance;
+pub use local_users::{local_user, local_user_conformance, local_user_event, login_key};
 pub use repository::{
     InboxConformanceRepository, PreviewConformanceRepository, YardConformanceFixture,
     YardConformanceRepository, granted_event, inbox_conformance, inbox_event, inbox_upload_event,
