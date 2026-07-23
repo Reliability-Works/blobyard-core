@@ -45,6 +45,7 @@ const OPENAPI_CLI_OPERATIONS: &[(&str, &str, &str, bool, &[&str])] = &[
     ("listWebYardDeploys", "/v1/yards/deploys", "GET", false, &["yard", "history"]),
     ("listWebYards", "/v1/yards", "GET", false, &["yard", "list"]),
     ("listWorkspaces", "/v1/workspaces", "GET", false, &["workspaces", "list"]),
+    ("listYardEnvironments", "/v1/yards/environments", "GET", false, &["env", "list"]),
     ("logoutCliSession", "/v1/cli/logout", "POST", false, &["logout"]),
     ("pollDeviceLogin", "/v1/cli/device/poll", "POST", false, &["login"]),
     ("prepareAccountDeletion", "/v1/account/deletion/prepare", "POST", true, &["account", "delete", "prepare"]),

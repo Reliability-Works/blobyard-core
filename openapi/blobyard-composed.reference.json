@@ -1105,6 +1105,44 @@
         ]
       }
     },
+    "/yards/environments": {
+      "get": {
+        "operationId": "listYardEnvironments",
+        "description": "Lists active environments for one Yard.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListYardEnvironmentsSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["env", "list"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_list_yard_environments"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ]
+      }
+    },
     "/yards/deploys": {
       "get": {
         "operationId": "listWebYardDeploys",
@@ -5588,6 +5626,70 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/ListWebYardsResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "YardEnvironmentSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["production", "staging", "preview"]
+          },
+          "name": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          }
+        },
+        "required": ["createdAt", "id", "kind", "name", "updatedAt"]
+      },
+      "ListYardEnvironmentsQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["yardId"]
+      },
+      "ListYardEnvironmentsResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "environments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YardEnvironmentSummary"
+            }
+          }
+        },
+        "required": ["environments"]
+      },
+      "ListYardEnvironmentsSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListYardEnvironmentsResult"
           },
           "ok": {
             "type": "boolean",

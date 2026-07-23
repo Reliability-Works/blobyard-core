@@ -34,6 +34,7 @@
     "listWebYardDeploys": "crates/blobyard-server/src/yards.rs",
     "listWebYards": "crates/blobyard-server/src/yards.rs",
     "listWorkspaces": "crates/blobyard-server/src/api.rs",
+    "listYardEnvironments": "crates/blobyard-server/src/yards.rs",
     "requestDownload": "crates/blobyard-server/src/objects.rs",
     "requestUpload": "crates/blobyard-server/src/transfers.rs",
     "resolveInbox": "crates/blobyard-server/src/inboxes.rs",

@@ -2301,6 +2301,64 @@ components:
         - data
         - ok
         - requestId
+    YardEnvironmentSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        kind:
+          type: string
+          enum:
+            - production
+            - staging
+            - preview
+        name:
+          $ref: "#/components/schemas/Slug"
+        updatedAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+      required:
+        - createdAt
+        - id
+        - kind
+        - name
+        - updatedAt
+    ListYardEnvironmentsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListYardEnvironmentsResult:
+      type: object
+      additionalProperties: false
+      properties:
+        environments:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardEnvironmentSummary"
+      required:
+        - environments
+    ListYardEnvironmentsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListYardEnvironmentsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     ListWebYardDeploysQuery:
       type: object
       additionalProperties: false
@@ -3950,6 +4008,7 @@ x-blobyard-path-order:
   - /previews
   - /previews/revoke
   - /yards
+  - /yards/environments
   - /yards/deploys
   - /yards/deploys/start
   - /yards/deploys/finalise

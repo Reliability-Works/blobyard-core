@@ -1522,6 +1522,36 @@
         "x-blobyard-sdk": true
       }
     },
+    "/yards/environments": {
+      "get": {
+        "description": "Lists active environments for one Yard.",
+        "operationId": "listYardEnvironments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardEnvironmentsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["env", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_environments" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/yards/rollback": {
       "post": {
         "description": "Promotes a retained successful deploy. Workspace administrator access is required.",

@@ -34,6 +34,7 @@
     "listWebYardDeploys",
     "listWebYards",
     "listWorkspaces",
+    "listYardEnvironments",
     "renameWorkspace",
     "requestDownload",
     "requestUpload",

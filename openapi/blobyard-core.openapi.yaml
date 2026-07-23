@@ -654,6 +654,32 @@ paths:
           required: true
           schema:
             $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /yards/environments:
+    get:
+      operationId: listYardEnvironments
+      description: Lists active environments for one Yard.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListYardEnvironmentsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - env
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_environments
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
   /yards/deploys:
     get:
       operationId: listWebYardDeploys

@@ -49,6 +49,7 @@ const OPENAPI_API_OPERATIONS: &[(&str, &str, &str, bool)] = &[
     ("listWebYardDeploys", "/v1/yards/deploys", "GET", false),
     ("listWebYards", "/v1/yards", "GET", false),
     ("listWorkspaces", "/v1/workspaces", "GET", false),
+    ("listYardEnvironments", "/v1/yards/environments", "GET", false),
     ("logoutCliSession", "/v1/cli/logout", "POST", false),
     ("pollDeviceLogin", "/v1/cli/device/poll", "POST", false),
     ("prepareAccountDeletion", "/v1/account/deletion/prepare", "POST", true),

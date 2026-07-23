@@ -608,6 +608,22 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly YardEnvironmentSummary: Readonly<{
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly id: Schemas["Identifier"];
+    readonly kind: "production" | "staging" | "preview";
+    readonly name: Schemas["Slug"];
+    readonly updatedAt: Schemas["IsoTimestamp"];
+  }>;
+  readonly ListYardEnvironmentsQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly ListYardEnvironmentsResult: Readonly<{
+    readonly environments: readonly Schemas["YardEnvironmentSummary"][];
+  }>;
+  readonly ListYardEnvironmentsSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListYardEnvironmentsResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly ListWebYardDeploysQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly ListWebYardDeploysResult: Schemas["YardDeployPage"];
   readonly ListWebYardDeploysSuccessEnvelope: Readonly<{
@@ -1300,6 +1316,10 @@ export type ListWorkspacesInput = Readonly<{
   readonly query?: Readonly<{ readonly cursor?: Schemas["Cursor"] }>;
   readonly signal?: AbortSignal;
 }>;
+export type ListYardEnvironmentsInput = Readonly<{
+  readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly signal?: AbortSignal;
+}>;
 export type LogoutCliSessionInput = Readonly<{
   readonly body: Schemas["LogoutCliSessionRequest"];
   readonly signal?: AbortSignal;
@@ -1973,6 +1993,18 @@ export declare const operations: Readonly<{
     risk: "read";
     successStatus: 200;
   }>;
+  readonly listYardEnvironments: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/environments";
+    public: false;
+    requiredCiActions: readonly ["yard:manage"];
+    requiredUserScopes: readonly ["yard:read"];
+    risk: "read";
+    successStatus: 200;
+  }>;
   readonly logoutCliSession: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2340,6 +2372,7 @@ export type RequiredOperationId =
   | "listShares"
   | "listWebYardDeploys"
   | "listWebYards"
+  | "listYardEnvironments"
   | "logoutCliSession"
   | "pollDeviceLogin"
   | "prepareAccountDeletion"
@@ -2423,6 +2456,7 @@ export interface OperationInputs {
   readonly listWebYardDeploys: ListWebYardDeploysInput;
   readonly listWebYards: ListWebYardsInput;
   readonly listWorkspaces: ListWorkspacesInput;
+  readonly listYardEnvironments: ListYardEnvironmentsInput;
   readonly logoutCliSession: LogoutCliSessionInput;
   readonly pollDeviceLogin: PollDeviceLoginInput;
   readonly prepareAccountDeletion: PrepareAccountDeletionInput;
@@ -2499,6 +2533,7 @@ export interface OperationOutputs {
   readonly listWebYardDeploys: Schemas["ListWebYardDeploysResult"];
   readonly listWebYards: Schemas["ListWebYardsResult"];
   readonly listWorkspaces: Schemas["ListWorkspacesResult"];
+  readonly listYardEnvironments: Schemas["ListYardEnvironmentsResult"];
   readonly logoutCliSession: Schemas["LogoutCliSessionResult"];
   readonly pollDeviceLogin: Schemas["PollDeviceLoginResult"];
   readonly prepareAccountDeletion: Schemas["PrepareAccountDeletionResult"];
@@ -2635,6 +2670,9 @@ export interface OperationBindings {
   readonly listWorkspaces: (
     options?: ListWorkspacesInput,
   ) => Promise<OperationOutputs["listWorkspaces"]>;
+  readonly listYardEnvironments: (
+    options: ListYardEnvironmentsInput,
+  ) => Promise<OperationOutputs["listYardEnvironments"]>;
   readonly logoutCliSession: (
     options: LogoutCliSessionInput,
   ) => Promise<OperationOutputs["logoutCliSession"]>;

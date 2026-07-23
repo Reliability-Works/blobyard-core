@@ -612,6 +612,19 @@
       "risk": "read"
     },
     {
+      "id": "listYardEnvironments",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/environments",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:read"],
+      "risk": "read"
+    },
+    {
       "id": "logoutCliSession",
       "idempotency": {
         "required": false,

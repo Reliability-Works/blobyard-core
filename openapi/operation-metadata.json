@@ -228,6 +228,11 @@
       "requiredCiActions": [],
       "risk": "read"
     },
+    "listYardEnvironments": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
     "logoutCliSession": {
       "requiredUserScopes": [],
       "requiredCiActions": [],

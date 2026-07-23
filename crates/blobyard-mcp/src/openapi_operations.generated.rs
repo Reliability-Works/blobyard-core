@@ -36,6 +36,7 @@ const OPENAPI_MCP_OPERATIONS: &[(&str, &str, &str, &str)] = &[
     ("listWebYardDeploys", "/v1/yards/deploys", "GET", "blobyard_list_yard_deploys"),
     ("listWebYards", "/v1/yards", "GET", "blobyard_list_web_yards"),
     ("listWorkspaces", "/v1/workspaces", "GET", "blobyard_list_workspaces"),
+    ("listYardEnvironments", "/v1/yards/environments", "GET", "blobyard_list_yard_environments"),
     ("removeMember", "/v1/members/remove", "POST", "blobyard_remove_member"),
     ("renameWorkspace", "/v1/workspaces/rename", "POST", "blobyard_rename_workspace"),
     ("requestAccountExport", "/v1/account/exports", "POST", "blobyard_request_account_export"),

@@ -1649,6 +1649,33 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "ListYardEnvironmentsQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListYardEnvironmentsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "environments": {
+            "items": { "$ref": "#/components/schemas/YardEnvironmentSummary" },
+            "type": "array"
+          }
+        },
+        "required": ["environments"],
+        "type": "object"
+      },
+      "ListYardEnvironmentsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListYardEnvironmentsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "LogoutCliSessionRequest": {
         "additionalProperties": false,
         "properties": {},
@@ -2847,6 +2874,18 @@
           "totalBytes"
         ],
         "type": "object"
+      },
+      "YardEnvironmentSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "kind": { "enum": ["production", "staging", "preview"], "type": "string" },
+          "name": { "$ref": "#/components/schemas/Slug" },
+          "updatedAt": { "$ref": "#/components/schemas/IsoTimestamp" }
+        },
+        "required": ["createdAt", "id", "kind", "name", "updatedAt"],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -2897,6 +2936,7 @@
     "/previews",
     "/previews/revoke",
     "/yards",
+    "/yards/environments",
     "/yards/deploys",
     "/yards/deploys/start",
     "/yards/deploys/finalise",
