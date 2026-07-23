@@ -94,7 +94,7 @@ fn faulting_repository_forwards_before_its_exact_failure_index() {
         FaultingRepository::new(Arc::clone(&inner), 0).schema_version(),
         Err(RepositoryError::Unavailable)
     );
-    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(17));
+    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(18));
 }
 
 #[test]

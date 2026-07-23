@@ -1,8 +1,9 @@
 use super::Faulting;
 use blobyard_contract::{
-    NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
-    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord,
-    YardEnvironmentRecord, YardFileTarget, YardStartRecord,
+    NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile, RepositoryError,
+    WebYardRecord, WebYardRepository, YardAccessGrantRecord, YardAccessPolicyRecord,
+    YardCleanupPlan, YardDeployRecord, YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget,
+    YardStartRecord, YardVisibility,
 };
 
 impl<T: WebYardRepository> WebYardRepository for Faulting<'_, T> {
@@ -42,6 +43,56 @@ impl<T: WebYardRepository> WebYardRepository for Faulting<'_, T> {
     ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
         self.check()?;
         self.inner.list_yard_environments(yard_id)
+    }
+
+    fn get_yard_access_policy(
+        &self,
+        yard_id: &str,
+    ) -> Result<Option<YardAccessPolicyRecord>, RepositoryError> {
+        self.check()?;
+        self.inner.get_yard_access_policy(yard_id)
+    }
+
+    fn set_yard_visibility(
+        &self,
+        yard_id: &str,
+        visibility: YardVisibility,
+        updated_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessPolicyRecord, RepositoryError> {
+        self.check()?;
+        self.inner
+            .set_yard_visibility(yard_id, visibility, updated_at_ms, event)
+    }
+
+    fn insert_yard_access_grant(
+        &self,
+        grant: &NewYardAccessGrant,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessGrantRecord, RepositoryError> {
+        self.check()?;
+        self.inner.insert_yard_access_grant(grant, event)
+    }
+
+    fn revoke_yard_access_grant(
+        &self,
+        yard_id: &str,
+        grant_id: &str,
+        revoked_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<bool, RepositoryError> {
+        self.check()?;
+        self.inner
+            .revoke_yard_access_grant(yard_id, grant_id, revoked_at_ms, event)
+    }
+
+    fn list_yard_access_grants(
+        &self,
+        yard_id: &str,
+        now_ms: u64,
+    ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError> {
+        self.check()?;
+        self.inner.list_yard_access_grants(yard_id, now_ms)
     }
 
     fn finalise_yard_deploy(

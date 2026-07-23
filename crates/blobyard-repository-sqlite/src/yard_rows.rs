@@ -65,11 +65,11 @@ pub(super) fn environment(row: &Row<'_>) -> rusqlite::Result<YardEnvironmentReco
     })
 }
 
-fn required_u64(value: i64) -> rusqlite::Result<u64> {
+pub(super) fn required_u64(value: i64) -> rusqlite::Result<u64> {
     u64::try_from(value).map_err(rows::conversion_error)
 }
 
-fn optional_u64(value: Option<i64>) -> rusqlite::Result<Option<u64>> {
+pub(super) fn optional_u64(value: Option<i64>) -> rusqlite::Result<Option<u64>> {
     value
         .map(|number| u64::try_from(number).map_err(rows::conversion_error))
         .transpose()

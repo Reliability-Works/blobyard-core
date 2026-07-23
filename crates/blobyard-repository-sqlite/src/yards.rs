@@ -1,11 +1,12 @@
 use super::{
-    SqliteRepository, map_error, rows, yard_cleanup, yard_finalise, yard_lifecycle, yard_queries,
-    yard_start,
+    SqliteRepository, map_error, rows, transfer_validation, yard_access, yard_cleanup,
+    yard_finalise, yard_lifecycle, yard_queries, yard_start,
 };
 use blobyard_contract::{
-    NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
-    WebYardRepository, YardCleanupPlan, YardDeployRecord, YardDeploymentRecord,
-    YardEnvironmentRecord, YardFileTarget, YardStartRecord, is_valid_yard_request_path,
+    NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile, RepositoryError,
+    WebYardRecord, WebYardRepository, YardAccessGrantRecord, YardAccessPolicyRecord,
+    YardCleanupPlan, YardDeployRecord, YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget,
+    YardStartRecord, YardVisibility, is_valid_yard_request_path,
 };
 
 impl WebYardRepository for SqliteRepository {
@@ -78,6 +79,70 @@ impl WebYardRepository for SqliteRepository {
         rows::validate_text(deploy_id)?;
         let connection = self.connection()?;
         yard_queries::deploy_by_id(&connection, deploy_id)
+    }
+
+    fn get_yard_access_policy(
+        &self,
+        yard_id: &str,
+    ) -> Result<Option<YardAccessPolicyRecord>, RepositoryError> {
+        rows::validate_text(yard_id)?;
+        let connection = self.connection()?;
+        yard_access::policy(&connection, yard_id)
+    }
+
+    fn set_yard_visibility(
+        &self,
+        yard_id: &str,
+        visibility: YardVisibility,
+        updated_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessPolicyRecord, RepositoryError> {
+        rows::validate_text(yard_id)?;
+        self.write_transaction(|transaction| {
+            yard_access::set_visibility(transaction, yard_id, visibility, updated_at_ms, event)
+        })
+    }
+
+    fn insert_yard_access_grant(
+        &self,
+        grant: &NewYardAccessGrant,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessGrantRecord, RepositoryError> {
+        self.write_transaction(|transaction| yard_access::insert_grant(transaction, grant, event))
+    }
+
+    fn revoke_yard_access_grant(
+        &self,
+        yard_id: &str,
+        grant_id: &str,
+        revoked_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<bool, RepositoryError> {
+        rows::validate_text(yard_id)?;
+        rows::validate_text(grant_id)?;
+        self.write_transaction(|transaction| {
+            yard_access::revoke_grant(transaction, yard_id, grant_id, revoked_at_ms, event)
+        })
+    }
+
+    fn list_yard_access_grants(
+        &self,
+        yard_id: &str,
+        now_ms: u64,
+    ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError> {
+        rows::validate_text(yard_id)?;
+        let now = transfer_validation::to_i64(now_ms)?;
+        let connection = self.connection()?;
+        let mut statement = connection
+            .prepare(&format!(
+                "SELECT {} FROM yard_access_grants WHERE yard_id = ?1 AND status = 'active' AND (expires_at_ms IS NULL OR expires_at_ms > ?2) ORDER BY created_at_ms DESC, id DESC",
+                yard_access::GRANT_COLUMNS
+            ))
+            .map_err(map_error)?;
+        let result = yard_access::list_grants(&mut statement, yard_id, now);
+        drop(statement);
+        drop(connection);
+        result
     }
 
     fn finalise_yard_deploy(

@@ -11,6 +11,8 @@ fn present<T>(value: Option<T>) -> T {
     values.remove(0)
 }
 
+#[path = "yards_tests/access.rs"]
+mod access;
 #[path = "yards_tests/adapter_edges.rs"]
 mod adapter_edges;
 #[path = "yards_tests/environments.rs"]

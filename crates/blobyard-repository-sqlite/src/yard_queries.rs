@@ -138,7 +138,7 @@ fn stable_deploy(
     connection
         .query_row(
             &format!(
-                "SELECT {} FROM web_yards y JOIN yard_deploys d ON d.id = y.current_deploy_id WHERE y.host_label = ?1 AND y.status = 'active' AND d.yard_id = y.id AND d.status = 'live'",
+                "SELECT {} FROM web_yards y JOIN yard_deploys d ON d.id = y.current_deploy_id WHERE y.host_label = ?1 AND y.status = 'active' AND d.yard_id = y.id AND d.status = 'live' AND NOT EXISTS (SELECT 1 FROM yard_access_policies p WHERE p.yard_id = y.id AND p.visibility != 'public')",
                 yard_rows::QUALIFIED_DEPLOY_COLUMNS
             ),
             [host_label],
@@ -155,7 +155,7 @@ fn immutable_deploy(
     connection
         .query_row(
             &format!(
-                "SELECT {} FROM yard_deploys d JOIN web_yards y ON y.id = d.yard_id WHERE d.deployment_host_label = ?1 AND y.status = 'active' AND d.status IN ('live', 'superseded')",
+                "SELECT {} FROM yard_deploys d JOIN web_yards y ON y.id = d.yard_id WHERE d.deployment_host_label = ?1 AND y.status = 'active' AND d.status IN ('live', 'superseded') AND NOT EXISTS (SELECT 1 FROM yard_access_policies p WHERE p.yard_id = y.id AND p.visibility != 'public')",
                 yard_rows::QUALIFIED_DEPLOY_COLUMNS
             ),
             [host_label],

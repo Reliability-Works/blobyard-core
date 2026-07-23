@@ -62,6 +62,8 @@ mod transfer_reservations;
 mod transfer_validation;
 #[path = "transfers.rs"]
 mod transfers;
+#[path = "yard_access.rs"]
+mod yard_access;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]

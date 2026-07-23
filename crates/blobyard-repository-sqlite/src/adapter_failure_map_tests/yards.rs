@@ -48,4 +48,25 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
     unavailable(repository.rollback_web_yard(&yard.id, Some(&deploy.id), 1_001, &event));
     unavailable(repository.delete_web_yard(&yard.id, 1_001, &event));
     unavailable(repository.yard_file_by_host(&yard.host_label, ""));
+    let grant = blobyard_contract::NewYardAccessGrant {
+        id: "grant_failure_map".to_owned(),
+        yard_id: yard.id.clone(),
+        environment_id: None,
+        principal_kind: blobyard_contract::YardAccessPrincipalKind::User,
+        principal_id: "user_failure_map".to_owned(),
+        app_roles: vec!["viewer".to_owned()],
+        created_at_ms: 1_000,
+        created_by_principal: "fixture".to_owned(),
+        expires_at_ms: None,
+    };
+    unavailable(repository.get_yard_access_policy(&yard.id));
+    unavailable(repository.set_yard_visibility(
+        &yard.id,
+        blobyard_contract::YardVisibility::Owner,
+        1_001,
+        &event,
+    ));
+    unavailable(repository.insert_yard_access_grant(&grant, &event));
+    unavailable(repository.revoke_yard_access_grant(&yard.id, &grant.id, 1_001, &event));
+    unavailable(repository.list_yard_access_grants(&yard.id, 1_001));
 }

@@ -1,5 +1,5 @@
 use super::{
-    super::{SqliteRepository, yard_queries},
+    super::{SqliteRepository, yard_access, yard_queries},
     success,
     transaction_edges::support::{created, deploy, deployed, yard},
 };
@@ -56,6 +56,18 @@ fn public_yard_adapter_rejects_invalid_required_read_ids_before_database_access(
         repository.pending_yard_cleanups(Some("")),
         Err(RepositoryError::InvalidInput)
     );
+    assert_eq!(
+        repository.get_yard_access_policy(""),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        repository.list_yard_access_grants("", 1),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        repository.list_yard_access_grants("yard_fixture", u64::MAX),
+        Err(RepositoryError::InvalidInput)
+    );
 }
 
 #[test]
@@ -93,6 +105,18 @@ fn public_yard_adapter_rejects_invalid_required_mutation_ids_before_database_acc
         repository.start_yard_deploy(&invalid, &candidate_deploy, &created("", 1)),
         Err(RepositoryError::InvalidInput)
     );
+    assert_eq!(
+        repository.set_yard_visibility("", blobyard_contract::YardVisibility::Owner, 2, &event()),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        repository.revoke_yard_access_grant("", "grant_fixture", 2, &event()),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        repository.revoke_yard_access_grant("yard_fixture", "", 2, &event()),
+        Err(RepositoryError::InvalidInput)
+    );
 }
 
 #[test]
@@ -128,6 +152,13 @@ fn yard_query_collectors_propagate_parameter_binding_failures() {
     );
     assert_eq!(
         yard_queries::list_environments(&mut environments, "yard"),
+        Err(RepositoryError::Unavailable)
+    );
+    let mut grants = success(connection.prepare(
+        "SELECT 'grant', 'yard', NULL, 'user', 'user_1', '[\"viewer\"]', 'active', 1, 'fixture', NULL, NULL",
+    ));
+    assert_eq!(
+        yard_access::list_grants(&mut grants, "yard", 1),
         Err(RepositoryError::Unavailable)
     );
 }

@@ -5,6 +5,7 @@ mod metadata;
 mod previews;
 mod sharing;
 mod transfer;
+mod yard_access;
 mod yards;
 
 use std::sync::atomic::AtomicUsize;
@@ -120,6 +121,20 @@ pub(crate) enum Corruption {
     YardSecondDelete,
     YardFinalRecord,
     YardDeletedResolution,
+    YardPhantomPolicy,
+    YardPhantomGrantList,
+    YardUnknownGrantList,
+    YardVisibilityRecord,
+    YardRestoredVisibility,
+    YardPrivateDelivery,
+    YardGrantRecord,
+    YardScopedGrantRecord,
+    YardGrantValidation,
+    YardExpiredGrantList,
+    YardRevokedGrantList,
+    YardMissingGrantRevoke,
+    YardFirstRevoke,
+    YardSecondRevoke,
 }
 
 pub(crate) struct Corrupting<'a, T> {

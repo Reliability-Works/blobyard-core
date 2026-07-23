@@ -10,6 +10,7 @@ mod repository;
 mod sharing;
 mod storage;
 mod transfers;
+mod yard_access;
 mod yard_environments;
 mod yard_repository;
 mod yards;
@@ -62,6 +63,10 @@ pub use transfers::{
     NewDownloadGrant, NewUploadPartGrant, NewUploadReservation, ReservationState,
     ReservationStrategy, StoredObjectRecord, TransferRepository, UploadPartRecord,
     UploadReservationRecord,
+};
+pub use yard_access::{
+    NewYardAccessGrant, YardAccessGrantRecord, YardAccessGrantStatus, YardAccessPolicyRecord,
+    YardAccessPrincipalKind, YardVisibility,
 };
 pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};

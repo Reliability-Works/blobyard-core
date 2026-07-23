@@ -4,6 +4,8 @@ use blobyard_contract::{
 };
 use blobyard_core::{Slug, SlugError};
 
+#[path = "repository_yards_access.rs"]
+mod access;
 #[path = "repository_yards_delivery.rs"]
 mod delivery;
 #[cfg(test)]
@@ -86,6 +88,7 @@ pub fn yard_conformance(
     {
         return Err(RepositoryError::Unavailable);
     }
+    access::assert_access_controls(repository, &first, &version_id)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
     assert_yard_deletion(repository, &first)

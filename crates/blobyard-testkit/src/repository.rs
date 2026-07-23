@@ -44,7 +44,7 @@ fn repository_conformance_validated(
     repository: &dyn MetadataRepository,
     fixtures: ValidatedNamespaceFixtures,
 ) -> Result<(), RepositoryError> {
-    if repository.schema_version()? != 17 {
+    if repository.schema_version()? != 18 {
         return Err(RepositoryError::SchemaTooNew);
     }
     let project = namespace_conformance(repository, fixtures)?;

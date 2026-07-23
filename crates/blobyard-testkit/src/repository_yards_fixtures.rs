@@ -1,4 +1,7 @@
-use blobyard_contract::{AuditValue, NewAuditEvent, NewWebYard, NewYardDeploy};
+use blobyard_contract::{
+    AuditValue, NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy,
+    YardAccessPrincipalKind,
+};
 use blobyard_core::Slug;
 
 pub(super) fn new_yard(name: &Slug, number: u64) -> NewWebYard {
@@ -65,6 +68,62 @@ pub(super) fn deployed_event(
 
 pub(super) fn action_event(action: &str, yard_id: &str, deploy_id: &str, at: u64) -> NewAuditEvent {
     let mut event = event(action, "yard_deploy", "deployId", deploy_id, at);
+    event
+        .metadata
+        .push(("yardId".to_owned(), AuditValue::String(yard_id.to_owned())));
+    event
+}
+
+pub(super) fn new_grant(
+    id: &str,
+    yard_id: &str,
+    environment_id: Option<&str>,
+    expires_at_ms: Option<u64>,
+    at: u64,
+) -> NewYardAccessGrant {
+    NewYardAccessGrant {
+        id: id.to_owned(),
+        yard_id: yard_id.to_owned(),
+        environment_id: environment_id.map(str::to_owned),
+        principal_kind: YardAccessPrincipalKind::User,
+        principal_id: "user_fixture".to_owned(),
+        app_roles: vec!["editor".to_owned(), "viewer".to_owned()],
+        created_at_ms: at,
+        created_by_principal: "fixture".to_owned(),
+        expires_at_ms,
+    }
+}
+
+pub(super) fn visibility_event(yard_id: &str, from: &str, to: &str, at: u64) -> NewAuditEvent {
+    let mut event = event("yard.visibility_changed", "yard_access_policy", "from", from, at);
+    event.metadata.extend([
+        ("to".to_owned(), AuditValue::String(to.to_owned())),
+        ("yardId".to_owned(), AuditValue::String(yard_id.to_owned())),
+    ]);
+    event
+}
+
+pub(super) fn granted_event(yard_id: &str, grant: &NewYardAccessGrant, at: u64) -> NewAuditEvent {
+    let mut event = event("yard.access_granted", "yard_access_grant", "grantId", &grant.id, at);
+    event.metadata.extend([
+        (
+            "environmentId".to_owned(),
+            grant
+                .environment_id
+                .clone()
+                .map_or(AuditValue::Null, AuditValue::String),
+        ),
+        (
+            "principalKind".to_owned(),
+            AuditValue::String(grant.principal_kind.as_str().to_owned()),
+        ),
+        ("yardId".to_owned(), AuditValue::String(yard_id.to_owned())),
+    ]);
+    event
+}
+
+pub(super) fn revoked_event(yard_id: &str, grant_id: &str, at: u64) -> NewAuditEvent {
+    let mut event = event("yard.access_revoked", "yard_access_grant", "grantId", grant_id, at);
     event
         .metadata
         .push(("yardId".to_owned(), AuditValue::String(yard_id.to_owned())));
