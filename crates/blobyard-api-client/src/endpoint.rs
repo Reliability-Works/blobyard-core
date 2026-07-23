@@ -148,6 +148,14 @@ pub enum Endpoint {
     CreateApiToken,
     /// Revoke a user API token.
     RevokeApiToken,
+    /// List local users with active sign-in key prefixes.
+    ListLocalUsers,
+    /// Create a local user and return the raw sign-in key once.
+    CreateLocalUser,
+    /// Replace a local user's sign-in key and return the raw value once.
+    ResetLocalUserLoginKey,
+    /// Deactivate a local user and revoke every active sign-in key.
+    DeactivateLocalUser,
     /// List GitHub OIDC trusts.
     ListCiTrusts,
     /// Create a GitHub OIDC trust.
@@ -200,7 +208,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 81] = [
+    pub const ALL: [Self; 85] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -258,6 +266,10 @@ impl Endpoint {
         Self::ListApiTokens,
         Self::CreateApiToken,
         Self::RevokeApiToken,
+        Self::ListLocalUsers,
+        Self::CreateLocalUser,
+        Self::ResetLocalUserLoginKey,
+        Self::DeactivateLocalUser,
         Self::ListCiTrusts,
         Self::CreateCiTrust,
         Self::RevokeCiTrust,
@@ -285,7 +297,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 79] = public_endpoints();
+    pub const PUBLIC: [Self; 83] = public_endpoints();
 
     /// Returns whether the endpoint durably replays an `Idempotency-Key` request.
     #[must_use]
@@ -302,8 +314,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 79] {
-    let mut public = [Endpoint::Health; 79];
+const fn public_endpoints() -> [Endpoint; 83] {
+    let mut public = [Endpoint::Health; 83];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {

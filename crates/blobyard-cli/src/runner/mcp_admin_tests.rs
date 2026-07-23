@@ -54,6 +54,10 @@ fn read_calls() -> Vec<(AdminToolCall, Endpoint)> {
             Endpoint::ListInvites,
         ),
         (
+            AdminToolCall::ListLocalUsers { scope: scope() },
+            Endpoint::ListLocalUsers,
+        ),
+        (
             AdminToolCall::ListApiTokens { scope: scope() },
             Endpoint::ListApiTokens,
         ),
@@ -108,6 +112,14 @@ fn member_write_calls() -> Vec<(AdminToolCall, Endpoint)> {
 
 fn credential_write_calls() -> Vec<(AdminToolCall, Endpoint)> {
     vec![
+        (
+            AdminToolCall::DeactivateLocalUser {
+                scope: scope(),
+                user_id: "user_1".to_owned(),
+                confirmed: true,
+            },
+            Endpoint::DeactivateLocalUser,
+        ),
         (
             AdminToolCall::RevokeApiToken {
                 scope: scope(),

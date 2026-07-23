@@ -17,6 +17,8 @@ fn recognizes_only_administration_tools() {
         "revoke_invite",
         "update_member_role",
         "remove_member",
+        "list_local_users",
+        "deactivate_local_user",
         "list_api_tokens",
         "revoke_api_token",
         "list_ci_trusts",
@@ -56,6 +58,12 @@ fn parses_administration_reads() {
         (
             "list_invites",
             AdminToolCall::ListInvites {
+                scope: Scope::default(),
+            },
+        ),
+        (
+            "list_local_users",
+            AdminToolCall::ListLocalUsers {
                 scope: Scope::default(),
             },
         ),
@@ -133,6 +141,17 @@ fn parses_member_administration_writes() {
 
 #[test]
 fn parses_credential_administration_writes() {
+    assert_eq!(
+        parse(
+            "deactivate_local_user",
+            &json!({ "confirm": true, "user_id": "user_1" }),
+        ),
+        AdminToolCall::DeactivateLocalUser {
+            scope: Scope::default(),
+            user_id: "user_1".to_owned(),
+            confirmed: true,
+        }
+    );
     assert_eq!(
         parse(
             "revoke_api_token",

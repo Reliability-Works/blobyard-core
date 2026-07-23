@@ -3,6 +3,7 @@
 mod auth;
 mod common;
 mod encoding;
+mod local_users;
 mod resources;
 mod share;
 mod sharing;
@@ -12,6 +13,7 @@ mod yards;
 
 pub use auth::*;
 pub use common::*;
+pub use local_users::*;
 pub use resources::*;
 pub use share::*;
 pub use sharing::*;

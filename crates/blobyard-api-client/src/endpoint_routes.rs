@@ -32,6 +32,7 @@ impl Endpoint {
             | Self::ListMembers
             | Self::ListInvites
             | Self::ListApiTokens
+            | Self::ListLocalUsers
             | Self::ListCiTrusts
             | Self::ListCliSessions
             | Self::GetBilling
@@ -45,7 +46,7 @@ impl Endpoint {
     }
 }
 
-const ENDPOINT_PATHS: [&str; 81] = [
+const ENDPOINT_PATHS: [&str; 85] = [
     "/v1/health",
     "/v1/bootstrap/exchange",
     "/v1/cli/device/start",
@@ -103,6 +104,10 @@ const ENDPOINT_PATHS: [&str; 81] = [
     "/v1/api-tokens",
     "/v1/api-tokens",
     "/v1/api-tokens/revoke",
+    "/v1/users",
+    "/v1/users",
+    "/v1/users/reset-key",
+    "/v1/users/deactivate",
     "/v1/ci/trusts",
     "/v1/ci/trusts",
     "/v1/ci/trusts/revoke",

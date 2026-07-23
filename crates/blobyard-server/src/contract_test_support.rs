@@ -38,6 +38,32 @@ pub async fn send(
         .expect("response")
 }
 
+/// Sends one request through a router with an explicit bearer token.
+///
+/// # Panics
+///
+/// Panics when the request cannot be built or served.
+pub async fn send_as(
+    router: axum::Router,
+    token: &str,
+    method: &str,
+    path: &str,
+    body: &[u8],
+) -> Response {
+    router
+        .oneshot(
+            Request::builder()
+                .method(method)
+                .uri(path)
+                .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_vec()))
+                .expect("request"),
+        )
+        .await
+        .expect("response")
+}
+
 /// Decodes a fixture response as JSON.
 ///
 /// # Panics

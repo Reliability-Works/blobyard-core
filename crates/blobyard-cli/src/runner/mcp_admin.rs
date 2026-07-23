@@ -28,6 +28,7 @@ fn require_admin_confirmation(call: &AdminToolCall) -> Result<(), BlobyardError>
         AdminToolCall::RevokeInvite { confirmed, .. }
         | AdminToolCall::UpdateMemberRole { confirmed, .. }
         | AdminToolCall::RemoveMember { confirmed, .. }
+        | AdminToolCall::DeactivateLocalUser { confirmed, .. }
         | AdminToolCall::RevokeApiToken { confirmed, .. }
         | AdminToolCall::RevokeCiTrust { confirmed, .. }
         | AdminToolCall::RevokeCliSession { confirmed, .. } => Some(*confirmed),
@@ -52,6 +53,8 @@ const fn admin_scope(call: &AdminToolCall) -> &Scope {
         | AdminToolCall::RevokeInvite { scope, .. }
         | AdminToolCall::UpdateMemberRole { scope, .. }
         | AdminToolCall::RemoveMember { scope, .. }
+        | AdminToolCall::ListLocalUsers { scope }
+        | AdminToolCall::DeactivateLocalUser { scope, .. }
         | AdminToolCall::ListApiTokens { scope }
         | AdminToolCall::RevokeApiToken { scope, .. }
         | AdminToolCall::ListCiTrusts { scope }
@@ -88,6 +91,10 @@ fn admin_request(runner: &Runner, call: AdminToolCall) -> Result<ApiRequest, Blo
             Endpoint::RemoveMember,
             &json!({ "targetUserId": user_id }),
         ),
+        AdminToolCall::ListLocalUsers { .. } => workspace_read(runner, Endpoint::ListLocalUsers),
+        AdminToolCall::DeactivateLocalUser { user_id, .. } => Ok(runner
+            .mutation(Endpoint::DeactivateLocalUser)
+            .with_json(json!({ "userId": user_id }))),
         AdminToolCall::ListApiTokens { .. } => Ok(ApiRequest::new(Endpoint::ListApiTokens)),
         AdminToolCall::RevokeApiToken { token_id, .. } => Ok(runner
             .mutation(Endpoint::RevokeApiToken)

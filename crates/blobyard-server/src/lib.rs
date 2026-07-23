@@ -12,6 +12,8 @@ pub mod api_ci_trusts;
 #[doc(hidden)]
 pub mod api_cli_sessions;
 #[doc(hidden)]
+pub mod api_local_users;
+#[doc(hidden)]
 pub mod api_tokens;
 #[doc(hidden)]
 pub mod api_workspace_rename;

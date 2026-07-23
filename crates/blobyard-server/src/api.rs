@@ -75,6 +75,7 @@ pub(crate) fn router_with_state(state: AppState) -> Router {
         .merge(crate::api_cli_sessions::routes())
         .merge(crate::api_ci_trusts::routes())
         .merge(crate::api_ci_exchange::routes())
+        .merge(crate::api_local_users::routes())
         .merge(crate::api_tokens::routes())
         .merge(crate::api_workspace_rename::routes())
         .merge(crate::objects::routes())

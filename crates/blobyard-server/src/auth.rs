@@ -25,6 +25,7 @@ pub(crate) const OPERATOR_SCOPES: &[&str] = &[
     "sessions:manage",
     "share:manage",
     "tokens:manage",
+    "users:manage",
     "workspace:read",
     "yard:manage",
     "yard:read",

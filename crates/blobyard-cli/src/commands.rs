@@ -3,7 +3,7 @@ use crate::account_commands::AccountCommand;
 use crate::billing_commands::BillingCommand;
 use crate::headless_commands::{
     AuditCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand, SharesCommand,
-    TokensCommand, TrustsCommand, WorkspacesCommand,
+    TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
 };
 use crate::yard_commands::{AccessCommand, DeployArgs, EnvCommand, YardCommand};
 use clap::{Args, Subcommand, ValueEnum};
@@ -137,6 +137,12 @@ pub enum Command {
         /// The API-token operation.
         #[command(subcommand)]
         command: TokensCommand,
+    },
+    /// Inspect or manage local users.
+    Users {
+        /// The local-user operation.
+        #[command(subcommand)]
+        command: UsersCommand,
     },
     /// Inspect or manage GitHub OIDC trusts.
     Trusts {

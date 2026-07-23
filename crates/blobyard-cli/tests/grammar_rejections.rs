@@ -16,6 +16,9 @@ fn rejects_invalid_required_values_and_conflicting_output_flags() {
         &["blobyard", "access", "set-visibility", "docs"],
         &["blobyard", "access", "revoke", "docs"],
         &["blobyard", "access", "grant", "docs"],
+        &["blobyard", "users", "create"],
+        &["blobyard", "users", "reset-key"],
+        &["blobyard", "users", "deactivate"],
         &["blobyard", "whoami", "--retry-key", "invalid key"],
         &[
             "blobyard",

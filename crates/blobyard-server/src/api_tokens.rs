@@ -114,7 +114,7 @@ fn create_at(
     }))
 }
 
-fn normalize_name(value: &str) -> Result<String, ApiError> {
+pub(crate) fn normalize_name(value: &str) -> Result<String, ApiError> {
     let name = value.trim();
     if (2..=80).contains(&name.len()) && !name.chars().any(char::is_control) {
         Ok(name.to_owned())

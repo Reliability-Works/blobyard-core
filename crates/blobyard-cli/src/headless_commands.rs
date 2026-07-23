@@ -193,6 +193,38 @@ pub struct RevokeTokenArgs {
     pub token_id: String,
 }
 
+/// Local-user operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum UsersCommand {
+    /// List local users with active sign-in key prefixes.
+    List,
+    /// Create a local user and show the sign-in key once.
+    Create(CreateUserArgs),
+    /// Replace a local user's sign-in key and show it once.
+    ResetKey(UserIdArgs),
+    /// Deactivate a local user and revoke every active sign-in key.
+    Deactivate(UserIdArgs),
+}
+
+/// Arguments for `blobyard users create`.
+#[derive(Clone, Debug, Args)]
+pub struct CreateUserArgs {
+    /// Human-readable display name.
+    #[arg(value_name = "DISPLAY_NAME")]
+    pub display_name: String,
+    /// Optional email unique among active users in the workspace.
+    #[arg(long, value_name = "EMAIL")]
+    pub email: Option<String>,
+}
+
+/// Arguments naming one local user.
+#[derive(Clone, Debug, Args)]
+pub struct UserIdArgs {
+    /// Stable local-user identifier.
+    #[arg(value_name = "USER_ID")]
+    pub user_id: String,
+}
+
 /// GitHub OIDC trust operations.
 #[derive(Clone, Debug, Subcommand)]
 pub enum TrustsCommand {

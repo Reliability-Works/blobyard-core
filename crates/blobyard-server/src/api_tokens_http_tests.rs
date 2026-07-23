@@ -11,7 +11,8 @@ use std::sync::Arc;
 #[path = "api_tokens_http_tests/support.rs"]
 mod support;
 
-use support::{item, send_as};
+use crate::contract_test_support::send_as;
+use support::item;
 
 #[tokio::test]
 async fn token_routes_create_list_authenticate_revoke_and_audit_without_secret_disclosure() {

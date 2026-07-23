@@ -9,6 +9,7 @@ mod dispatch;
 mod environments;
 mod identity;
 mod local;
+mod local_users;
 mod login;
 mod mcp;
 mod mcp_admin;

@@ -48,6 +48,7 @@ impl Runner {
             | Command::Tokens { .. }
             | Command::Trusts { .. }
             | Command::Sessions { .. } => self.execute_admin_command(command).await,
+            Command::Users { command } => self.execute_users_command(command).await,
             _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
         }
     }

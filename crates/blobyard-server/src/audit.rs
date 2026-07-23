@@ -203,6 +203,21 @@ pub(crate) fn bootstrap_exchanged(
     )
 }
 
+pub(crate) fn local_user_event(
+    principal: &LocalApiTokenRecord,
+    action: &str,
+    user_id: &str,
+    created_at_ms: u64,
+) -> NewAuditEvent {
+    action_event(
+        principal,
+        action,
+        "local_user",
+        vec![("userId".to_owned(), AuditValue::String(user_id.to_owned()))],
+        created_at_ms,
+    )
+}
+
 pub(crate) fn api_token_created_event(
     principal: &LocalApiTokenRecord,
     token: &LocalApiTokenRecord,
