@@ -56,7 +56,10 @@ fn presentation_maps_every_persisted_yard_and_deploy_status() {
 #[test]
 fn environment_summaries_map_every_kind_with_stable_timestamps() {
     for (kind, expected) in [
-        (YardEnvironmentKind::Production, ApiEnvironmentKind::Production),
+        (
+            YardEnvironmentKind::Production,
+            ApiEnvironmentKind::Production,
+        ),
         (YardEnvironmentKind::Staging, ApiEnvironmentKind::Staging),
         (YardEnvironmentKind::Preview, ApiEnvironmentKind::Preview),
     ] {

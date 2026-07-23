@@ -97,63 +97,6 @@ async fn yard_history_resolves_the_name_then_lists_immutable_deploys() {
 }
 
 #[tokio::test]
-async fn env_list_resolves_the_name_then_lists_active_environments() {
-    let environments = Fixture::new(
-        &[
-            "blobyard",
-            "--workspace",
-            "team",
-            "--project",
-            "web",
-            "env",
-            "list",
-            "documentation",
-        ],
-        vec![
-            ok(
-                serde_json::json!({ "items": [yard("documentation", Some("deploy_1"))], "nextCursor": null }),
-                "req_yard",
-            ),
-            ok(
-                serde_json::json!({
-                    "environments": [{
-                        "createdAt": "1970-01-01T00:00:00.001Z",
-                        "id": "yardenv_yard_documentation",
-                        "kind": "production",
-                        "name": "production",
-                        "updatedAt": "1970-01-01T00:00:00.001Z"
-                    }]
-                }),
-                "req_environments",
-            ),
-        ],
-        Some("ci-token"),
-        None,
-    );
-    let listed = result_json(
-        environments
-            .runner
-            .execute(&environments.command)
-            .await
-            .expect("environments"),
-    );
-    assert_eq!(listed["data"]["yard"], "documentation");
-    assert_eq!(
-        listed["data"]["environments"][0]["id"],
-        "yardenv_yard_documentation"
-    );
-    assert_eq!(listed["data"]["environments"][0]["kind"], "production");
-    assert_eq!(
-        environments.transport.requests()[1].endpoint(),
-        Endpoint::ListYardEnvironments
-    );
-    assert_eq!(
-        environments.transport.requests()[1].query().expect("query"),
-        "yardId=yard_documentation"
-    );
-}
-
-#[tokio::test]
 async fn yard_rollback_resolves_the_name_and_sends_the_selected_deploy() {
     let rollback = Fixture::new(
         &[

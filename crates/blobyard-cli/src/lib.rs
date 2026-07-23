@@ -21,6 +21,7 @@ mod headless_commands;
 mod output;
 mod runner;
 mod token_store;
+mod yard_commands;
 
 #[cfg(test)]
 mod runner_cases_tests;

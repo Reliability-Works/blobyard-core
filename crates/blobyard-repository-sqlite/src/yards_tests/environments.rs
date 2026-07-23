@@ -2,17 +2,25 @@ use super::{
     success,
     transaction_edges::support::{created, deploy, repository, yard},
 };
-use blobyard_contract::{WebYardRepository, YardEnvironmentKind, YardEnvironmentStatus};
+use crate::adapter::SqliteRepository;
+use blobyard_contract::{
+    NewWebYard, WebYardRepository, YardEnvironmentKind, YardEnvironmentStatus,
+};
 
-#[test]
-fn created_yards_backfill_one_deterministic_production_environment() {
-    let (_temporary, repository, _version, _size) = repository();
+fn created_yard() -> (tempfile::TempDir, SqliteRepository, NewWebYard) {
+    let (temporary, repository, _version, _size) = repository();
     let candidate = yard("docs", 1);
     success(repository.start_yard_deploy(
         &candidate,
         &deploy(&candidate, 1, false),
         &created(&candidate.id, 1),
     ));
+    (temporary, repository, candidate)
+}
+
+#[test]
+fn created_yards_backfill_one_deterministic_production_environment() {
+    let (_temporary, repository, candidate) = created_yard();
     let environments = success(repository.list_yard_environments(&candidate.id));
     assert_eq!(environments.len(), 1);
     assert_eq!(environments[0].id, format!("yardenv_{}", candidate.id));
@@ -30,13 +38,7 @@ fn created_yards_backfill_one_deterministic_production_environment() {
 
 #[test]
 fn environment_lists_order_production_first_and_exclude_deleted_rows() {
-    let (_temporary, repository, _version, _size) = repository();
-    let candidate = yard("docs", 1);
-    success(repository.start_yard_deploy(
-        &candidate,
-        &deploy(&candidate, 1, false),
-        &created(&candidate.id, 1),
-    ));
+    let (_temporary, repository, candidate) = created_yard();
     let connection = success(repository.test_connection());
     success(connection.execute_batch(&format!(
         "INSERT INTO yard_environments VALUES ('yardenv_staging', '{id}', 'staging', 'staging', 'active', 2, 2, NULL);

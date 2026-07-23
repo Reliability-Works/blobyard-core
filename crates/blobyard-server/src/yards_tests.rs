@@ -29,6 +29,8 @@ mod lifecycle_edge_tests;
 mod operation_edge_tests;
 #[path = "yards_tests/presentation_edges.rs"]
 mod presentation_edge_tests;
+#[path = "yards_tests/read_edges.rs"]
+mod read_edge_tests;
 
 pub(super) fn faulted_state(
     fixture: &test_seams::TransferFixture,

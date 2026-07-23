@@ -1,5 +1,5 @@
 use crate::Command;
-use crate::commands::{
+use crate::yard_commands::{
     DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs, RollbackYardArgs, YardCommand,
     YardNameArgs,
 };
@@ -18,17 +18,7 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             yard,
             spa,
             clean_urls,
-        } => (
-            scope,
-            Command::Deploy(DeployArgs {
-                directory: Some(PathBuf::from(directory)),
-                yard: Some(yard),
-                all: false,
-                spa,
-                clean_urls,
-                public: true,
-            }),
-        ),
+        } => (scope, deploy_command(directory, yard, spa, clean_urls)),
         WebYardToolCall::ListWebYards { scope } => (
             scope,
             Command::Yard {
@@ -72,3 +62,18 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
     };
     Ok(mapped)
 }
+
+fn deploy_command(directory: String, yard: String, spa: bool, clean_urls: bool) -> Command {
+    Command::Deploy(DeployArgs {
+        directory: Some(PathBuf::from(directory)),
+        yard: Some(yard),
+        all: false,
+        spa,
+        clean_urls,
+        public: true,
+    })
+}
+
+#[cfg(test)]
+#[path = "mcp_yards_tests.rs"]
+mod tests;

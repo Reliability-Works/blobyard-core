@@ -1,6 +1,7 @@
 use super::super::support::{Fixture, api_failure, ok};
 use super::yard;
-use crate::commands::{Command, RollbackYardArgs, YardCommand};
+use crate::commands::Command;
+use crate::yard_commands::{RollbackYardArgs, YardCommand};
 use blobyard_core::ErrorCode;
 
 fn fixture(args: &[&str], responses: Vec<blobyard_api_client::RawResponse>) -> Fixture {
@@ -58,54 +59,6 @@ async fn yard_list_propagates_scope_api_and_pagination_failures() {
         )],
     );
     assert!(cursor.runner.execute(&cursor.command).await.is_err());
-}
-
-#[tokio::test]
-async fn env_list_propagates_scope_selection_and_api_failures() {
-    let missing_scope = fixture(&["blobyard", "env", "list"], Vec::new());
-    assert!(
-        missing_scope
-            .runner
-            .execute(&missing_scope.command)
-            .await
-            .is_err()
-    );
-
-    let scoped = [
-        "blobyard",
-        "--workspace",
-        "team",
-        "--project",
-        "web",
-        "env",
-        "list",
-        "documentation",
-    ];
-    let missing_yard = fixture(
-        &scoped,
-        vec![yard_page(&serde_json::json!([]), &serde_json::Value::Null)],
-    );
-    assert_eq!(
-        missing_yard
-            .runner
-            .execute(&missing_yard.command)
-            .await
-            .expect_err("missing Yard")
-            .code(),
-        ErrorCode::NotFound
-    );
-
-    let remote = fixture(
-        &scoped,
-        vec![
-            yard_page(
-                &serde_json::json!([yard("documentation", None)]),
-                &serde_json::Value::Null,
-            ),
-            api_failure(ErrorCode::ProviderUnavailable, "req_environments"),
-        ],
-    );
-    assert!(remote.runner.execute(&remote.command).await.is_err());
 }
 
 #[tokio::test]

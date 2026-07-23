@@ -4,7 +4,8 @@ use super::deploy_output::{
 use super::deploy_selection::{SelectedYard, select};
 use super::preview::require_index;
 use super::{Runner, command_result};
-use crate::commands::{DeployArgs, UploadArgs};
+use crate::commands::UploadArgs;
+use crate::yard_commands::DeployArgs;
 use crate::{CommandResult, OutputMode};
 use blobyard_api_client::{
     ApiRequest, EmptyResponse, Endpoint, FailYardDeployRequest, StartYardDeployRequest,

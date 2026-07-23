@@ -23,18 +23,11 @@ fn public_yard_adapter_rejects_invalid_optional_ids_and_request_paths() {
 }
 
 #[test]
-fn public_yard_adapter_rejects_invalid_required_ids_before_database_access() {
+fn public_yard_adapter_rejects_invalid_required_read_ids_before_database_access() {
     let temporary = success(tempfile::tempdir());
     let repository = success(SqliteRepository::open(
         &temporary.path().join("metadata.sqlite3"),
     ));
-    let candidate_yard = yard("invalid", 1);
-    let candidate_deploy = deploy(&candidate_yard, 1, false);
-    let files = [NewYardFile {
-        normalized_path: "index.html".to_owned(),
-        version_id: "version_fixture".to_owned(),
-        byte_size: 1,
-    }];
     assert_eq!(
         repository.list_web_yards(""),
         Err(RepositoryError::InvalidInput)
@@ -56,6 +49,29 @@ fn public_yard_adapter_rejects_invalid_required_ids_before_database_access() {
         Err(RepositoryError::InvalidInput)
     );
     assert_eq!(
+        repository.yard_file_by_host("", ""),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        repository.pending_yard_cleanups(Some("")),
+        Err(RepositoryError::InvalidInput)
+    );
+}
+
+#[test]
+fn public_yard_adapter_rejects_invalid_required_mutation_ids_before_database_access() {
+    let temporary = success(tempfile::tempdir());
+    let repository = success(SqliteRepository::open(
+        &temporary.path().join("metadata.sqlite3"),
+    ));
+    let candidate_yard = yard("invalid", 1);
+    let candidate_deploy = deploy(&candidate_yard, 1, false);
+    let files = [NewYardFile {
+        normalized_path: "index.html".to_owned(),
+        version_id: "version_fixture".to_owned(),
+        byte_size: 1,
+    }];
+    assert_eq!(
         repository.finalise_yard_deploy("", &files, 2, &deployed("", 1, 1, "live", 2),),
         Err(RepositoryError::InvalidInput)
     );
@@ -69,14 +85,6 @@ fn public_yard_adapter_rejects_invalid_required_ids_before_database_access() {
     );
     assert_eq!(
         repository.delete_web_yard("", 2, &created("", 2)),
-        Err(RepositoryError::InvalidInput)
-    );
-    assert_eq!(
-        repository.yard_file_by_host("", ""),
-        Err(RepositoryError::InvalidInput)
-    );
-    assert_eq!(
-        repository.pending_yard_cleanups(Some("")),
         Err(RepositoryError::InvalidInput)
     );
     let mut invalid = candidate_yard;
@@ -114,9 +122,10 @@ fn yard_query_collectors_propagate_parameter_binding_failures() {
         yard_queries::list_deploys(&mut deploys, "yard"),
         Err(RepositoryError::Unavailable)
     );
-    let mut environments = success(connection.prepare(
-        "SELECT 'yardenv_yard', 'yard', 'production', 'production', 'active', 1, 1",
-    ));
+    let mut environments = success(
+        connection
+            .prepare("SELECT 'yardenv_yard', 'yard', 'production', 'production', 'active', 1, 1"),
+    );
     assert_eq!(
         yard_queries::list_environments(&mut environments, "yard"),
         Err(RepositoryError::Unavailable)

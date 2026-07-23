@@ -233,6 +233,20 @@ fn parses_inbox_and_retention_calls() {
 }
 
 #[test]
+fn parses_yard_environment_list_calls() {
+    assert_eq!(
+        parse(
+            "blobyard_list_yard_environments",
+            json!({ "yard": "documentation" })
+        ),
+        ToolCall::WebYard(WebYardToolCall::ListYardEnvironments {
+            scope: Scope::default(),
+            yard: "documentation".into()
+        })
+    );
+}
+
+#[test]
 fn parses_web_yard_calls_with_explicit_public_and_delete_confirmation() {
     let scope = Scope {
         workspace: Some("team".into()),
@@ -266,16 +280,6 @@ fn parses_web_yard_calls_with_explicit_public_and_delete_confirmation() {
             json!({ "yard": "documentation" })
         ),
         ToolCall::WebYard(WebYardToolCall::ListYardDeploys {
-            scope: Scope::default(),
-            yard: "documentation".into()
-        })
-    );
-    assert_eq!(
-        parse(
-            "blobyard_list_yard_environments",
-            json!({ "yard": "documentation" })
-        ),
-        ToolCall::WebYard(WebYardToolCall::ListYardEnvironments {
             scope: Scope::default(),
             yard: "documentation".into()
         })

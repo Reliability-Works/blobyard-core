@@ -118,23 +118,19 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::CreateShare => share_contract(&mut properties),
         ToolKind::RevokeShare => revoke_share_contract(&mut properties),
         ToolKind::CreatePreview => preview_contract(&mut properties),
-        ToolKind::RevokePreview => {
-            add(
-                &mut properties,
-                "preview_id",
-                string("Stable preview identifier."),
-            );
-            ("Revoke a static preview.", vec!["preview_id"])
-        }
+        ToolKind::RevokePreview => identifier_contract(
+            &mut properties,
+            "preview_id",
+            "Stable preview identifier.",
+            "Revoke a static preview.",
+        ),
         ToolKind::CreateInbox => inbox_contract(&mut properties),
-        ToolKind::RevokeInbox => {
-            add(
-                &mut properties,
-                "inbox_id",
-                string("Stable inbox identifier."),
-            );
-            ("Revoke an upload inbox.", vec!["inbox_id"])
-        }
+        ToolKind::RevokeInbox => identifier_contract(
+            &mut properties,
+            "inbox_id",
+            "Stable inbox identifier.",
+            "Revoke an upload inbox.",
+        ),
         ToolKind::SetRetention => retention_contract(&mut properties),
         ToolKind::ClearRetention => ("Clear the selected project's retention policy.", vec![]),
         ToolKind::DeployWebYard => crate::catalog_contracts::deploy_yard_contract(&mut properties),
@@ -151,6 +147,16 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::DeleteWebYard => crate::catalog_contracts::delete_yard_contract(&mut properties),
     };
     (description, properties, required)
+}
+
+fn identifier_contract(
+    properties: &mut Map<String, Value>,
+    key: &'static str,
+    field_description: &'static str,
+    description: &'static str,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, key, string(field_description));
+    (description, vec![key])
 }
 
 fn named_resource_contract(

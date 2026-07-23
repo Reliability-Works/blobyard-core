@@ -30,7 +30,10 @@ fn environment_lines_cover_empty_and_populated_lists() {
 
 #[test]
 fn environment_kinds_present_every_stable_name() {
-    assert_eq!(environment_kind(YardEnvironmentKind::Production), "production");
+    assert_eq!(
+        environment_kind(YardEnvironmentKind::Production),
+        "production"
+    );
     assert_eq!(environment_kind(YardEnvironmentKind::Staging), "staging");
     assert_eq!(environment_kind(YardEnvironmentKind::Preview), "preview");
 }

@@ -2,9 +2,8 @@
 
 use super::*;
 use crate::TokenStore;
-use crate::commands::{McpCommand, McpServeArgs, YardCommand};
+use crate::commands::{McpCommand, McpServeArgs};
 use blobyard_core::SecretString;
-use blobyard_mcp::WebYardToolCall;
 
 #[test]
 fn zero_retention_count_fails_before_command_execution() {
@@ -127,81 +126,6 @@ fn workspace_resource_calls_map_to_headless_commands() {
     })
     .expect("create workspace mapping");
     assert!(matches!(create, Command::Workspaces { .. }));
-}
-
-#[test]
-fn web_yard_tools_map_to_confirmed_cli_contracts() {
-    let scope = Scope::default();
-    let (_, deploy) = mcp_command(ToolCall::WebYard(WebYardToolCall::DeployWebYard {
-        scope: scope.clone(),
-        directory: "./dist".into(),
-        yard: "site".into(),
-        spa: true,
-        clean_urls: false,
-    }))
-    .expect("deploy mapping");
-    assert!(matches!(deploy, Command::Deploy(arguments) if arguments.public));
-    let (_, delete) = mcp_command(ToolCall::WebYard(WebYardToolCall::DeleteWebYard {
-        scope,
-        yard: "site".into(),
-    }))
-    .expect("delete mapping");
-    assert!(matches!(
-        delete,
-        Command::Yard {
-            command: YardCommand::Delete(arguments)
-        } if arguments.force
-    ));
-}
-
-#[test]
-fn web_yard_management_tools_map_to_cli_contracts() {
-    let scope = Scope::default();
-    let (_, list) = mcp_command(ToolCall::WebYard(WebYardToolCall::ListWebYards {
-        scope: scope.clone(),
-    }))
-    .expect("list mapping");
-    assert!(matches!(
-        list,
-        Command::Yard {
-            command: YardCommand::List
-        }
-    ));
-    let (_, history) = mcp_command(ToolCall::WebYard(WebYardToolCall::ListYardDeploys {
-        scope: scope.clone(),
-        yard: "site".into(),
-    }))
-    .expect("history mapping");
-    assert!(matches!(
-        history,
-        Command::Yard {
-            command: YardCommand::History(_)
-        }
-    ));
-    let (_, environments) =
-        mcp_command(ToolCall::WebYard(WebYardToolCall::ListYardEnvironments {
-            scope: scope.clone(),
-            yard: "site".into(),
-        }))
-        .expect("environment mapping");
-    assert!(matches!(
-        environments,
-        Command::Env {
-            command: crate::commands::EnvCommand::List(_)
-        }
-    ));
-    let (_, rollback) = mcp_command(ToolCall::WebYard(WebYardToolCall::RollbackWebYard {
-        scope,
-        yard: "site".into(),
-        deploy_id: Some("deploy_1".into()),
-    }))
-    .expect("rollback mapping");
-    assert!(matches!(
-        rollback,
-        Command::Yard {
-            command: YardCommand::Rollback(_)
-        }
-    ));
 }
 
 #[tokio::test]

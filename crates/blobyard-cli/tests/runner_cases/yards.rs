@@ -56,6 +56,8 @@ mod deploy_confirmation_tests;
 mod deploy_failure_paths;
 #[path = "yards/deploy_tests.rs"]
 mod deploy_tests;
+#[path = "yards/environment_tests.rs"]
+mod environment_tests;
 #[path = "yards/management_failure_tests.rs"]
 mod management_failure_tests;
 #[path = "yards/management_tests.rs"]

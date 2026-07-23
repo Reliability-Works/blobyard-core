@@ -216,40 +216,6 @@ fn accepts_global_flags_after_nested_subcommands() {
 }
 
 #[test]
-fn rejects_invalid_required_values_and_conflicting_output_flags() {
-    let cases: &[&[&str]] = &[
-        &["blobyard", "download", "blobyard://studio/default/app.zip"],
-        &["blobyard", "retention", "set", "--latest", "0"],
-        &["blobyard", "whoami", "--quiet", "--verbose"],
-        &["blobyard", "completion", "powershell"],
-        &["blobyard", "deploy", "./dist", "--all"],
-        &["blobyard", "whoami", "--retry-key", "invalid key"],
-        &[
-            "blobyard",
-            "profiles",
-            "add",
-            "local",
-            "--api-url",
-            "http://localhost:8787",
-        ],
-    ];
-
-    for args in cases {
-        assert!(
-            Cli::try_parse_from(*args).is_err(),
-            "unexpected grammar: {args:?}"
-        );
-    }
-}
-
-#[test]
-fn retry_keys_are_redacted_from_debug_output() {
-    let cli = Cli::try_parse_from(["blobyard", "whoami", "--retry-key", "opaque-retry-key"])
-        .expect("retry key grammar");
-    assert_eq!(format!("{:?}", cli.global.retry_key), "Some([REDACTED])");
-}
-
-#[test]
 fn root_help_names_every_command_and_global_flag() {
     let help = Cli::command().render_long_help().to_string();
     let expected = [

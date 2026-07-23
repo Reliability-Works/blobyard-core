@@ -1,5 +1,5 @@
-use crate::commands::DeployArgs;
 use crate::config::{YardConfig, validate_yard_name};
+use crate::yard_commands::DeployArgs;
 use blobyard_core::{BlobyardError, ErrorCode, Slug};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -131,8 +131,8 @@ mod tests {
     #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
     use super::{automatic_unconfigured, select};
-    use crate::commands::DeployArgs;
     use crate::config::YardConfig;
+    use crate::yard_commands::DeployArgs;
     use blobyard_core::ErrorCode;
     use std::collections::BTreeMap;
     use std::path::PathBuf;

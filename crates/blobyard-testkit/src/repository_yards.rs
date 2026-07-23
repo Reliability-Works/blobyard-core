@@ -4,11 +4,14 @@ use blobyard_contract::{
 };
 use blobyard_core::{Slug, SlugError};
 
+#[path = "repository_yards_delivery.rs"]
+mod delivery;
 #[cfg(test)]
 #[path = "repository_yards_fixture_tests.rs"]
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+use delivery::{assert_deleted_yard_cannot_finalise, assert_delivery, prune_history};
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
 
 /// Combined repository surface needed by Web Yard conformance.
@@ -77,7 +80,10 @@ pub fn yard_conformance(
         .id;
     let first = assert_initial_deployment(repository, fixture, &version_id)?;
     assert_production_environment(repository, &first.yard.id)?;
-    if !repository.list_yard_environments("yard_unknown")?.is_empty() {
+    if !repository
+        .list_yard_environments("yard_unknown")?
+        .is_empty()
+    {
         return Err(RepositoryError::Unavailable);
     }
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
@@ -288,72 +294,4 @@ fn finalise_as(
         at,
         &deployed_event(deploy_id, 5, byte_size * 5, status, at),
     )
-}
-
-fn assert_delivery(
-    repository: &dyn YardConformanceRepository,
-    host: &str,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let index = repository.yard_file_by_host(host, "")?;
-    let exact = repository.yard_file_by_host(host, "asset.js")?;
-    let directory = repository.yard_file_by_host(host, "docs/")?;
-    let clean = repository.yard_file_by_host(host, "guide")?;
-    let spa = repository.yard_file_by_host(host, "missing")?;
-    let missing = repository.yard_file_by_host(host, "missing.txt")?;
-    if index.object.version.id == version_id
-        && !index.not_found_document
-        && exact.object.version.id == version_id
-        && !exact.not_found_document
-        && directory.object.version.id == version_id
-        && !directory.not_found_document
-        && clean.object.version.id == version_id
-        && !clean.not_found_document
-        && spa.object.version.id == version_id
-        && !spa.not_found_document
-        && missing.object.version.id == version_id
-        && missing.not_found_document
-    {
-        Ok(())
-    } else {
-        Err(RepositoryError::Unavailable)
-    }
-}
-
-fn assert_deleted_yard_cannot_finalise(
-    repository: &dyn YardConformanceRepository,
-    name: &Slug,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let started = start(repository, name, 50)?;
-    repository.delete_web_yard(
-        &started.yard.id,
-        51,
-        &event("yard.deleted", "web_yard", "yardId", &started.yard.id, 51),
-    )?;
-    if finalise(repository, &started.deploy.id, version_id, 5, 52) != Err(RepositoryError::Conflict)
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
-}
-
-fn prune_history(
-    repository: &dyn YardConformanceRepository,
-    name: &Slug,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let oldest = start(repository, name, 10)?.deploy;
-    finalise(repository, &oldest.id, version_id, 5, 110)?;
-    for number in 11..=20 {
-        let started = start(repository, name, number)?;
-        finalise(repository, &started.deploy.id, version_id, 5, number + 100)?;
-    }
-    if repository.yard_deploy_by_id(&oldest.id)?.status != YardDeployStatus::Pruned
-        || repository.yard_file_by_host(&oldest.deployment_host_label, "")
-            != Err(RepositoryError::NotFound)
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
 }
