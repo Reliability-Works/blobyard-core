@@ -74,7 +74,9 @@ pub(super) fn action_event(action: &str, yard_id: &str, deploy_id: &str, at: u64
     event
 }
 
-pub(super) fn new_grant(
+/// Builds a deterministic user grant input for one Yard.
+#[must_use]
+pub fn new_grant(
     id: &str,
     yard_id: &str,
     environment_id: Option<&str>,
@@ -94,8 +96,16 @@ pub(super) fn new_grant(
     }
 }
 
-pub(super) fn visibility_event(yard_id: &str, from: &str, to: &str, at: u64) -> NewAuditEvent {
-    let mut event = event("yard.visibility_changed", "yard_access_policy", "from", from, at);
+/// Builds the exact audit event a visibility change must persist.
+#[must_use]
+pub fn visibility_event(yard_id: &str, from: &str, to: &str, at: u64) -> NewAuditEvent {
+    let mut event = event(
+        "yard.visibility_changed",
+        "yard_access_policy",
+        "from",
+        from,
+        at,
+    );
     event.metadata.extend([
         ("to".to_owned(), AuditValue::String(to.to_owned())),
         ("yardId".to_owned(), AuditValue::String(yard_id.to_owned())),
@@ -103,8 +113,16 @@ pub(super) fn visibility_event(yard_id: &str, from: &str, to: &str, at: u64) -> 
     event
 }
 
-pub(super) fn granted_event(yard_id: &str, grant: &NewYardAccessGrant, at: u64) -> NewAuditEvent {
-    let mut event = event("yard.access_granted", "yard_access_grant", "grantId", &grant.id, at);
+/// Builds the exact audit event a new access grant must persist.
+#[must_use]
+pub fn granted_event(yard_id: &str, grant: &NewYardAccessGrant, at: u64) -> NewAuditEvent {
+    let mut event = event(
+        "yard.access_granted",
+        "yard_access_grant",
+        "grantId",
+        &grant.id,
+        at,
+    );
     event.metadata.extend([
         (
             "environmentId".to_owned(),
@@ -122,8 +140,16 @@ pub(super) fn granted_event(yard_id: &str, grant: &NewYardAccessGrant, at: u64) 
     event
 }
 
-pub(super) fn revoked_event(yard_id: &str, grant_id: &str, at: u64) -> NewAuditEvent {
-    let mut event = event("yard.access_revoked", "yard_access_grant", "grantId", grant_id, at);
+/// Builds the exact audit event an access revocation must persist.
+#[must_use]
+pub fn revoked_event(yard_id: &str, grant_id: &str, at: u64) -> NewAuditEvent {
+    let mut event = event(
+        "yard.access_revoked",
+        "yard_access_grant",
+        "grantId",
+        grant_id,
+        at,
+    );
     event
         .metadata
         .push(("yardId".to_owned(), AuditValue::String(yard_id.to_owned())));

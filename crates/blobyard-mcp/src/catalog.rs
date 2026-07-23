@@ -1,5 +1,7 @@
 use serde_json::{Map, Value, json};
 
+use crate::catalog_access as access;
+use crate::catalog_contracts as contracts;
 use crate::catalog_contracts::{
     add, boolean, delete_contract, download_contract, inbox_contract, preview_contract,
     retention_contract, revoke_share_contract, scope_properties, share_contract, string, title,
@@ -33,11 +35,15 @@ enum ToolKind {
     ListWebYards,
     ListYardDeploys,
     ListYardEnvironments,
+    GetYardAccess,
+    SetYardVisibility,
+    GrantYardAccess,
+    RevokeYardAccess,
     RollbackWebYard,
     DeleteWebYard,
 }
 
-const TOOLS: [ToolKind; 27] = [
+const TOOLS: [ToolKind; 31] = [
     ToolKind::Whoami,
     ToolKind::ListWorkspaces,
     ToolKind::CreateWorkspace,
@@ -63,6 +69,10 @@ const TOOLS: [ToolKind; 27] = [
     ToolKind::ListWebYards,
     ToolKind::ListYardDeploys,
     ToolKind::ListYardEnvironments,
+    ToolKind::GetYardAccess,
+    ToolKind::SetYardVisibility,
+    ToolKind::GrantYardAccess,
+    ToolKind::RevokeYardAccess,
     ToolKind::RollbackWebYard,
     ToolKind::DeleteWebYard,
 ];
@@ -133,18 +143,18 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ),
         ToolKind::SetRetention => retention_contract(&mut properties),
         ToolKind::ClearRetention => ("Clear the selected project's retention policy.", vec![]),
-        ToolKind::DeployWebYard => crate::catalog_contracts::deploy_yard_contract(&mut properties),
+        ToolKind::DeployWebYard => contracts::deploy_yard_contract(&mut properties),
         ToolKind::ListWebYards => ("List Web Yards in the selected project.", vec![]),
-        ToolKind::ListYardDeploys => {
-            crate::catalog_contracts::list_yard_deploys_contract(&mut properties)
-        }
+        ToolKind::ListYardDeploys => contracts::list_yard_deploys_contract(&mut properties),
         ToolKind::ListYardEnvironments => {
-            crate::catalog_contracts::list_yard_environments_contract(&mut properties)
+            contracts::list_yard_environments_contract(&mut properties)
         }
-        ToolKind::RollbackWebYard => {
-            crate::catalog_contracts::rollback_yard_contract(&mut properties)
-        }
-        ToolKind::DeleteWebYard => crate::catalog_contracts::delete_yard_contract(&mut properties),
+        ToolKind::GetYardAccess => access::yard_access_contract(&mut properties),
+        ToolKind::SetYardVisibility => access::set_yard_visibility_contract(&mut properties),
+        ToolKind::GrantYardAccess => access::grant_yard_access_contract(&mut properties),
+        ToolKind::RevokeYardAccess => access::revoke_yard_access_contract(&mut properties),
+        ToolKind::RollbackWebYard => contracts::rollback_yard_contract(&mut properties),
+        ToolKind::DeleteWebYard => contracts::delete_yard_contract(&mut properties),
     };
     (description, properties, required)
 }
@@ -200,6 +210,7 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ListWebYards
             | ToolKind::ListYardDeploys
             | ToolKind::ListYardEnvironments
+            | ToolKind::GetYardAccess
     );
     let destructive = matches!(
         kind,
@@ -209,6 +220,8 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::RevokeInbox
             | ToolKind::SetRetention
             | ToolKind::ClearRetention
+            | ToolKind::SetYardVisibility
+            | ToolKind::RevokeYardAccess
             | ToolKind::RollbackWebYard
             | ToolKind::DeleteWebYard
     );
@@ -219,6 +232,7 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::CreatePreview
             | ToolKind::CreateInbox
             | ToolKind::DeployWebYard
+            | ToolKind::GrantYardAccess
     );
     json!({
         "title": title(name),
@@ -257,6 +271,10 @@ impl ToolKind {
             Self::ListWebYards => "list_web_yards",
             Self::ListYardDeploys => "list_yard_deploys",
             Self::ListYardEnvironments => "list_yard_environments",
+            Self::GetYardAccess => "get_yard_access",
+            Self::SetYardVisibility => "set_yard_visibility",
+            Self::GrantYardAccess => "grant_yard_access",
+            Self::RevokeYardAccess => "revoke_yard_access",
             Self::RollbackWebYard => "rollback_web_yard",
             Self::DeleteWebYard => "delete_web_yard",
         }

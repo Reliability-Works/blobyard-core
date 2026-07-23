@@ -20,7 +20,10 @@ use fixtures::{NamespaceFixtures, ValidatedNamespaceFixtures, hash, hello_checks
 pub use inboxes::{InboxConformanceRepository, inbox_conformance, inbox_event, inbox_upload_event};
 pub use previews::{PreviewConformanceRepository, preview_conformance, preview_event};
 pub use sharing::{share_event, sharing_conformance};
-pub use yards::{YardConformanceFixture, YardConformanceRepository, yard_conformance, yard_event};
+pub use yards::{
+    YardConformanceFixture, YardConformanceRepository, granted_event, new_grant, revoked_event,
+    visibility_event, yard_conformance, yard_event,
+};
 
 /// Runs the deterministic metadata repository contract against one empty adapter.
 ///

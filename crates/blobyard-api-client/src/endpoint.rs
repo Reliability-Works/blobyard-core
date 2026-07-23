@@ -116,6 +116,14 @@ pub enum Endpoint {
     ListYardDeploys,
     /// List active environments for a Web Yard.
     ListYardEnvironments,
+    /// Read a Web Yard's effective visibility and active grants.
+    GetYardAccess,
+    /// Set a Web Yard's visibility policy.
+    SetYardVisibility,
+    /// Grant one principal scoped access to a Web Yard.
+    GrantYardAccess,
+    /// Revoke one Web Yard access grant.
+    RevokeYardAccess,
     /// Repoint a Web Yard to an earlier deploy.
     RollbackWebYard,
     /// Delete a Web Yard and schedule its objects for cleanup.
@@ -192,7 +200,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 77] = [
+    pub const ALL: [Self; 81] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -234,6 +242,10 @@ impl Endpoint {
         Self::ListWebYards,
         Self::ListYardDeploys,
         Self::ListYardEnvironments,
+        Self::GetYardAccess,
+        Self::SetYardVisibility,
+        Self::GrantYardAccess,
+        Self::RevokeYardAccess,
         Self::RollbackWebYard,
         Self::DeleteWebYard,
         Self::ListAudit,
@@ -273,13 +285,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 75] = public_endpoints();
-
-    /// Returns the stable `OpenAPI` operation identifier.
-    #[must_use]
-    pub const fn operation_id(self) -> &'static str {
-        OPERATION_IDS[self as usize]
-    }
+    pub const PUBLIC: [Self; 79] = public_endpoints();
 
     /// Returns whether the endpoint durably replays an `Idempotency-Key` request.
     #[must_use]
@@ -296,8 +302,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 75] {
-    let mut public = [Endpoint::Health; 75];
+const fn public_endpoints() -> [Endpoint; 79] {
+    let mut public = [Endpoint::Health; 79];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {
@@ -310,86 +316,6 @@ const fn public_endpoints() -> [Endpoint; 75] {
     }
     public
 }
-
-const OPERATION_IDS: [&str; 77] = [
-    "health",
-    "exchangeBootstrapToken",
-    "startDeviceLogin",
-    "pollDeviceLogin",
-    "refreshCliSession",
-    "logoutCliSession",
-    "whoAmI",
-    "listWorkspaces",
-    "createWorkspace",
-    "listProjects",
-    "createProject",
-    "listObjects",
-    "deleteObject",
-    "requestUpload",
-    "requestUploadParts",
-    "completeUpload",
-    "abortUpload",
-    "getUploadStatus",
-    "requestDownload",
-    "createShare",
-    "listShares",
-    "resolveShare",
-    "downloadShare",
-    "revokeShare",
-    "createPreview",
-    "listPreviews",
-    "resolvePreview",
-    "revokePreview",
-    "createInbox",
-    "listInboxes",
-    "revokeInbox",
-    "resolveInbox",
-    "getRetention",
-    "setRetention",
-    "clearRetention",
-    "startWebYardDeploy",
-    "finaliseWebYardDeploy",
-    "failWebYardDeploy",
-    "listWebYards",
-    "listWebYardDeploys",
-    "listYardEnvironments",
-    "rollbackWebYard",
-    "deleteWebYard",
-    "listAuditEvents",
-    "listMembers",
-    "listInvites",
-    "createInvite",
-    "revokeInvite",
-    "updateMemberRole",
-    "removeMember",
-    "listApiTokens",
-    "createApiToken",
-    "revokeApiToken",
-    "listCiTrusts",
-    "createCiTrust",
-    "revokeCiTrust",
-    "listCliSessions",
-    "revokeCliSession",
-    "exchangeGitHubOidc",
-    "createOneTimeSecret",
-    "redeemOneTimeSecret",
-    "renameWorkspace",
-    "createBillingCheckout",
-    "createBillingPortal",
-    "getBilling",
-    "createStorageCheckout",
-    "createStorageUpdate",
-    "createBillingSubscriptionUpdate",
-    "requestAccountExport",
-    "getAccountExport",
-    "downloadAccountExport",
-    "prepareAccountDeletion",
-    "completeAccountDeletion",
-    "getAccountDeletion",
-    "retryAccountDeletion",
-    "getRetentionOverview",
-    "stripeWebhook",
-];
 
 #[cfg(test)]
 #[path = "endpoint_tests.rs"]

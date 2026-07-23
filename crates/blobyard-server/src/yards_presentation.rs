@@ -2,12 +2,15 @@ use super::contracts::web_yard_url;
 use crate::error::ApiError;
 use blobyard_api_client::{
     StartYardDeployResponse, WebYardStatus as ApiYardStatus, WebYardSummary,
+    YardAccessGrantSummary, YardAccessPrincipalKind as ApiPrincipalKind,
     YardDeployStatus as ApiDeployStatus, YardDeploySummary, YardDeploymentResponse,
     YardEnvironmentKind as ApiEnvironmentKind, YardEnvironmentSummary,
+    YardVisibility as ApiVisibility,
 };
 use blobyard_contract::{
-    WebYardRecord, WebYardStatus, YardDeployRecord, YardDeployStatus, YardDeploymentRecord,
-    YardEnvironmentKind, YardEnvironmentRecord, YardStartRecord,
+    WebYardRecord, WebYardStatus, YardAccessPrincipalKind, YardDeployRecord, YardDeployStatus,
+    YardDeploymentRecord, YardEnvironmentKind, YardEnvironmentRecord, YardStartRecord,
+    YardVisibility,
 };
 
 pub(super) fn yard_summary(origin: &str, yard: WebYardRecord) -> Result<WebYardSummary, ApiError> {
@@ -60,6 +63,63 @@ const fn environment_kind(kind: YardEnvironmentKind) -> ApiEnvironmentKind {
         YardEnvironmentKind::Production => ApiEnvironmentKind::Production,
         YardEnvironmentKind::Staging => ApiEnvironmentKind::Staging,
         YardEnvironmentKind::Preview => ApiEnvironmentKind::Preview,
+    }
+}
+
+pub(super) fn grant_summary(
+    grant: blobyard_contract::YardAccessGrantRecord,
+) -> Result<YardAccessGrantSummary, ApiError> {
+    Ok(YardAccessGrantSummary {
+        app_roles: grant.app_roles,
+        created_at: crate::transfer_grants::format_expiry(grant.created_at_ms)?,
+        environment_id: grant.environment_id,
+        expires_at: grant
+            .expires_at_ms
+            .map(crate::transfer_grants::format_expiry)
+            .transpose()?,
+        id: grant.id,
+        principal_id: grant.principal_id,
+        principal_kind: api_principal_kind(grant.principal_kind),
+    })
+}
+
+pub(super) const fn api_visibility(visibility: YardVisibility) -> ApiVisibility {
+    match visibility {
+        YardVisibility::Public => ApiVisibility::Public,
+        YardVisibility::Owner => ApiVisibility::Owner,
+        YardVisibility::Selected => ApiVisibility::Selected,
+        YardVisibility::Workspace => ApiVisibility::Workspace,
+        YardVisibility::AuthenticatedLink => ApiVisibility::AuthenticatedLink,
+        YardVisibility::AnyAuthenticated => ApiVisibility::AnyAuthenticated,
+    }
+}
+
+pub(super) const fn domain_visibility(visibility: ApiVisibility) -> YardVisibility {
+    match visibility {
+        ApiVisibility::Public => YardVisibility::Public,
+        ApiVisibility::Owner => YardVisibility::Owner,
+        ApiVisibility::Selected => YardVisibility::Selected,
+        ApiVisibility::Workspace => YardVisibility::Workspace,
+        ApiVisibility::AuthenticatedLink => YardVisibility::AuthenticatedLink,
+        ApiVisibility::AnyAuthenticated => YardVisibility::AnyAuthenticated,
+    }
+}
+
+const fn api_principal_kind(kind: YardAccessPrincipalKind) -> ApiPrincipalKind {
+    match kind {
+        YardAccessPrincipalKind::User => ApiPrincipalKind::User,
+        YardAccessPrincipalKind::Group => ApiPrincipalKind::Group,
+        YardAccessPrincipalKind::GuestInvite => ApiPrincipalKind::GuestInvite,
+        YardAccessPrincipalKind::Link => ApiPrincipalKind::Link,
+    }
+}
+
+pub(super) const fn domain_principal_kind(kind: ApiPrincipalKind) -> YardAccessPrincipalKind {
+    match kind {
+        ApiPrincipalKind::User => YardAccessPrincipalKind::User,
+        ApiPrincipalKind::Group => YardAccessPrincipalKind::Group,
+        ApiPrincipalKind::GuestInvite => YardAccessPrincipalKind::GuestInvite,
+        ApiPrincipalKind::Link => YardAccessPrincipalKind::Link,
     }
 }
 

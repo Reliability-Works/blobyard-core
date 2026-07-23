@@ -1,11 +1,11 @@
 use super::Corruption;
 use blobyard_contract::{
-    RepositoryError, YardAccessGrantRecord, YardAccessGrantStatus, YardAccessPolicyRecord,
+    RepositoryError, RevocableStatus, YardAccessGrantRecord, YardAccessPolicyRecord,
     YardAccessPrincipalKind, YardVisibility,
 };
 
 pub(super) fn corrupt_policy(
-    corruption: &Corruption,
+    corruption: Corruption,
     yard_id: &str,
     record: Option<YardAccessPolicyRecord>,
 ) -> Option<YardAccessPolicyRecord> {
@@ -15,8 +15,8 @@ pub(super) fn corrupt_policy(
     record
 }
 
-pub(super) fn corrupt_visibility(
-    corruption: &Corruption,
+pub(super) const fn corrupt_visibility(
+    corruption: Corruption,
     updated_at_ms: u64,
     mut record: YardAccessPolicyRecord,
 ) -> YardAccessPolicyRecord {
@@ -33,7 +33,7 @@ pub(super) fn corrupt_visibility(
 }
 
 pub(super) fn corrupt_inserted_grant(
-    corruption: &Corruption,
+    corruption: Corruption,
     created_at_ms: u64,
     result: Result<YardAccessGrantRecord, RepositoryError>,
 ) -> Result<YardAccessGrantRecord, RepositoryError> {
@@ -55,7 +55,7 @@ pub(super) fn corrupt_inserted_grant(
 }
 
 pub(super) fn corrupt_revocation(
-    corruption: &Corruption,
+    corruption: Corruption,
     grant_id: &str,
     revoked_at_ms: u64,
     result: Result<bool, RepositoryError>,
@@ -73,7 +73,7 @@ pub(super) fn corrupt_revocation(
 }
 
 pub(super) fn corrupt_grant_list(
-    corruption: &Corruption,
+    corruption: Corruption,
     yard_id: &str,
     now_ms: u64,
     mut records: Vec<YardAccessGrantRecord>,
@@ -109,7 +109,7 @@ fn phantom_grant(yard_id: &str) -> YardAccessGrantRecord {
         principal_kind: YardAccessPrincipalKind::User,
         principal_id: "user_unexpected".to_owned(),
         app_roles: Vec::new(),
-        status: YardAccessGrantStatus::Active,
+        status: RevocableStatus::Active,
         created_at_ms: 0,
         created_by_principal: "corrupt".to_owned(),
         expires_at_ms: None,

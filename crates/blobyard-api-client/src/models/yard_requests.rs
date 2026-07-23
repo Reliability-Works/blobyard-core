@@ -128,6 +128,96 @@ impl ListYardEnvironmentsQuery {
     }
 }
 
+/// Reads one Web Yard's effective visibility and active grants.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GetYardAccessQuery {
+    /// Stable Yard identifier.
+    pub yard_id: String,
+}
+
+impl GetYardAccessQuery {
+    /// Encodes the access-read query.
+    #[must_use]
+    pub fn into_query(self) -> String {
+        encoding::query(&[("yardId", Some(self.yard_id))])
+    }
+}
+
+/// Sets one Web Yard's visibility policy.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SetYardVisibilityRequest {
+    /// Stable Yard identifier.
+    pub yard_id: String,
+    /// Requested audience.
+    pub visibility: super::YardVisibility,
+}
+
+impl SetYardVisibilityRequest {
+    /// Encodes the visibility request.
+    #[must_use]
+    pub fn into_json(self) -> serde_json::Value {
+        serde_json::json!({ "visibility": self.visibility, "yardId": self.yard_id })
+    }
+}
+
+/// Grants one principal scoped access to a Web Yard.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GrantYardAccessRequest {
+    /// Stable Yard identifier.
+    pub yard_id: String,
+    /// Kind of admitted principal.
+    pub principal_kind: super::YardAccessPrincipalKind,
+    /// Stable identifier of the admitted principal.
+    pub principal_id: String,
+    /// Application roles the manifest declares.
+    pub app_roles: Vec<String>,
+    /// Optional single-environment restriction.
+    pub environment_id: Option<String>,
+    /// Optional RFC 3339 expiry.
+    pub expires_at: Option<String>,
+}
+
+impl GrantYardAccessRequest {
+    /// Encodes the grant request.
+    #[must_use]
+    pub fn into_json(self) -> serde_json::Value {
+        let mut body = serde_json::json!({
+            "appRoles": self.app_roles,
+            "principalId": self.principal_id,
+            "principalKind": self.principal_kind,
+            "yardId": self.yard_id,
+        });
+        if let Some(environment_id) = self.environment_id {
+            body["environmentId"] = serde_json::Value::String(environment_id);
+        }
+        if let Some(expires_at) = self.expires_at {
+            body["expiresAt"] = serde_json::Value::String(expires_at);
+        }
+        body
+    }
+}
+
+/// Revokes one Web Yard access grant.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RevokeYardAccessRequest {
+    /// Stable Yard identifier.
+    pub yard_id: String,
+    /// Stable grant identifier.
+    pub grant_id: String,
+}
+
+impl RevokeYardAccessRequest {
+    /// Encodes the revocation request.
+    #[must_use]
+    pub fn into_json(self) -> serde_json::Value {
+        serde_json::json!({ "grantId": self.grant_id, "yardId": self.yard_id })
+    }
+}
+
 /// Repoints a Web Yard alias to an earlier immutable deploy.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

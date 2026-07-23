@@ -1,6 +1,6 @@
 use super::Runner;
 use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand};
-use crate::yard_commands::{EnvCommand, YardCommand};
+use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand};
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
 
@@ -71,6 +71,30 @@ impl Runner {
     ) -> Result<CommandResult, BlobyardError> {
         match command {
             EnvCommand::List(arguments) => self.list_environments(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_yard_family(
+        &self,
+        command: &Command,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            Command::Yard { command } => self.execute_yard(command).await,
+            Command::Env { command } => self.execute_env(command).await,
+            Command::Access { command } => self.execute_access(command).await,
+            _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
+        }
+    }
+
+    pub(super) async fn execute_access(
+        &self,
+        command: &AccessCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            AccessCommand::List(arguments) => self.access_list(arguments).await,
+            AccessCommand::SetVisibility(arguments) => self.access_set_visibility(arguments).await,
+            AccessCommand::Grant(arguments) => self.access_grant(arguments).await,
+            AccessCommand::Revoke(arguments) => self.access_revoke(arguments).await,
         }
     }
 
@@ -156,6 +180,15 @@ mod tests {
                 .execute_headless(&Command::Whoami)
                 .await
                 .expect_err("unrelated headless command")
+                .code(),
+            ErrorCode::InternalError
+        );
+        assert_eq!(
+            fixture
+                .runner
+                .execute_yard_family(&Command::Whoami)
+                .await
+                .expect_err("unrelated Yard-family command")
                 .code(),
             ErrorCode::InternalError
         );

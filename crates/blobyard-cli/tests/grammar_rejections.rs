@@ -13,6 +13,9 @@ fn rejects_invalid_required_values_and_conflicting_output_flags() {
         &["blobyard", "whoami", "--quiet", "--verbose"],
         &["blobyard", "completion", "powershell"],
         &["blobyard", "deploy", "./dist", "--all"],
+        &["blobyard", "access", "set-visibility", "docs"],
+        &["blobyard", "access", "revoke", "docs"],
+        &["blobyard", "access", "grant", "docs"],
         &["blobyard", "whoami", "--retry-key", "invalid key"],
         &[
             "blobyard",

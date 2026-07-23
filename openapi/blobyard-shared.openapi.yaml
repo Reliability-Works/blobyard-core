@@ -2391,9 +2391,13 @@ components:
         createdAt:
           $ref: "#/components/schemas/IsoTimestamp"
         environmentId:
-          $ref: "#/components/schemas/Identifier"
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
         expiresAt:
-          $ref: "#/components/schemas/IsoTimestamp"
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
         id:
           $ref: "#/components/schemas/Identifier"
         principalId:
@@ -2405,6 +2409,8 @@ components:
       required:
         - appRoles
         - createdAt
+        - environmentId
+        - expiresAt
         - id
         - principalId
         - principalKind

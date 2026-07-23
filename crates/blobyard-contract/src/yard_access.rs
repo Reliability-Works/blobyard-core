@@ -82,36 +82,6 @@ impl YardAccessPrincipalKind {
     }
 }
 
-/// Persisted lifecycle state for one Yard access grant.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum YardAccessGrantStatus {
-    /// The grant admits its principal until it expires or is revoked.
-    Active,
-    /// The grant no longer admits its principal.
-    Revoked,
-}
-
-impl YardAccessGrantStatus {
-    /// Returns the stable persisted representation.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Active => "active",
-            Self::Revoked => "revoked",
-        }
-    }
-
-    /// Parses the stable persisted representation.
-    #[must_use]
-    pub fn parse(value: &str) -> Option<Self> {
-        match value {
-            "active" => Some(Self::Active),
-            "revoked" => Some(Self::Revoked),
-            _ => None,
-        }
-    }
-}
-
 /// Durable visibility policy for one Yard. An absent row means public.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct YardAccessPolicyRecord {
@@ -141,7 +111,7 @@ pub struct YardAccessGrantRecord {
     /// Application roles the manifest declares.
     pub app_roles: Vec<String>,
     /// Persisted lifecycle state.
-    pub status: YardAccessGrantStatus,
+    pub status: crate::RevocableStatus,
     /// Creation time as Unix milliseconds.
     pub created_at_ms: u64,
     /// Safe label of the principal that created the grant.

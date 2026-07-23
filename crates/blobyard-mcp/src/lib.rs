@@ -4,6 +4,7 @@ use serde_json::{Map, Value};
 
 pub(crate) mod admin_call;
 pub(crate) mod admin_catalog;
+pub(crate) mod catalog_access;
 pub(crate) mod catalog_contracts;
 mod dashboard_call;
 mod dashboard_catalog;

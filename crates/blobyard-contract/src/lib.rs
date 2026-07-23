@@ -65,8 +65,8 @@ pub use transfers::{
     UploadReservationRecord,
 };
 pub use yard_access::{
-    NewYardAccessGrant, YardAccessGrantRecord, YardAccessGrantStatus, YardAccessPolicyRecord,
-    YardAccessPrincipalKind, YardVisibility,
+    NewYardAccessGrant, YardAccessGrantRecord, YardAccessPolicyRecord, YardAccessPrincipalKind,
+    YardVisibility,
 };
 pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};

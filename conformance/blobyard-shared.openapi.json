@@ -2911,13 +2911,25 @@
             "type": "array"
           },
           "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
-          "environmentId": { "$ref": "#/components/schemas/Identifier" },
-          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "environmentId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          },
+          "expiresAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
           "id": { "$ref": "#/components/schemas/Identifier" },
           "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
           "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" }
         },
-        "required": ["appRoles", "createdAt", "id", "principalId", "principalKind"],
+        "required": [
+          "appRoles",
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "id",
+          "principalId",
+          "principalKind"
+        ],
         "type": "object"
       },
       "YardAccessPrincipalKind": {

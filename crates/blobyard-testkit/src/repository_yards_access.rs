@@ -2,7 +2,7 @@ use super::YardConformanceRepository;
 use super::delivery::assert_delivery;
 use super::fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 use blobyard_contract::{
-    RepositoryError, YardAccessGrantRecord, YardAccessGrantStatus, YardStartRecord, YardVisibility,
+    RepositoryError, RevocableStatus, YardAccessGrantRecord, YardStartRecord, YardVisibility,
 };
 
 pub(super) fn assert_access_controls(
@@ -81,7 +81,7 @@ fn assert_grant_lifecycle(
         && open_record.principal_kind == open.principal_kind
         && open_record.principal_id == open.principal_id
         && open_record.app_roles == open.app_roles
-        && open_record.status == YardAccessGrantStatus::Active
+        && open_record.status == RevocableStatus::Active
         && open_record.created_at_ms == 7
         && open_record.expires_at_ms.is_none()
         && open_record.revoked_at_ms.is_none();
@@ -117,7 +117,13 @@ fn assert_grant_rejections(
     repository: &dyn YardConformanceRepository,
     yard_id: &str,
 ) -> Result<(), RepositoryError> {
-    let foreign = new_grant("grant_docs_foreign", yard_id, Some("yardenv_unknown"), None, 9);
+    let foreign = new_grant(
+        "grant_docs_foreign",
+        yard_id,
+        Some("yardenv_unknown"),
+        None,
+        9,
+    );
     let expired = new_grant("grant_docs_expired", yard_id, None, Some(3), 9);
     if repository.insert_yard_access_grant(&foreign, &granted_event(yard_id, &foreign, 9))
         != Err(RepositoryError::InvalidInput)
@@ -180,9 +186,5 @@ fn assert_restored_delivery(
         return Err(RepositoryError::Unavailable);
     }
     assert_delivery(repository, &first.yard.host_label, version_id)?;
-    assert_delivery(
-        repository,
-        &first.deploy.deployment_host_label,
-        version_id,
-    )
+    assert_delivery(repository, &first.deploy.deployment_host_label, version_id)
 }

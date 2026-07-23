@@ -44,7 +44,7 @@ test("canonical split composes to the checked-in hosted contract", async () => {
   );
   assert.equal(expected.paths["/bootstrap/exchange"], undefined);
   assert.notEqual(actual.paths["/bootstrap/exchange"], undefined);
-  assert.equal(contractOperationIds(split.core).length, 50);
+  assert.equal(contractOperationIds(split.core).length, 54);
   assert.equal(contractOperationIds(split.hosted).length, 25);
   assert.deepEqual(split.shared.paths, {});
 });
@@ -90,7 +90,7 @@ test("operation metadata covers every contract operation and rejects drift", asy
   ]);
   const identifiers = contractOperationIds(document).toSorted();
   const metadata = operationMetadata(identifiers, source);
-  assert.equal(metadata.size, 75);
+  assert.equal(metadata.size, 79);
   assert.deepEqual(metadata.get("requestUpload"), {
     requiredCiActions: ["upload"],
     requiredUserScopes: ["object:write"],

@@ -16,9 +16,10 @@ pub use fault_forwarders::FailureCounter;
 pub use lifecycle::lifecycle_conformance;
 pub use repository::{
     InboxConformanceRepository, PreviewConformanceRepository, YardConformanceFixture,
-    YardConformanceRepository, inbox_conformance, inbox_event, inbox_upload_event,
-    preview_conformance, preview_event, repository_conformance, share_event, sharing_conformance,
-    transfer_conformance, yard_conformance, yard_event,
+    YardConformanceRepository, granted_event, inbox_conformance, inbox_event, inbox_upload_event,
+    new_grant, preview_conformance, preview_event, repository_conformance, revoked_event,
+    share_event, sharing_conformance, transfer_conformance, visibility_event, yard_conformance,
+    yard_event,
 };
 pub use storage::storage_conformance;
 

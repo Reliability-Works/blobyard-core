@@ -1,7 +1,8 @@
 use crate::{
     DeletionPlan, NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile,
-    RepositoryError, WebYardRecord, YardAccessGrantRecord, YardAccessPolicyRecord, YardDeployRecord,
-    YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget, YardStartRecord, YardVisibility,
+    RepositoryError, WebYardRecord, YardAccessGrantRecord, YardAccessPolicyRecord,
+    YardDeployRecord, YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget, YardStartRecord,
+    YardVisibility,
 };
 
 /// One durable byte-cleanup plan created when a Web Yard deploy is pruned.

@@ -48,8 +48,8 @@
     },
     {
       "path": "blobyard-shared.openapi.json",
-      "sha256": "5c8ce2f9f5eaef9d79d22d171966a9eebb143be5ad5ceead98a6daf666aeeb46",
-      "size": 120772
+      "sha256": "f56c7d7b79f7a1d11c5f9c07c8f1b820505e3b9d6056bbad9e16f57f6b95872f",
+      "size": 120996
     },
     {
       "path": "operations.json",

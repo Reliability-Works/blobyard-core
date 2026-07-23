@@ -10,13 +10,17 @@ use axum::{
     routing::{get, post},
 };
 use blobyard_api_client::{
-    DeleteWebYardRequest, EmptyResponse, FailYardDeployRequest, ListWebYardsQuery,
-    ListYardDeploysQuery, ListYardEnvironmentsQuery, RollbackWebYardRequest,
-    StartYardDeployRequest, StartYardDeployResponse, WebYardSummary, YardDeployMutationRequest,
-    YardDeploySummary, YardDeploymentResponse, YardEnvironmentList,
+    DeleteWebYardRequest, EmptyResponse, FailYardDeployRequest, GetYardAccessQuery,
+    GrantYardAccessRequest, ListWebYardsQuery, ListYardDeploysQuery, ListYardEnvironmentsQuery,
+    RevokeYardAccessRequest, RollbackWebYardRequest, SetYardVisibilityRequest,
+    StartYardDeployRequest, StartYardDeployResponse, WebYardSummary, YardAccessGrantResponse,
+    YardAccessResponse, YardDeployMutationRequest, YardDeploySummary, YardDeploymentResponse,
+    YardEnvironmentList, YardVisibilityResponse,
 };
 use blobyard_contract::CiAction;
 
+#[path = "yards_access.rs"]
+mod access;
 #[path = "yards_contracts.rs"]
 mod contracts;
 #[path = "yards_deploy.rs"]
@@ -31,6 +35,10 @@ mod read;
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/v1/yards", get(list_yards))
+        .route("/v1/yards/access", get(get_yard_access))
+        .route("/v1/yards/access/grant", post(grant_yard_access))
+        .route("/v1/yards/access/revoke", post(revoke_yard_access))
+        .route("/v1/yards/access/visibility", post(set_yard_visibility))
         .route("/v1/yards/delete", post(delete_yard))
         .route("/v1/yards/deploys", get(list_yard_deploys))
         .route("/v1/yards/deploys/fail", post(fail_yard_deploy))
@@ -68,6 +76,61 @@ async fn list_yard_environments(
     require_read(&principal)?;
     let Query(query) = ApiError::invalid_request_result(query)?;
     read::list_environments(&state, &principal, &query)
+}
+
+async fn get_yard_access(
+    State(state): State<AppState>,
+    principal: Principal,
+    query: Result<Query<GetYardAccessQuery>, QueryRejection>,
+) -> Result<Json<Success<YardAccessResponse>>, ApiError> {
+    require_read(&principal)?;
+    let Query(query) = ApiError::invalid_request_result(query)?;
+    access::get(&state, &principal, &query, crate::transfer_grants::now_ms())
+}
+
+async fn set_yard_visibility(
+    State(state): State<AppState>,
+    principal: Principal,
+    payload: Result<Json<SetYardVisibilityRequest>, JsonRejection>,
+) -> Result<Json<Success<YardVisibilityResponse>>, ApiError> {
+    require_manage(&principal)?;
+    let Json(request) = ApiError::invalid_request_result(payload)?;
+    access::set_visibility(
+        &state,
+        &principal,
+        &request,
+        crate::transfer_grants::now_ms(),
+    )
+}
+
+async fn grant_yard_access(
+    State(state): State<AppState>,
+    principal: Principal,
+    payload: Result<Json<GrantYardAccessRequest>, JsonRejection>,
+) -> Result<Json<Success<YardAccessGrantResponse>>, ApiError> {
+    require_manage(&principal)?;
+    let Json(request) = ApiError::invalid_request_result(payload)?;
+    access::grant(
+        &state,
+        &principal,
+        &request,
+        crate::transfer_grants::now_ms(),
+    )
+}
+
+async fn revoke_yard_access(
+    State(state): State<AppState>,
+    principal: Principal,
+    payload: Result<Json<RevokeYardAccessRequest>, JsonRejection>,
+) -> Result<Json<Success<EmptyResponse>>, ApiError> {
+    require_manage(&principal)?;
+    let Json(request) = ApiError::invalid_request_result(payload)?;
+    access::revoke(
+        &state,
+        &principal,
+        &request,
+        crate::transfer_grants::now_ms(),
+    )
 }
 
 async fn start_yard_deploy(
@@ -155,6 +218,14 @@ fn require_read(principal: &Principal) -> Result<(), ApiError> {
 
 fn require_deploy(principal: &Principal) -> Result<(), ApiError> {
     principal.require_actions(&[CiAction::Upload, CiAction::YardManage], "yard:manage")
+}
+
+fn require_manage(principal: &Principal) -> Result<(), ApiError> {
+    if principal.is_machine() {
+        Err(ApiError::forbidden())
+    } else {
+        principal.require("yard:manage")
+    }
 }
 
 pub(crate) async fn public_fallback(

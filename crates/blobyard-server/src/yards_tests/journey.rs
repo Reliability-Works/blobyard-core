@@ -46,7 +46,7 @@ async fn assert_head_and_range(fixture: &test_seams::TransferFixture, host: &str
     assert_eq!(body(range).await.as_ref(), b"yard");
 }
 
-async fn publish(
+pub(super) async fn publish(
     fixture: &test_seams::TransferFixture,
     client_deploy_id: &str,
     index: &[u8],

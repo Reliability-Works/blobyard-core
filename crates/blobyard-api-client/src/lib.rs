@@ -4,6 +4,7 @@ mod client;
 mod config;
 mod endpoint;
 mod endpoint_availability;
+mod endpoint_ids;
 mod endpoint_routes;
 mod models;
 mod protocol;

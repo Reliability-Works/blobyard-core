@@ -2,7 +2,7 @@
 
 use super::mcp_yard_command;
 use crate::Command;
-use crate::yard_commands::{EnvCommand, YardCommand};
+use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand};
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
 
 #[test]
@@ -77,5 +77,68 @@ fn web_yard_management_tools_map_to_cli_contracts() {
         Command::Yard {
             command: YardCommand::Rollback(_)
         }
+    ));
+}
+
+#[test]
+fn web_yard_access_tools_map_to_cli_contracts() {
+    let scope = Scope::default();
+    let (_, list) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::GetYardAccess {
+        scope: scope.clone(),
+        yard: "site".into(),
+    }))
+    .expect("access list mapping");
+    assert!(matches!(
+        list,
+        Command::Access {
+            command: AccessCommand::List(arguments)
+        } if arguments.name.as_deref() == Some("site")
+    ));
+    let (_, visibility) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::SetYardVisibility {
+        scope,
+        yard: "site".into(),
+        visibility: "owner".into(),
+    }))
+    .expect("visibility mapping");
+    assert!(matches!(
+        visibility,
+        Command::Access {
+            command: AccessCommand::SetVisibility(arguments)
+        } if arguments.visibility == "owner"
+    ));
+}
+
+#[test]
+fn web_yard_grant_tools_map_to_cli_contracts() {
+    let scope = Scope::default();
+    let (_, granted) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::GrantYardAccess {
+        scope: scope.clone(),
+        yard: "site".into(),
+        principal_kind: "user".into(),
+        principal_id: "user_reader".into(),
+        roles: vec!["viewer".into()],
+        environment_id: Some("yardenv_site".into()),
+        expires_at: Some("2100-01-01T00:00:00Z".into()),
+    }))
+    .expect("grant mapping");
+    assert!(matches!(
+        granted,
+        Command::Access {
+            command: AccessCommand::Grant(arguments)
+        } if arguments.roles == ["viewer"]
+            && arguments.environment.as_deref() == Some("yardenv_site")
+            && arguments.expires.as_deref() == Some("2100-01-01T00:00:00Z")
+    ));
+    let (_, revoked) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::RevokeYardAccess {
+        scope,
+        yard: "site".into(),
+        grant_id: "yardgrant_1".into(),
+    }))
+    .expect("revoke mapping");
+    assert!(matches!(
+        revoked,
+        Command::Access {
+            command: AccessCommand::Revoke(arguments)
+        } if arguments.grant_id == "yardgrant_1"
     ));
 }

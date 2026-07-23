@@ -630,8 +630,8 @@ export interface Schemas {
   readonly YardAccessGrantSummary: Readonly<{
     readonly appRoles: readonly string[];
     readonly createdAt: Schemas["IsoTimestamp"];
-    readonly environmentId?: Schemas["Identifier"];
-    readonly expiresAt?: Schemas["IsoTimestamp"];
+    readonly environmentId: Schemas["Identifier"] | null;
+    readonly expiresAt: Schemas["IsoTimestamp"] | null;
     readonly id: Schemas["Identifier"];
     readonly principalId: string;
     readonly principalKind: Schemas["YardAccessPrincipalKind"];

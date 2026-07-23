@@ -1,6 +1,6 @@
 use super::{grant, policy_row};
 use crate::adapter::rows::tests::{assert_each_column_rejects_blob, assert_replacements_fail};
-use blobyard_contract::{YardAccessGrantStatus, YardAccessPrincipalKind, YardVisibility};
+use blobyard_contract::{RevocableStatus, YardAccessPrincipalKind, YardVisibility};
 use rusqlite::Connection;
 
 const POLICY_VALUES: [&str; 4] = ["'yard_1'", "'owner'", "1", "'fixture'"];
@@ -39,18 +39,14 @@ fn policy_rows_reject_every_malformed_column_and_value() {
 #[test]
 fn grant_rows_decode_complete_records() -> rusqlite::Result<()> {
     let connection = Connection::open_in_memory()?;
-    let record = connection.query_row(
-        &format!("SELECT {}", GRANT_VALUES.join(", ")),
-        [],
-        grant,
-    )?;
+    let record = connection.query_row(&format!("SELECT {}", GRANT_VALUES.join(", ")), [], grant)?;
     assert_eq!(record.id, "grant_1");
     assert_eq!(record.yard_id, "yard_1");
     assert_eq!(record.environment_id.as_deref(), Some("yardenv_yard_1"));
     assert_eq!(record.principal_kind, YardAccessPrincipalKind::User);
     assert_eq!(record.principal_id, "user_1");
     assert_eq!(record.app_roles, ["editor"]);
-    assert_eq!(record.status, YardAccessGrantStatus::Active);
+    assert_eq!(record.status, RevocableStatus::Active);
     assert_eq!(record.created_at_ms, 1);
     assert_eq!(record.created_by_principal, "fixture");
     assert_eq!(record.expires_at_ms, Some(2));

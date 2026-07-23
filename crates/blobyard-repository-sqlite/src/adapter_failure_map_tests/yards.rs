@@ -48,9 +48,17 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
     unavailable(repository.rollback_web_yard(&yard.id, Some(&deploy.id), 1_001, &event));
     unavailable(repository.delete_web_yard(&yard.id, 1_001, &event));
     unavailable(repository.yard_file_by_host(&yard.host_label, ""));
+    assert_poisoned_yard_access(repository, &yard.id, &event);
+}
+
+fn assert_poisoned_yard_access(
+    repository: &SqliteRepository,
+    yard_id: &str,
+    event: &blobyard_contract::NewAuditEvent,
+) {
     let grant = blobyard_contract::NewYardAccessGrant {
         id: "grant_failure_map".to_owned(),
-        yard_id: yard.id.clone(),
+        yard_id: yard_id.to_owned(),
         environment_id: None,
         principal_kind: blobyard_contract::YardAccessPrincipalKind::User,
         principal_id: "user_failure_map".to_owned(),
@@ -59,14 +67,14 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
         created_by_principal: "fixture".to_owned(),
         expires_at_ms: None,
     };
-    unavailable(repository.get_yard_access_policy(&yard.id));
+    unavailable(repository.get_yard_access_policy(yard_id));
     unavailable(repository.set_yard_visibility(
-        &yard.id,
+        yard_id,
         blobyard_contract::YardVisibility::Owner,
         1_001,
-        &event,
+        event,
     ));
-    unavailable(repository.insert_yard_access_grant(&grant, &event));
-    unavailable(repository.revoke_yard_access_grant(&yard.id, &grant.id, 1_001, &event));
-    unavailable(repository.list_yard_access_grants(&yard.id, 1_001));
+    unavailable(repository.insert_yard_access_grant(&grant, event));
+    unavailable(repository.revoke_yard_access_grant(yard_id, &grant.id, 1_001, event));
+    unavailable(repository.list_yard_access_grants(yard_id, 1_001));
 }

@@ -152,6 +152,84 @@ pub struct YardEnvironmentList {
     pub environments: Vec<YardEnvironmentSummary>,
 }
 
+/// Public audience allowed to open one Yard.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum YardVisibility {
+    /// Anyone may open the Yard without authentication.
+    Public,
+    /// Only the Yard owner may open the Yard.
+    Owner,
+    /// Only selected people and groups may open the Yard.
+    Selected,
+    /// Any workspace member may open the Yard.
+    Workspace,
+    /// Anyone holding the authenticated link may open the Yard.
+    AuthenticatedLink,
+    /// Any authenticated user may open the Yard.
+    AnyAuthenticated,
+}
+
+/// Kind of principal one access grant covers.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum YardAccessPrincipalKind {
+    /// A local user account.
+    User,
+    /// A local group.
+    Group,
+    /// A guest invitation.
+    GuestInvite,
+    /// A capability link holder.
+    Link,
+}
+
+/// Stable metadata for one active Yard access grant.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardAccessGrantSummary {
+    /// Application roles the manifest declares.
+    pub app_roles: Vec<String>,
+    /// Creation timestamp in RFC 3339 form.
+    pub created_at: String,
+    /// Optional single-environment restriction.
+    pub environment_id: Option<String>,
+    /// Optional RFC 3339 expiry.
+    pub expires_at: Option<String>,
+    /// Stable grant identifier.
+    pub id: String,
+    /// Stable identifier of the admitted principal.
+    pub principal_id: String,
+    /// Kind of admitted principal.
+    pub principal_kind: YardAccessPrincipalKind,
+}
+
+/// Effective visibility and active grants for one Web Yard.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardAccessResponse {
+    /// Active, unexpired grants in newest-first order.
+    pub grants: Vec<YardAccessGrantSummary>,
+    /// Effective audience.
+    pub visibility: YardVisibility,
+}
+
+/// Persisted visibility after one policy change.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardVisibilityResponse {
+    /// Persisted audience.
+    pub visibility: YardVisibility,
+}
+
+/// Newly created Yard access grant.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardAccessGrantResponse {
+    /// The active grant.
+    pub grant: YardAccessGrantSummary,
+}
+
 /// Web Yard list response.
 pub type WebYardPage = Page<WebYardSummary>;
 

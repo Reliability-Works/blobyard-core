@@ -5888,10 +5888,24 @@
             "$ref": "#/components/schemas/IsoTimestamp"
           },
           "environmentId": {
-            "$ref": "#/components/schemas/Identifier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "expiresAt": {
-            "$ref": "#/components/schemas/IsoTimestamp"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IsoTimestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "$ref": "#/components/schemas/Identifier"
@@ -5905,7 +5919,15 @@
             "$ref": "#/components/schemas/YardAccessPrincipalKind"
           }
         },
-        "required": ["appRoles", "createdAt", "id", "principalId", "principalKind"]
+        "required": [
+          "appRoles",
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "id",
+          "principalId",
+          "principalKind"
+        ]
       },
       "GetYardAccessQuery": {
         "type": "object",

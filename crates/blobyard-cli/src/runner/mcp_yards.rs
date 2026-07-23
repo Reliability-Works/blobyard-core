@@ -1,6 +1,7 @@
 use crate::Command;
 use crate::yard_commands::{
-    DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs, RollbackYardArgs, YardCommand,
+    AccessCommand, AccessListArgs, DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs,
+    GrantAccessArgs, RevokeAccessArgs, RollbackYardArgs, SetVisibilityArgs, YardCommand,
     YardNameArgs,
 };
 use blobyard_core::{BlobyardError, ErrorCode};
@@ -19,48 +20,108 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             spa,
             clean_urls,
         } => (scope, deploy_command(directory, yard, spa, clean_urls)),
-        WebYardToolCall::ListWebYards { scope } => (
-            scope,
-            Command::Yard {
-                command: YardCommand::List,
-            },
-        ),
+        WebYardToolCall::ListWebYards { scope } => (scope, yard_command(YardCommand::List)),
         WebYardToolCall::ListYardDeploys { scope, yard } => (
             scope,
-            Command::Yard {
-                command: YardCommand::History(YardNameArgs { name: yard }),
-            },
+            yard_command(YardCommand::History(YardNameArgs { name: yard })),
         ),
-        WebYardToolCall::ListYardEnvironments { scope, yard } => (
+        WebYardToolCall::ListYardEnvironments { scope, yard } => (scope, env_command(yard)),
+        WebYardToolCall::GetYardAccess { scope, yard } => (scope, access_list_command(yard)),
+        WebYardToolCall::SetYardVisibility {
             scope,
-            Command::Env {
-                command: EnvCommand::List(EnvListArgs { name: Some(yard) }),
-            },
+            yard,
+            visibility,
+        } => (scope, visibility_command(yard, visibility)),
+        WebYardToolCall::GrantYardAccess {
+            scope,
+            yard,
+            principal_kind,
+            principal_id,
+            roles,
+            environment_id,
+            expires_at,
+        } => (
+            scope,
+            grant_command(GrantAccessArgs {
+                name: yard,
+                principal_kind,
+                principal_id,
+                roles,
+                environment: environment_id,
+                expires: expires_at,
+            }),
         ),
+        WebYardToolCall::RevokeYardAccess {
+            scope,
+            yard,
+            grant_id,
+        } => (scope, revoke_command(yard, grant_id)),
         WebYardToolCall::RollbackWebYard {
             scope,
             yard,
             deploy_id,
-        } => (
-            scope,
-            Command::Yard {
-                command: YardCommand::Rollback(RollbackYardArgs {
-                    name: yard,
-                    deploy_id,
-                }),
-            },
-        ),
-        WebYardToolCall::DeleteWebYard { scope, yard } => (
-            scope,
-            Command::Yard {
-                command: YardCommand::Delete(DeleteYardArgs {
-                    name: yard,
-                    force: true,
-                }),
-            },
-        ),
+        } => (scope, rollback_command(yard, deploy_id)),
+        WebYardToolCall::DeleteWebYard { scope, yard } => (scope, delete_command(yard)),
     };
     Ok(mapped)
+}
+
+const fn yard_command(command: YardCommand) -> Command {
+    Command::Yard { command }
+}
+
+const fn env_command(yard: String) -> Command {
+    Command::Env {
+        command: EnvCommand::List(EnvListArgs { name: Some(yard) }),
+    }
+}
+
+const fn access_list_command(yard: String) -> Command {
+    Command::Access {
+        command: AccessCommand::List(AccessListArgs { name: Some(yard) }),
+    }
+}
+
+const fn visibility_command(yard: String, visibility: String) -> Command {
+    Command::Access {
+        command: AccessCommand::SetVisibility(SetVisibilityArgs {
+            name: yard,
+            visibility,
+        }),
+    }
+}
+
+const fn grant_command(arguments: GrantAccessArgs) -> Command {
+    Command::Access {
+        command: AccessCommand::Grant(arguments),
+    }
+}
+
+const fn revoke_command(yard: String, grant_id: String) -> Command {
+    Command::Access {
+        command: AccessCommand::Revoke(RevokeAccessArgs {
+            name: yard,
+            grant_id,
+        }),
+    }
+}
+
+const fn rollback_command(yard: String, deploy_id: Option<String>) -> Command {
+    Command::Yard {
+        command: YardCommand::Rollback(RollbackYardArgs {
+            name: yard,
+            deploy_id,
+        }),
+    }
+}
+
+const fn delete_command(yard: String) -> Command {
+    Command::Yard {
+        command: YardCommand::Delete(DeleteYardArgs {
+            name: yard,
+            force: true,
+        }),
+    }
 }
 
 fn deploy_command(directory: String, yard: String, spa: bool, clean_urls: bool) -> Command {

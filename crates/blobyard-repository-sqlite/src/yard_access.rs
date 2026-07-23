@@ -2,8 +2,8 @@ use super::{
     lifecycle_audit, map_error, rows, transfer_validation, yard_queries, yard_rows, yard_validation,
 };
 use blobyard_contract::{
-    AuditValue, NewAuditEvent, NewYardAccessGrant, RepositoryError, WebYardRecord, WebYardStatus,
-    YardAccessGrantRecord, YardAccessGrantStatus, YardAccessPolicyRecord, YardAccessPrincipalKind,
+    AuditValue, NewAuditEvent, NewYardAccessGrant, RepositoryError, RevocableStatus, WebYardRecord,
+    WebYardStatus, YardAccessGrantRecord, YardAccessPolicyRecord, YardAccessPrincipalKind,
     YardVisibility,
 };
 use rusqlite::{Connection, OptionalExtension, Row, Statement, Transaction, params};
@@ -35,8 +35,8 @@ pub(super) fn set_visibility(
     event: &NewAuditEvent,
 ) -> Result<YardAccessPolicyRecord, RepositoryError> {
     let yard = active_yard(transaction, yard_id)?;
-    let previous = policy(transaction, yard_id)?
-        .map_or(YardVisibility::Public, |record| record.visibility);
+    let previous =
+        policy(transaction, yard_id)?.map_or(YardVisibility::Public, |record| record.visibility);
     let updated_at = yard_validation::action_event(
         event,
         "yard.visibility_changed",
@@ -64,25 +64,7 @@ pub(super) fn insert_grant(
     grant: &NewYardAccessGrant,
     event: &NewAuditEvent,
 ) -> Result<YardAccessGrantRecord, RepositoryError> {
-    for value in [
-        &grant.id,
-        &grant.yard_id,
-        &grant.principal_id,
-        &grant.created_by_principal,
-    ] {
-        rows::validate_text(value)?;
-    }
-    let yard = active_yard(transaction, &grant.yard_id)?;
-    if let Some(environment_id) = &grant.environment_id {
-        rows::validate_text(environment_id)?;
-        require_active_environment(transaction, &yard.id, environment_id)?;
-    }
-    if grant
-        .expires_at_ms
-        .is_some_and(|expires| expires < grant.created_at_ms)
-    {
-        return Err(RepositoryError::InvalidInput);
-    }
+    let yard = validated_grant_yard(transaction, grant)?;
     let app_roles = encode_roles(&grant.app_roles)?;
     let created_at = yard_validation::action_event(
         event,
@@ -142,7 +124,7 @@ pub(super) fn revoke_grant(
     if grant.yard_id != yard.id {
         return Err(RepositoryError::NotFound);
     }
-    if grant.status == YardAccessGrantStatus::Revoked {
+    if grant.status == RevocableStatus::Revoked {
         return Ok(false);
     }
     let revoked_at = yard_validation::action_event(
@@ -192,6 +174,32 @@ fn grant_by_id(
         .map_err(map_error)
 }
 
+fn validated_grant_yard(
+    transaction: &Transaction<'_>,
+    grant: &NewYardAccessGrant,
+) -> Result<WebYardRecord, RepositoryError> {
+    for value in [
+        &grant.id,
+        &grant.yard_id,
+        &grant.principal_id,
+        &grant.created_by_principal,
+    ] {
+        rows::validate_text(value)?;
+    }
+    let yard = active_yard(transaction, &grant.yard_id)?;
+    if let Some(environment_id) = &grant.environment_id {
+        rows::validate_text(environment_id)?;
+        require_active_environment(transaction, &yard.id, environment_id)?;
+    }
+    if grant
+        .expires_at_ms
+        .is_some_and(|expires| expires < grant.created_at_ms)
+    {
+        return Err(RepositoryError::InvalidInput);
+    }
+    Ok(yard)
+}
+
 fn active_yard(
     transaction: &Transaction<'_>,
     yard_id: &str,
@@ -229,6 +237,7 @@ fn encode_roles(roles: &[String]) -> Result<String, RepositoryError> {
         && roles.iter().all(|role| {
             !role.is_empty()
                 && role.len() <= MAXIMUM_ROLE_LENGTH
+                && role.trim() == role
                 && !role.chars().any(char::is_control)
                 && seen.insert(role.as_str())
         });
@@ -267,8 +276,7 @@ pub(super) fn grant(row: &Row<'_>) -> rusqlite::Result<YardAccessGrantRecord> {
             .ok_or_else(|| rows::conversion_error(principal_kind))?,
         principal_id: row.get(4)?,
         app_roles: decode_roles(&app_roles).ok_or_else(|| rows::conversion_error(app_roles))?,
-        status: YardAccessGrantStatus::parse(&status)
-            .ok_or_else(|| rows::conversion_error(status))?,
+        status: RevocableStatus::parse(&status).ok_or_else(|| rows::conversion_error(status))?,
         created_at_ms: yard_rows::required_u64(row.get(7)?)?,
         created_by_principal: row.get(8)?,
         expires_at_ms: yard_rows::optional_u64(row.get(9)?)?,

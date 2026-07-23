@@ -15,6 +15,7 @@ mod fixture_tests;
 mod fixtures;
 use delivery::{assert_deleted_yard_cannot_finalise, assert_delivery, prune_history};
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
+pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 
 /// Combined repository surface needed by Web Yard conformance.
 pub trait YardConformanceRepository: WebYardRepository + TransferRepository {}

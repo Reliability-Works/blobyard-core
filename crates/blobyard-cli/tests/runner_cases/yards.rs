@@ -48,6 +48,8 @@ async fn failed_deploy_requests(
     requests
 }
 
+#[path = "yards/access_tests.rs"]
+mod access_tests;
 #[path = "yards/deploy_completion_tests.rs"]
 mod deploy_completion_tests;
 #[path = "yards/deploy_confirmation_tests.rs"]

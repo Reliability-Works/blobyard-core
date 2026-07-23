@@ -27,6 +27,7 @@ impl Endpoint {
             | Self::ListWebYards
             | Self::ListYardDeploys
             | Self::ListYardEnvironments
+            | Self::GetYardAccess
             | Self::ListAudit
             | Self::ListMembers
             | Self::ListInvites
@@ -44,7 +45,7 @@ impl Endpoint {
     }
 }
 
-const ENDPOINT_PATHS: [&str; 77] = [
+const ENDPOINT_PATHS: [&str; 81] = [
     "/v1/health",
     "/v1/bootstrap/exchange",
     "/v1/cli/device/start",
@@ -86,6 +87,10 @@ const ENDPOINT_PATHS: [&str; 77] = [
     "/v1/yards",
     "/v1/yards/deploys",
     "/v1/yards/environments",
+    "/v1/yards/access",
+    "/v1/yards/access/visibility",
+    "/v1/yards/access/grant",
+    "/v1/yards/access/revoke",
     "/v1/yards/rollback",
     "/v1/yards/delete",
     "/v1/audit",

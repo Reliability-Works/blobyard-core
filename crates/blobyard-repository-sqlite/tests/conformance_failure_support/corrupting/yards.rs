@@ -77,7 +77,11 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         yard_id: &str,
     ) -> Result<Option<YardAccessPolicyRecord>, RepositoryError> {
         let record = self.inner.get_yard_access_policy(yard_id)?;
-        Ok(yard_access::corrupt_policy(&self.corruption, yard_id, record))
+        Ok(yard_access::corrupt_policy(
+            self.corruption,
+            yard_id,
+            record,
+        ))
     }
 
     fn set_yard_visibility(
@@ -89,7 +93,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
     ) -> Result<YardAccessPolicyRecord, RepositoryError> {
         self.inner
             .set_yard_visibility(yard_id, visibility, updated_at_ms, event)
-            .map(|record| yard_access::corrupt_visibility(&self.corruption, updated_at_ms, record))
+            .map(|record| yard_access::corrupt_visibility(self.corruption, updated_at_ms, record))
     }
 
     fn insert_yard_access_grant(
@@ -98,7 +102,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         event: &NewAuditEvent,
     ) -> Result<YardAccessGrantRecord, RepositoryError> {
         let result = self.inner.insert_yard_access_grant(grant, event);
-        yard_access::corrupt_inserted_grant(&self.corruption, grant.created_at_ms, result)
+        yard_access::corrupt_inserted_grant(self.corruption, grant.created_at_ms, result)
     }
 
     fn revoke_yard_access_grant(
@@ -111,7 +115,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         let result = self
             .inner
             .revoke_yard_access_grant(yard_id, grant_id, revoked_at_ms, event);
-        yard_access::corrupt_revocation(&self.corruption, grant_id, revoked_at_ms, result)
+        yard_access::corrupt_revocation(self.corruption, grant_id, revoked_at_ms, result)
     }
 
     fn list_yard_access_grants(
@@ -121,7 +125,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
     ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError> {
         let records = self.inner.list_yard_access_grants(yard_id, now_ms)?;
         Ok(yard_access::corrupt_grant_list(
-            &self.corruption,
+            self.corruption,
             yard_id,
             now_ms,
             records,

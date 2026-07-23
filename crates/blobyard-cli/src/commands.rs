@@ -5,7 +5,7 @@ use crate::headless_commands::{
     AuditCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand, SharesCommand,
     TokensCommand, TrustsCommand, WorkspacesCommand,
 };
-use crate::yard_commands::{DeployArgs, EnvCommand, YardCommand};
+use crate::yard_commands::{AccessCommand, DeployArgs, EnvCommand, YardCommand};
 use clap::{Args, Subcommand, ValueEnum};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -89,6 +89,12 @@ pub enum Command {
         /// The environment operation.
         #[command(subcommand)]
         command: EnvCommand,
+    },
+    /// Inspect or manage Web Yard access policy.
+    Access {
+        /// The access operation.
+        #[command(subcommand)]
+        command: AccessCommand,
     },
     /// Inspect or manage Web Yards.
     Yard {

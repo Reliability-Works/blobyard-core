@@ -5,7 +5,7 @@ use crate::{
 };
 use axum::http::StatusCode;
 
-const DENIED_ROUTES: [(&str, &str, &[u8]); 8] = [
+const DENIED_ROUTES: [(&str, &str, &[u8]); 12] = [
     (
         "GET",
         "/v1/yards?workspace=fixture&project=project",
@@ -13,6 +13,22 @@ const DENIED_ROUTES: [(&str, &str, &[u8]); 8] = [
     ),
     ("GET", "/v1/yards/deploys?yardId=missing", b""),
     ("GET", "/v1/yards/environments?yardId=missing", b""),
+    ("GET", "/v1/yards/access?yardId=missing", b""),
+    (
+        "POST",
+        "/v1/yards/access/visibility",
+        br#"{"yardId":"missing","visibility":"owner"}"#,
+    ),
+    (
+        "POST",
+        "/v1/yards/access/grant",
+        br#"{"yardId":"missing","principalKind":"user","principalId":"user_reader","appRoles":[]}"#,
+    ),
+    (
+        "POST",
+        "/v1/yards/access/revoke",
+        br#"{"yardId":"missing","grantId":"grant_missing"}"#,
+    ),
     (
         "POST",
         "/v1/yards/deploys/start",

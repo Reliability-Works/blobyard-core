@@ -1,4 +1,4 @@
-use super::{YardAccessGrantStatus, YardAccessPrincipalKind, YardVisibility};
+use super::{YardAccessPrincipalKind, YardVisibility};
 
 #[test]
 fn visibilities_round_trip_and_reject_unknown_values() {
@@ -26,15 +26,4 @@ fn principal_kinds_round_trip_and_reject_unknown_values() {
         assert_eq!(YardAccessPrincipalKind::parse(kind.as_str()), Some(kind));
     }
     assert_eq!(YardAccessPrincipalKind::parse("unknown"), None);
-}
-
-#[test]
-fn grant_statuses_round_trip_and_reject_unknown_values() {
-    for status in [
-        YardAccessGrantStatus::Active,
-        YardAccessGrantStatus::Revoked,
-    ] {
-        assert_eq!(YardAccessGrantStatus::parse(status.as_str()), Some(status));
-    }
-    assert_eq!(YardAccessGrantStatus::parse("unknown"), None);
 }
