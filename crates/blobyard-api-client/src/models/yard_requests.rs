@@ -112,6 +112,22 @@ impl ListYardDeploysQuery {
     }
 }
 
+/// Lists active environments for one Web Yard.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ListYardEnvironmentsQuery {
+    /// Stable Yard identifier.
+    pub yard_id: String,
+}
+
+impl ListYardEnvironmentsQuery {
+    /// Encodes the environment-list query.
+    #[must_use]
+    pub fn into_query(self) -> String {
+        encoding::query(&[("yardId", Some(self.yard_id))])
+    }
+}
+
 /// Repoints a Web Yard alias to an earlier immutable deploy.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

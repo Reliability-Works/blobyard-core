@@ -1,5 +1,7 @@
 use super::Runner;
-use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand, YardCommand};
+use crate::commands::{
+    Command, EnvCommand, InboxCommand, ProjectsCommand, RetentionCommand, YardCommand,
+};
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
 
@@ -61,6 +63,15 @@ impl Runner {
             YardCommand::History(arguments) => self.yard_history(arguments).await,
             YardCommand::Rollback(arguments) => self.rollback_yard(arguments).await,
             YardCommand::Delete(arguments) => self.delete_yard(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_env(
+        &self,
+        command: &EnvCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            EnvCommand::List(arguments) => self.list_environments(arguments).await,
         }
     }
 

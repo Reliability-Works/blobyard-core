@@ -114,6 +114,8 @@ pub enum Endpoint {
     ListWebYards,
     /// List immutable deploys for a Web Yard.
     ListYardDeploys,
+    /// List active environments for a Web Yard.
+    ListYardEnvironments,
     /// Repoint a Web Yard to an earlier deploy.
     RollbackWebYard,
     /// Delete a Web Yard and schedule its objects for cleanup.
@@ -190,7 +192,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 76] = [
+    pub const ALL: [Self; 77] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -231,6 +233,7 @@ impl Endpoint {
         Self::FailYardDeploy,
         Self::ListWebYards,
         Self::ListYardDeploys,
+        Self::ListYardEnvironments,
         Self::RollbackWebYard,
         Self::DeleteWebYard,
         Self::ListAudit,
@@ -270,7 +273,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 74] = public_endpoints();
+    pub const PUBLIC: [Self; 75] = public_endpoints();
 
     /// Returns the stable `OpenAPI` operation identifier.
     #[must_use]
@@ -293,8 +296,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 74] {
-    let mut public = [Endpoint::Health; 74];
+const fn public_endpoints() -> [Endpoint; 75] {
+    let mut public = [Endpoint::Health; 75];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {
@@ -308,7 +311,7 @@ const fn public_endpoints() -> [Endpoint; 74] {
     public
 }
 
-const OPERATION_IDS: [&str; 76] = [
+const OPERATION_IDS: [&str; 77] = [
     "health",
     "exchangeBootstrapToken",
     "startDeviceLogin",
@@ -349,6 +352,7 @@ const OPERATION_IDS: [&str; 76] = [
     "failWebYardDeploy",
     "listWebYards",
     "listWebYardDeploys",
+    "listYardEnvironments",
     "rollbackWebYard",
     "deleteWebYard",
     "listAuditEvents",

@@ -272,6 +272,16 @@ fn parses_web_yard_calls_with_explicit_public_and_delete_confirmation() {
     );
     assert_eq!(
         parse(
+            "blobyard_list_yard_environments",
+            json!({ "yard": "documentation" })
+        ),
+        ToolCall::WebYard(WebYardToolCall::ListYardEnvironments {
+            scope: Scope::default(),
+            yard: "documentation".into()
+        })
+    );
+    assert_eq!(
+        parse(
             "blobyard_rollback_web_yard",
             json!({ "yard": "documentation", "deploy_id": "deploy_1" })
         ),

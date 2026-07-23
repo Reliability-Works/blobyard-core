@@ -83,6 +83,12 @@ pub enum Command {
     },
     /// Deploy a static directory to a named public Web Yard.
     Deploy(DeployArgs),
+    /// Inspect Web Yard environments.
+    Env {
+        /// The environment operation.
+        #[command(subcommand)]
+        command: EnvCommand,
+    },
     /// Inspect or manage Web Yards.
     Yard {
         /// The Web Yard operation.
@@ -315,6 +321,21 @@ pub struct DeployArgs {
     /// Acknowledge that deployed files become public.
     #[arg(long)]
     pub public: bool,
+}
+
+/// Web Yard environment operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum EnvCommand {
+    /// List active environments for a Web Yard.
+    List(EnvListArgs),
+}
+
+/// Arguments for `blobyard env list`.
+#[derive(Clone, Debug, Args)]
+pub struct EnvListArgs {
+    /// Project-unique Web Yard name, selected automatically when only one exists.
+    #[arg(value_name = "NAME")]
+    pub name: Option<String>,
 }
 
 /// Web Yard management operations.

@@ -3,10 +3,11 @@ use crate::error::ApiError;
 use blobyard_api_client::{
     StartYardDeployResponse, WebYardStatus as ApiYardStatus, WebYardSummary,
     YardDeployStatus as ApiDeployStatus, YardDeploySummary, YardDeploymentResponse,
+    YardEnvironmentKind as ApiEnvironmentKind, YardEnvironmentSummary,
 };
 use blobyard_contract::{
     WebYardRecord, WebYardStatus, YardDeployRecord, YardDeployStatus, YardDeploymentRecord,
-    YardStartRecord,
+    YardEnvironmentKind, YardEnvironmentRecord, YardStartRecord,
 };
 
 pub(super) fn yard_summary(origin: &str, yard: WebYardRecord) -> Result<WebYardSummary, ApiError> {
@@ -40,6 +41,26 @@ pub(super) fn deploy_summary(
         status: deploy_status(deploy.status),
         total_bytes: deploy.total_bytes,
     })
+}
+
+pub(super) fn environment_summary(
+    environment: YardEnvironmentRecord,
+) -> Result<YardEnvironmentSummary, ApiError> {
+    Ok(YardEnvironmentSummary {
+        created_at: crate::transfer_grants::format_expiry(environment.created_at_ms)?,
+        id: environment.id,
+        kind: environment_kind(environment.kind),
+        name: environment.name,
+        updated_at: crate::transfer_grants::format_expiry(environment.updated_at_ms)?,
+    })
+}
+
+const fn environment_kind(kind: YardEnvironmentKind) -> ApiEnvironmentKind {
+    match kind {
+        YardEnvironmentKind::Production => ApiEnvironmentKind::Production,
+        YardEnvironmentKind::Staging => ApiEnvironmentKind::Staging,
+        YardEnvironmentKind::Preview => ApiEnvironmentKind::Preview,
+    }
 }
 
 pub(super) fn start_response(

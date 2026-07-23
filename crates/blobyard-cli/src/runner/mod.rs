@@ -5,6 +5,7 @@ mod deploy;
 mod deploy_output;
 mod deploy_selection;
 mod dispatch;
+mod environments;
 mod local;
 mod login;
 mod mcp;
@@ -103,6 +104,7 @@ impl Runner {
             Command::Share(_) | Command::Preview(_) => self.execute_capability(command).await,
             Command::Deploy(arguments) => self.deploy(arguments).await,
             Command::Yard { command } => self.execute_yard(command).await,
+            Command::Env { command } => self.execute_env(command).await,
             Command::App { .. } | Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
                 self.execute_local(command)
             }

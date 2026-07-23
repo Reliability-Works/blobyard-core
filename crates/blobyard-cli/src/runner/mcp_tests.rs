@@ -178,6 +178,18 @@ fn web_yard_management_tools_map_to_cli_contracts() {
             command: YardCommand::History(_)
         }
     ));
+    let (_, environments) =
+        mcp_command(ToolCall::WebYard(WebYardToolCall::ListYardEnvironments {
+            scope: scope.clone(),
+            yard: "site".into(),
+        }))
+        .expect("environment mapping");
+    assert!(matches!(
+        environments,
+        Command::Env {
+            command: crate::commands::EnvCommand::List(_)
+        }
+    ));
     let (_, rollback) = mcp_command(ToolCall::WebYard(WebYardToolCall::RollbackWebYard {
         scope,
         yard: "site".into(),

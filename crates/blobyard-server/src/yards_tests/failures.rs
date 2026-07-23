@@ -5,13 +5,14 @@ use crate::{
 };
 use axum::http::StatusCode;
 
-const DENIED_ROUTES: [(&str, &str, &[u8]); 7] = [
+const DENIED_ROUTES: [(&str, &str, &[u8]); 8] = [
     (
         "GET",
         "/v1/yards?workspace=fixture&project=project",
         b"",
     ),
     ("GET", "/v1/yards/deploys?yardId=missing", b""),
+    ("GET", "/v1/yards/environments?yardId=missing", b""),
     (
         "POST",
         "/v1/yards/deploys/start",
@@ -122,7 +123,11 @@ async fn yard_routes_reject_malformed_or_incomplete_deploys_without_publication(
 #[tokio::test]
 async fn every_yard_route_maps_extractor_rejections_to_the_public_error_contract() {
     let fixture = test_seams::fixture(&["object:write", "yard:manage"]);
-    for path in ["/v1/yards?workspace=fixture", "/v1/yards/deploys"] {
+    for path in [
+        "/v1/yards?workspace=fixture",
+        "/v1/yards/deploys",
+        "/v1/yards/environments",
+    ] {
         assert_error(
             send(&fixture, "GET", path, b"", false).await,
             StatusCode::BAD_REQUEST,

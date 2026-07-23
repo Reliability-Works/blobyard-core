@@ -1,4 +1,4 @@
-use super::presentation::{deploy_summary, yard_summary};
+use super::presentation::{deploy_summary, environment_summary, yard_summary};
 use crate::{
     api::AppState,
     auth::Principal,
@@ -8,7 +8,8 @@ use crate::{
 };
 use axum::Json;
 use blobyard_api_client::{
-    ListWebYardsQuery, ListYardDeploysQuery, WebYardSummary, YardDeploySummary,
+    ListWebYardsQuery, ListYardDeploysQuery, ListYardEnvironmentsQuery, WebYardSummary,
+    YardDeploySummary, YardEnvironmentList,
 };
 use blobyard_contract::{WebYardRecord, YardDeployRecord};
 
@@ -55,6 +56,26 @@ pub(super) fn list_deploys(
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(success(page(items)))
+}
+
+pub(super) fn list_environments(
+    state: &AppState,
+    principal: &Principal,
+    query: &ListYardEnvironmentsQuery,
+) -> Result<Json<Success<YardEnvironmentList>>, ApiError> {
+    let yard = state
+        .repository
+        .web_yard_by_id(&query.yard_id)
+        .map_err(ApiError::from_repository)?;
+    authorize_yard(principal, &yard)?;
+    let environments = state
+        .repository
+        .list_yard_environments(&yard.id)
+        .map_err(ApiError::from_repository)?
+        .into_iter()
+        .map(environment_summary)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(success(YardEnvironmentList { environments }))
 }
 
 pub(super) fn authorize_yard(principal: &Principal, yard: &WebYardRecord) -> Result<(), ApiError> {

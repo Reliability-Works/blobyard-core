@@ -1,5 +1,8 @@
 use crate::Command;
-use crate::commands::{DeleteYardArgs, DeployArgs, RollbackYardArgs, YardCommand, YardNameArgs};
+use crate::commands::{
+    DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs, RollbackYardArgs, YardCommand,
+    YardNameArgs,
+};
 use blobyard_core::{BlobyardError, ErrorCode};
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
 use std::path::PathBuf;
@@ -36,6 +39,12 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             scope,
             Command::Yard {
                 command: YardCommand::History(YardNameArgs { name: yard }),
+            },
+        ),
+        WebYardToolCall::ListYardEnvironments { scope, yard } => (
+            scope,
+            Command::Env {
+                command: EnvCommand::List(EnvListArgs { name: Some(yard) }),
             },
         ),
         WebYardToolCall::RollbackWebYard {

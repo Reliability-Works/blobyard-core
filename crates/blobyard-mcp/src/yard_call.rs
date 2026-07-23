@@ -35,6 +35,13 @@ pub enum WebYardToolCall {
         /// Project-unique Web Yard name.
         yard: String,
     },
+    /// List active environments for one Web Yard.
+    ListYardEnvironments {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
     /// Repoint a Web Yard to an earlier immutable deploy.
     RollbackWebYard {
         /// CLI scope overrides.
@@ -59,6 +66,7 @@ pub(crate) fn is_yard_tool(name: &str) -> bool {
         "deploy_web_yard"
             | "list_web_yards"
             | "list_yard_deploys"
+            | "list_yard_environments"
             | "rollback_web_yard"
             | "delete_web_yard"
     )
@@ -74,6 +82,10 @@ pub(crate) fn parse_yard_call(
         "deploy_web_yard" => parse_deploy(scope, arguments),
         "list_web_yards" => Ok(WebYardToolCall::ListWebYards { scope }),
         "list_yard_deploys" => Ok(WebYardToolCall::ListYardDeploys {
+            scope,
+            yard: required_string(arguments, "yard")?,
+        }),
+        "list_yard_environments" => Ok(WebYardToolCall::ListYardEnvironments {
             scope,
             yard: required_string(arguments, "yard")?,
         }),
@@ -115,7 +127,7 @@ fn require_true(arguments: &Map<String, Value>, key: &str) -> Result<(), String>
 fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), String> {
     let specific: &[&str] = match name {
         "deploy_web_yard" => &["directory", "yard", "spa", "clean_urls", "public"],
-        "list_yard_deploys" => &["yard"],
+        "list_yard_deploys" | "list_yard_environments" => &["yard"],
         "delete_web_yard" => &["yard", "confirm"],
         "rollback_web_yard" => &["yard", "deploy_id"],
         _ => &[],

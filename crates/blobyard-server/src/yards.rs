@@ -11,8 +11,9 @@ use axum::{
 };
 use blobyard_api_client::{
     DeleteWebYardRequest, EmptyResponse, FailYardDeployRequest, ListWebYardsQuery,
-    ListYardDeploysQuery, RollbackWebYardRequest, StartYardDeployRequest, StartYardDeployResponse,
-    WebYardSummary, YardDeployMutationRequest, YardDeploySummary, YardDeploymentResponse,
+    ListYardDeploysQuery, ListYardEnvironmentsQuery, RollbackWebYardRequest,
+    StartYardDeployRequest, StartYardDeployResponse, WebYardSummary, YardDeployMutationRequest,
+    YardDeploySummary, YardDeploymentResponse, YardEnvironmentList,
 };
 use blobyard_contract::CiAction;
 
@@ -35,6 +36,7 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/yards/deploys/fail", post(fail_yard_deploy))
         .route("/v1/yards/deploys/finalise", post(finalise_yard_deploy))
         .route("/v1/yards/deploys/start", post(start_yard_deploy))
+        .route("/v1/yards/environments", get(list_yard_environments))
         .route("/v1/yards/rollback", post(rollback_yard))
 }
 
@@ -56,6 +58,16 @@ async fn list_yard_deploys(
     require_read(&principal)?;
     let Query(query) = ApiError::invalid_request_result(query)?;
     read::list_deploys(&state, &principal, &query)
+}
+
+async fn list_yard_environments(
+    State(state): State<AppState>,
+    principal: Principal,
+    query: Result<Query<ListYardEnvironmentsQuery>, QueryRejection>,
+) -> Result<Json<Success<YardEnvironmentList>>, ApiError> {
+    require_read(&principal)?;
+    let Query(query) = ApiError::invalid_request_result(query)?;
+    read::list_environments(&state, &principal, &query)
 }
 
 async fn start_yard_deploy(

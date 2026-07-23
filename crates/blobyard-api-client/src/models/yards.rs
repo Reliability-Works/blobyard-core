@@ -116,6 +116,42 @@ pub struct YardDeploymentResponse {
     pub url: String,
 }
 
+/// Public deployment-target class for one Yard environment.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum YardEnvironmentKind {
+    /// The stable environment selected by the public alias.
+    Production,
+    /// A long-lived pre-production environment.
+    Staging,
+    /// A short-lived review environment.
+    Preview,
+}
+
+/// Stable metadata for one named Yard environment.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardEnvironmentSummary {
+    /// Creation timestamp in RFC 3339 form.
+    pub created_at: String,
+    /// Stable environment identifier.
+    pub id: String,
+    /// Deployment-target class.
+    pub kind: YardEnvironmentKind,
+    /// Yard-unique environment name.
+    pub name: Slug,
+    /// Last-change timestamp in RFC 3339 form.
+    pub updated_at: String,
+}
+
+/// Active environments for one Web Yard.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YardEnvironmentList {
+    /// Active environments, production first then by name.
+    pub environments: Vec<YardEnvironmentSummary>,
+}
+
 /// Web Yard list response.
 pub type WebYardPage = Page<WebYardSummary>;
 

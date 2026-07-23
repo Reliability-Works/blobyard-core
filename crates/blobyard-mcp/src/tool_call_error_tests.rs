@@ -172,6 +172,11 @@ fn rejects_implicit_or_malformed_web_yard_confirmation() {
 fn rejects_malformed_web_yard_management_calls() {
     assert_invalid([
         ("blobyard_list_yard_deploys", json!({}), "missing required"),
+        (
+            "blobyard_list_yard_environments",
+            json!({}),
+            "missing required",
+        ),
         ("blobyard_rollback_web_yard", json!({}), "missing required"),
         (
             "blobyard_rollback_web_yard",

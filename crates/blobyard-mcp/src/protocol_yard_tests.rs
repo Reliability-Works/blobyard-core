@@ -13,7 +13,7 @@ pub(super) fn assert_openapi_catalog(listed: &[Value]) {
         .iter()
         .filter_map(|tool| tool["name"].as_str())
         .collect::<BTreeSet<_>>();
-    assert_eq!(expected_names.len(), 46);
+    assert_eq!(expected_names.len(), 47);
     assert_eq!(listed_names, expected_names);
     for (operation, expected_path, expected_method, tool_name) in OPENAPI_MCP_OPERATIONS {
         let endpoint = Endpoint::PUBLIC

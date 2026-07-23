@@ -61,6 +61,54 @@ async fn yard_list_propagates_scope_api_and_pagination_failures() {
 }
 
 #[tokio::test]
+async fn env_list_propagates_scope_selection_and_api_failures() {
+    let missing_scope = fixture(&["blobyard", "env", "list"], Vec::new());
+    assert!(
+        missing_scope
+            .runner
+            .execute(&missing_scope.command)
+            .await
+            .is_err()
+    );
+
+    let scoped = [
+        "blobyard",
+        "--workspace",
+        "team",
+        "--project",
+        "web",
+        "env",
+        "list",
+        "documentation",
+    ];
+    let missing_yard = fixture(
+        &scoped,
+        vec![yard_page(&serde_json::json!([]), &serde_json::Value::Null)],
+    );
+    assert_eq!(
+        missing_yard
+            .runner
+            .execute(&missing_yard.command)
+            .await
+            .expect_err("missing Yard")
+            .code(),
+        ErrorCode::NotFound
+    );
+
+    let remote = fixture(
+        &scoped,
+        vec![
+            yard_page(
+                &serde_json::json!([yard("documentation", None)]),
+                &serde_json::Value::Null,
+            ),
+            api_failure(ErrorCode::ProviderUnavailable, "req_environments"),
+        ],
+    );
+    assert!(remote.runner.execute(&remote.command).await.is_err());
+}
+
+#[tokio::test]
 async fn yard_show_propagates_list_and_selection_failures() {
     let missing_scope = fixture(&["blobyard", "yard", "show"], Vec::new());
     assert!(

@@ -32,11 +32,12 @@ enum ToolKind {
     DeployWebYard,
     ListWebYards,
     ListYardDeploys,
+    ListYardEnvironments,
     RollbackWebYard,
     DeleteWebYard,
 }
 
-const TOOLS: [ToolKind; 26] = [
+const TOOLS: [ToolKind; 27] = [
     ToolKind::Whoami,
     ToolKind::ListWorkspaces,
     ToolKind::CreateWorkspace,
@@ -61,6 +62,7 @@ const TOOLS: [ToolKind; 26] = [
     ToolKind::DeployWebYard,
     ToolKind::ListWebYards,
     ToolKind::ListYardDeploys,
+    ToolKind::ListYardEnvironments,
     ToolKind::RollbackWebYard,
     ToolKind::DeleteWebYard,
 ];
@@ -140,6 +142,9 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::ListYardDeploys => {
             crate::catalog_contracts::list_yard_deploys_contract(&mut properties)
         }
+        ToolKind::ListYardEnvironments => {
+            crate::catalog_contracts::list_yard_environments_contract(&mut properties)
+        }
         ToolKind::RollbackWebYard => {
             crate::catalog_contracts::rollback_yard_contract(&mut properties)
         }
@@ -188,6 +193,7 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ListPreviews
             | ToolKind::ListWebYards
             | ToolKind::ListYardDeploys
+            | ToolKind::ListYardEnvironments
     );
     let destructive = matches!(
         kind,
@@ -244,6 +250,7 @@ impl ToolKind {
             Self::DeployWebYard => "deploy_web_yard",
             Self::ListWebYards => "list_web_yards",
             Self::ListYardDeploys => "list_yard_deploys",
+            Self::ListYardEnvironments => "list_yard_environments",
             Self::RollbackWebYard => "rollback_web_yard",
             Self::DeleteWebYard => "delete_web_yard",
         }

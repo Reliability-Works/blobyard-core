@@ -141,6 +141,9 @@ fn persisted_yard_relationships_fail_closed_for_foreign_authority_and_identity()
     let mut foreign_principal = principal.clone();
     foreign_principal.0.workspace_id = "workspace_foreign".to_owned();
     let deploy_query = blobyard_api_client::ListYardDeploysQuery {
+        yard_id: persisted_yard.id.clone(),
+    };
+    let environment_query = blobyard_api_client::ListYardEnvironmentsQuery {
         yard_id: persisted_yard.id,
     };
     assert_eq!(
@@ -148,6 +151,14 @@ fn persisted_yard_relationships_fail_closed_for_foreign_authority_and_identity()
             &fixture.state,
             &foreign_principal,
             &deploy_query,
+        )),
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        error_status(read::list_environments(
+            &fixture.state,
+            &foreign_principal,
+            &environment_query,
         )),
         StatusCode::NOT_FOUND
     );
@@ -212,6 +223,9 @@ fn read_operations_propagate_repository_and_presentation_failures() {
         StatusCode::INTERNAL_SERVER_ERROR
     );
     let deploy_query = blobyard_api_client::ListYardDeploysQuery {
+        yard_id: persisted_yard.id.clone(),
+    };
+    let environment_query = blobyard_api_client::ListYardEnvironmentsQuery {
         yard_id: persisted_yard.id,
     };
     for failure_index in 0..=1 {
@@ -224,9 +238,20 @@ fn read_operations_propagate_repository_and_presentation_failures() {
             StatusCode::INTERNAL_SERVER_ERROR,
             "failure index {failure_index}"
         );
+        assert_eq!(
+            error_status(read::list_environments(
+                &faulted_state(&fixture, failure_index),
+                &principal,
+                &environment_query,
+            )),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "environment failure index {failure_index}"
+        );
     }
     let _ = read::list_deploys(&fixture.state, &principal, &deploy_query)
         .expect("uploading deploy history");
+    let _ = read::list_environments(&fixture.state, &principal, &environment_query)
+        .expect("backfilled environments");
     let mut invalid = fixture.state;
     invalid.web_yard_origin = "bad\norigin".to_owned();
     assert_eq!(

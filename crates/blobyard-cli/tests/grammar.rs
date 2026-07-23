@@ -108,6 +108,8 @@ const COMPLETE_COMMANDS: &[&[&str]] = &[
     &["blobyard", "yard", "show"],
     &["blobyard", "yard", "show", "docs"],
     &["blobyard", "yard", "history", "docs"],
+    &["blobyard", "env", "list"],
+    &["blobyard", "env", "list", "docs"],
     &["blobyard", "yard", "rollback", "docs", "deploy_1"],
     &["blobyard", "yard", "delete", "docs", "--force"],
     &[
@@ -271,6 +273,7 @@ fn root_help_names_every_command_and_global_flag() {
         "previews",
         "deploy",
         "yard",
+        "env",
         "inbox",
         "retention",
         "audit",

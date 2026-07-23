@@ -184,7 +184,7 @@ fn named_yard<'a>(
         .ok_or_else(|| BlobyardError::from_code(ErrorCode::NotFound))
 }
 
-fn select_yard<'a>(
+pub(super) fn select_yard<'a>(
     yards: &'a [WebYardSummary],
     name: Option<&str>,
 ) -> Result<&'a WebYardSummary, BlobyardError> {
