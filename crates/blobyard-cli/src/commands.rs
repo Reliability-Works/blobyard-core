@@ -5,7 +5,9 @@ use crate::headless_commands::{
     AuditCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand, SharesCommand,
     TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
 };
-use crate::yard_commands::{AccessCommand, DeployArgs, EnvCommand, YardCommand};
+use crate::yard_commands::{
+    AccessCommand, DeployArgs, EnvCommand, YardCommand, YardSessionsCommand,
+};
 use clap::{Args, Subcommand, ValueEnum};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -95,6 +97,12 @@ pub enum Command {
         /// The access operation.
         #[command(subcommand)]
         command: AccessCommand,
+    },
+    /// Inspect or revoke Web Yard browser sessions.
+    YardSessions {
+        /// The browser-session operation.
+        #[command(subcommand)]
+        command: YardSessionsCommand,
     },
     /// Inspect or manage Web Yards.
     Yard {

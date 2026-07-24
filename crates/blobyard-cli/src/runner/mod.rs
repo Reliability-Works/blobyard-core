@@ -22,6 +22,7 @@ mod retry;
 mod sharing;
 mod transfers;
 mod workspaces;
+mod yard_sessions;
 mod yards;
 
 use crate::commands::Command;
@@ -106,9 +107,10 @@ impl Runner {
             Command::Rm(arguments) => self.remove_object(arguments).await,
             Command::Share(_) | Command::Preview(_) => self.execute_capability(command).await,
             Command::Deploy(arguments) => self.deploy(arguments).await,
-            Command::Yard { .. } | Command::Env { .. } | Command::Access { .. } => {
-                self.execute_yard_family(command).await
-            }
+            Command::Yard { .. }
+            | Command::Env { .. }
+            | Command::Access { .. }
+            | Command::YardSessions { .. } => self.execute_yard_family(command).await,
             Command::App { .. } | Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
                 self.execute_local(command)
             }

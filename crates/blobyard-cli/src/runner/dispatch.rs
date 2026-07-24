@@ -1,6 +1,6 @@
 use super::Runner;
 use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand};
-use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand};
+use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
 
@@ -83,6 +83,7 @@ impl Runner {
             Command::Yard { command } => self.execute_yard(command).await,
             Command::Env { command } => self.execute_env(command).await,
             Command::Access { command } => self.execute_access(command).await,
+            Command::YardSessions { command } => self.execute_yard_sessions(command).await,
             _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
         }
     }
@@ -96,6 +97,16 @@ impl Runner {
             AccessCommand::SetVisibility(arguments) => self.access_set_visibility(arguments).await,
             AccessCommand::Grant(arguments) => self.access_grant(arguments).await,
             AccessCommand::Revoke(arguments) => self.access_revoke(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_yard_sessions(
+        &self,
+        command: &YardSessionsCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            YardSessionsCommand::List(arguments) => self.list_yard_sessions(arguments).await,
+            YardSessionsCommand::Revoke(arguments) => self.revoke_yard_session(arguments).await,
         }
     }
 

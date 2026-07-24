@@ -79,6 +79,31 @@ pub(crate) fn revoke_yard_access_contract(
     )
 }
 
+pub(crate) fn list_yard_sessions_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    (
+        "List retained browser sessions for a Web Yard.",
+        vec!["yard"],
+    )
+}
+
+pub(crate) fn revoke_yard_session_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "session_id",
+        string("Stable Yard browser-session identifier."),
+    );
+    (
+        "Revoke one retained Web Yard browser session.",
+        vec!["yard", "session_id"],
+    )
+}
+
 fn string_array(description: &str) -> Value {
     json!({
         "type": "array",

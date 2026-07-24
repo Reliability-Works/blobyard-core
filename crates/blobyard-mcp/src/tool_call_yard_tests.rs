@@ -103,6 +103,31 @@ fn parses_yard_access_grant_and_revoke_calls() {
 }
 
 #[test]
+fn parses_yard_session_list_and_revoke_calls() {
+    assert_eq!(
+        parse(
+            "blobyard_list_yard_sessions",
+            json!({ "yard": "documentation" })
+        ),
+        ToolCall::WebYard(WebYardToolCall::ListYardSessions {
+            scope: Scope::default(),
+            yard: "documentation".into(),
+        })
+    );
+    assert_eq!(
+        parse(
+            "blobyard_revoke_yard_session",
+            json!({ "yard": "documentation", "session_id": "byys_session" })
+        ),
+        ToolCall::WebYard(WebYardToolCall::RevokeYardSession {
+            scope: Scope::default(),
+            yard: "documentation".into(),
+            session_id: "byys_session".into(),
+        })
+    );
+}
+
+#[test]
 fn parses_web_yard_calls_with_explicit_public_and_delete_confirmation() {
     let scope = Scope {
         workspace: Some("team".into()),

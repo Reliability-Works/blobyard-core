@@ -39,11 +39,13 @@ enum ToolKind {
     SetYardVisibility,
     GrantYardAccess,
     RevokeYardAccess,
+    ListYardSessions,
+    RevokeYardSession,
     RollbackWebYard,
     DeleteWebYard,
 }
 
-const TOOLS: [ToolKind; 31] = [
+const TOOLS: [ToolKind; 33] = [
     ToolKind::Whoami,
     ToolKind::ListWorkspaces,
     ToolKind::CreateWorkspace,
@@ -73,6 +75,8 @@ const TOOLS: [ToolKind; 31] = [
     ToolKind::SetYardVisibility,
     ToolKind::GrantYardAccess,
     ToolKind::RevokeYardAccess,
+    ToolKind::ListYardSessions,
+    ToolKind::RevokeYardSession,
     ToolKind::RollbackWebYard,
     ToolKind::DeleteWebYard,
 ];
@@ -153,6 +157,8 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::SetYardVisibility => access::set_yard_visibility_contract(&mut properties),
         ToolKind::GrantYardAccess => access::grant_yard_access_contract(&mut properties),
         ToolKind::RevokeYardAccess => access::revoke_yard_access_contract(&mut properties),
+        ToolKind::ListYardSessions => access::list_yard_sessions_contract(&mut properties),
+        ToolKind::RevokeYardSession => access::revoke_yard_session_contract(&mut properties),
         ToolKind::RollbackWebYard => contracts::rollback_yard_contract(&mut properties),
         ToolKind::DeleteWebYard => contracts::delete_yard_contract(&mut properties),
     };
@@ -211,6 +217,7 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ListYardDeploys
             | ToolKind::ListYardEnvironments
             | ToolKind::GetYardAccess
+            | ToolKind::ListYardSessions
     );
     let destructive = matches!(
         kind,
@@ -222,6 +229,7 @@ fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ClearRetention
             | ToolKind::SetYardVisibility
             | ToolKind::RevokeYardAccess
+            | ToolKind::RevokeYardSession
             | ToolKind::RollbackWebYard
             | ToolKind::DeleteWebYard
     );
@@ -275,6 +283,8 @@ impl ToolKind {
             Self::SetYardVisibility => "set_yard_visibility",
             Self::GrantYardAccess => "grant_yard_access",
             Self::RevokeYardAccess => "revoke_yard_access",
+            Self::ListYardSessions => "list_yard_sessions",
+            Self::RevokeYardSession => "revoke_yard_session",
             Self::RollbackWebYard => "rollback_web_yard",
             Self::DeleteWebYard => "delete_web_yard",
         }

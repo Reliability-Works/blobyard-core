@@ -2,7 +2,7 @@
 
 use super::mcp_yard_command;
 use crate::Command;
-use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand};
+use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
 
 #[test]
@@ -140,5 +140,33 @@ fn web_yard_grant_tools_map_to_cli_contracts() {
         Command::Access {
             command: AccessCommand::Revoke(arguments)
         } if arguments.grant_id == "yardgrant_1"
+    ));
+}
+
+#[test]
+fn web_yard_session_tools_map_to_cli_contracts() {
+    let scope = Scope::default();
+    let (_, listed) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::ListYardSessions {
+        scope: scope.clone(),
+        yard: "site".into(),
+    }))
+    .expect("session list mapping");
+    assert!(matches!(
+        listed,
+        Command::YardSessions {
+            command: YardSessionsCommand::List(arguments)
+        } if arguments.name.as_deref() == Some("site")
+    ));
+    let (_, revoked) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::RevokeYardSession {
+        scope,
+        yard: "site".into(),
+        session_id: "byys_session".into(),
+    }))
+    .expect("session revoke mapping");
+    assert!(matches!(
+        revoked,
+        Command::YardSessions {
+            command: YardSessionsCommand::Revoke(arguments)
+        } if arguments.name == "site" && arguments.session_id == "byys_session"
     ));
 }

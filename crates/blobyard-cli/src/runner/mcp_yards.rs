@@ -1,8 +1,8 @@
 use crate::Command;
 use crate::yard_commands::{
     AccessCommand, AccessListArgs, DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs,
-    GrantAccessArgs, RevokeAccessArgs, RollbackYardArgs, SetVisibilityArgs, YardCommand,
-    YardNameArgs,
+    GrantAccessArgs, RevokeAccessArgs, RevokeYardSessionArgs, RollbackYardArgs, SetVisibilityArgs,
+    YardCommand, YardNameArgs, YardSessionsCommand, YardSessionsListArgs,
 };
 use blobyard_core::{BlobyardError, ErrorCode};
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
@@ -26,6 +26,24 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             yard_command(YardCommand::History(YardNameArgs { name: yard })),
         ),
         WebYardToolCall::ListYardEnvironments { scope, yard } => (scope, env_command(yard)),
+        call @ (WebYardToolCall::GetYardAccess { .. }
+        | WebYardToolCall::SetYardVisibility { .. }
+        | WebYardToolCall::GrantYardAccess { .. }
+        | WebYardToolCall::RevokeYardAccess { .. }
+        | WebYardToolCall::ListYardSessions { .. }
+        | WebYardToolCall::RevokeYardSession { .. }) => return yard_policy_command(call),
+        WebYardToolCall::RollbackWebYard {
+            scope,
+            yard,
+            deploy_id,
+        } => (scope, rollback_command(yard, deploy_id)),
+        WebYardToolCall::DeleteWebYard { scope, yard } => (scope, delete_command(yard)),
+    };
+    Ok(mapped)
+}
+
+fn yard_policy_command(call: WebYardToolCall) -> Result<(Scope, Command), BlobyardError> {
+    let mapped = match call {
         WebYardToolCall::GetYardAccess { scope, yard } => (scope, access_list_command(yard)),
         WebYardToolCall::SetYardVisibility {
             scope,
@@ -56,12 +74,26 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             yard,
             grant_id,
         } => (scope, revoke_command(yard, grant_id)),
-        WebYardToolCall::RollbackWebYard {
+        WebYardToolCall::ListYardSessions { scope, yard } => (
+            scope,
+            Command::YardSessions {
+                command: YardSessionsCommand::List(YardSessionsListArgs { name: Some(yard) }),
+            },
+        ),
+        WebYardToolCall::RevokeYardSession {
             scope,
             yard,
-            deploy_id,
-        } => (scope, rollback_command(yard, deploy_id)),
-        WebYardToolCall::DeleteWebYard { scope, yard } => (scope, delete_command(yard)),
+            session_id,
+        } => (
+            scope,
+            Command::YardSessions {
+                command: YardSessionsCommand::Revoke(RevokeYardSessionArgs {
+                    name: yard,
+                    session_id,
+                }),
+            },
+        ),
+        _ => return Err(BlobyardError::from_code(ErrorCode::InternalError)),
     };
     Ok(mapped)
 }

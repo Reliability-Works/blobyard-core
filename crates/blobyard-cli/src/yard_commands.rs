@@ -111,6 +111,34 @@ pub struct RevokeAccessArgs {
     pub grant_id: String,
 }
 
+/// Web Yard browser-session operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum YardSessionsCommand {
+    /// List retained browser sessions for a Web Yard.
+    List(YardSessionsListArgs),
+    /// Revoke one retained browser session.
+    Revoke(RevokeYardSessionArgs),
+}
+
+/// Arguments for `blobyard yard-sessions list`.
+#[derive(Clone, Debug, Args)]
+pub struct YardSessionsListArgs {
+    /// Project-unique Web Yard name, selected automatically when only one exists.
+    #[arg(value_name = "NAME")]
+    pub name: Option<String>,
+}
+
+/// Arguments for `blobyard yard-sessions revoke`.
+#[derive(Clone, Debug, Args)]
+pub struct RevokeYardSessionArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Stable Yard browser-session identifier.
+    #[arg(value_name = "SESSION_ID")]
+    pub session_id: String,
+}
+
 /// Web Yard management operations.
 #[derive(Clone, Debug, Subcommand)]
 pub enum YardCommand {

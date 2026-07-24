@@ -13,7 +13,7 @@ pub(super) fn assert_openapi_catalog(listed: &[Value]) {
         .iter()
         .filter_map(|tool| tool["name"].as_str())
         .collect::<BTreeSet<_>>();
-    assert_eq!(expected_names.len(), 53);
+    assert_eq!(expected_names.len(), 55);
     assert_eq!(listed_names, expected_names);
     for (operation, expected_path, expected_method, tool_name) in OPENAPI_MCP_OPERATIONS {
         let endpoint = Endpoint::PUBLIC
@@ -67,5 +67,20 @@ pub(super) fn assert_yard_catalog(listed: &[Value]) {
     assert_eq!(
         delete_yard["inputSchema"]["required"],
         json!(["yard", "confirm"])
+    );
+    let list_sessions = listed
+        .iter()
+        .find(|tool| tool["name"] == "blobyard_list_yard_sessions")
+        .expect("Yard session list tool must be listed");
+    assert_eq!(list_sessions["annotations"]["readOnlyHint"], true);
+    assert_eq!(list_sessions["inputSchema"]["required"], json!(["yard"]));
+    let revoke_session = listed
+        .iter()
+        .find(|tool| tool["name"] == "blobyard_revoke_yard_session")
+        .expect("Yard session revoke tool must be listed");
+    assert_eq!(revoke_session["annotations"]["destructiveHint"], true);
+    assert_eq!(
+        revoke_session["inputSchema"]["required"],
+        json!(["yard", "session_id"])
     );
 }

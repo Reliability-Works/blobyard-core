@@ -84,6 +84,22 @@ pub enum WebYardToolCall {
         /// Stable grant identifier.
         grant_id: String,
     },
+    /// List retained browser sessions for one Web Yard.
+    ListYardSessions {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
+    /// Revoke one retained Web Yard browser session.
+    RevokeYardSession {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable Yard browser-session identifier.
+        session_id: String,
+    },
     /// Repoint a Web Yard to an earlier immutable deploy.
     RollbackWebYard {
         /// CLI scope overrides.
@@ -113,6 +129,8 @@ pub(crate) fn is_yard_tool(name: &str) -> bool {
             | "set_yard_visibility"
             | "grant_yard_access"
             | "revoke_yard_access"
+            | "list_yard_sessions"
+            | "revoke_yard_session"
             | "rollback_web_yard"
             | "delete_web_yard"
     )
@@ -157,6 +175,15 @@ pub(crate) fn parse_yard_call(
             scope,
             yard: required_string(arguments, "yard")?,
             grant_id: required_string(arguments, "grant_id")?,
+        }),
+        "list_yard_sessions" => Ok(WebYardToolCall::ListYardSessions {
+            scope,
+            yard: required_string(arguments, "yard")?,
+        }),
+        "revoke_yard_session" => Ok(WebYardToolCall::RevokeYardSession {
+            scope,
+            yard: required_string(arguments, "yard")?,
+            session_id: required_string(arguments, "session_id")?,
         }),
         "rollback_web_yard" => Ok(WebYardToolCall::RollbackWebYard {
             scope,
@@ -214,7 +241,10 @@ fn require_true(arguments: &Map<String, Value>, key: &str) -> Result<(), String>
 fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), String> {
     let specific: &[&str] = match name {
         "deploy_web_yard" => &["directory", "yard", "spa", "clean_urls", "public"],
-        "list_yard_deploys" | "list_yard_environments" | "get_yard_access" => &["yard"],
+        "list_yard_deploys"
+        | "list_yard_environments"
+        | "get_yard_access"
+        | "list_yard_sessions" => &["yard"],
         "set_yard_visibility" => &["yard", "visibility"],
         "grant_yard_access" => &[
             "yard",
@@ -225,6 +255,7 @@ fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), Stri
             "expires_at",
         ],
         "revoke_yard_access" => &["yard", "grant_id"],
+        "revoke_yard_session" => &["yard", "session_id"],
         "delete_web_yard" => &["yard", "confirm"],
         "rollback_web_yard" => &["yard", "deploy_id"],
         _ => &[],

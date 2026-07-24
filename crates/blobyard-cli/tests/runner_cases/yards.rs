@@ -66,6 +66,8 @@ mod environment_tests;
 mod management_failure_tests;
 #[path = "yards/management_tests.rs"]
 mod management_tests;
+#[path = "yards/session_tests.rs"]
+mod session_tests;
 
 fn start_response(
     name: &str,
