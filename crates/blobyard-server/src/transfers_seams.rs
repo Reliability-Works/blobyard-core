@@ -195,10 +195,12 @@ fn fixture_state(
     let repository: Arc<dyn Repository> = sqlite_repository;
     let storage =
         Arc::new(FilesystemStorage::open(&root.path().join("objects")).expect("storage fixture"));
+    let capability_key = Arc::new(SecretString::new("capability").expect("secret"));
     AppState {
         repository,
         storage,
-        capability_key: Arc::new(SecretString::new("capability").expect("secret")),
+        yard_continuation_key: Arc::new(crate::yard_session_contracts::derive_key(&capability_key)),
+        capability_key,
         public_origin: "http://127.0.0.1:8787".to_owned(),
         web_yard_origin: "http://localhost:8787".to_owned(),
         staging_directory,

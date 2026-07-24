@@ -17,7 +17,7 @@ use blobyard_api_client::{
     YardAccessResponse, YardDeployMutationRequest, YardDeploySummary, YardDeploymentResponse,
     YardEnvironmentList, YardVisibilityResponse,
 };
-use blobyard_contract::CiAction;
+use blobyard_contract::{CiAction, RepositoryError};
 
 #[path = "yards_access.rs"]
 mod access;
@@ -31,6 +31,8 @@ mod lifecycle;
 mod presentation;
 #[path = "yards_read.rs"]
 mod read;
+#[path = "yards_sessions.rs"]
+mod sessions;
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -45,6 +47,8 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/yards/deploys/finalise", post(finalise_yard_deploy))
         .route("/v1/yards/deploys/start", post(start_yard_deploy))
         .route("/v1/yards/environments", get(list_yard_environments))
+        .route("/v1/yards/sessions", get(list_yard_sessions))
+        .route("/v1/yards/sessions/revoke", post(revoke_yard_session))
         .route("/v1/yards/rollback", post(rollback_yard))
 }
 
@@ -86,6 +90,31 @@ async fn get_yard_access(
     require_read(&principal)?;
     let Query(query) = ApiError::invalid_request_result(query)?;
     access::get(&state, &principal, &query, crate::transfer_grants::now_ms())
+}
+
+async fn list_yard_sessions(
+    State(state): State<AppState>,
+    principal: Principal,
+    query: Result<Query<blobyard_api_client::ListYardSessionsQuery>, QueryRejection>,
+) -> Result<Json<Success<blobyard_api_client::ListYardSessionsResponse>>, ApiError> {
+    require_read(&principal)?;
+    let Query(query) = ApiError::invalid_request_result(query)?;
+    sessions::list(&state, &principal, &query, crate::transfer_grants::now_ms())
+}
+
+async fn revoke_yard_session(
+    State(state): State<AppState>,
+    principal: Principal,
+    payload: Result<Json<blobyard_api_client::RevokeYardSessionRequest>, JsonRejection>,
+) -> Result<Json<Success<EmptyResponse>>, ApiError> {
+    require_manage(&principal)?;
+    let Json(request) = ApiError::invalid_request_result(payload)?;
+    sessions::revoke(
+        &state,
+        &principal,
+        &request,
+        crate::transfer_grants::now_ms(),
+    )
 }
 
 async fn set_yard_visibility(
@@ -247,10 +276,26 @@ pub(crate) async fn public_fallback(
         return Err(ApiError::not_found());
     }
     let path = contracts::public_request_path(uri.path())?;
-    let target = state
-        .repository
-        .yard_file_by_host(&host_label, &path, None, crate::transfer_grants::now_ms()?)
-        .map_err(ApiError::concealed_capability)?;
+    let session = crate::yard_session_cookie::read(&headers);
+    let session_hash = session
+        .as_ref()
+        .map(|token| crate::auth::hash(token.expose_secret()));
+    let target = state.repository.yard_file_by_host(
+        &host_label,
+        &path,
+        session_hash.as_deref(),
+        crate::transfer_grants::now_ms()?,
+    );
+    let target = match target {
+        Ok(target) => target,
+        Err(RepositoryError::NotFound | RepositoryError::InvalidInput)
+            if method == Method::GET && accepts_html(&headers) =>
+        {
+            let return_path = uri.path_and_query().map_or("/", |value| value.as_str());
+            return crate::yard_session_runtime::login_redirect(&state, &host_label, return_path);
+        }
+        Err(error) => return Err(ApiError::concealed_capability(error)),
+    };
     let status = if target.not_found_document {
         StatusCode::NOT_FOUND
     } else {
@@ -264,6 +309,16 @@ pub(crate) async fn public_fallback(
         status,
     )
     .await
+}
+
+fn accepts_html(headers: &HeaderMap) -> bool {
+    headers
+        .get_all(header::ACCEPT)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(','))
+        .filter_map(|media_range| media_range.split(';').next())
+        .any(|media_type| media_type.trim().eq_ignore_ascii_case("text/html"))
 }
 
 #[cfg(test)]

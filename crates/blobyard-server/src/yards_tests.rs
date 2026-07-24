@@ -37,6 +37,8 @@ mod operation_edge_tests;
 mod presentation_edge_tests;
 #[path = "yards_tests/read_edges.rs"]
 mod read_edge_tests;
+#[path = "yards_tests/session_journey.rs"]
+mod session_journey_tests;
 
 pub(super) fn faulted_state(
     fixture: &test_seams::TransferFixture,

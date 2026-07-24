@@ -33,6 +33,7 @@ pub(crate) struct AppState {
     pub(crate) repository: Arc<dyn Repository>,
     pub(crate) storage: Arc<dyn ObjectStorage>,
     pub(crate) capability_key: Arc<SecretString>,
+    pub(crate) yard_continuation_key: Arc<[u8; 32]>,
     pub(crate) public_origin: String,
     pub(crate) web_yard_origin: String,
     pub(crate) staging_directory: PathBuf,
@@ -49,10 +50,13 @@ pub(crate) fn router(
     web_yard_origin: String,
     staging_directory: PathBuf,
 ) -> Router {
+    let yard_continuation_key =
+        Arc::new(crate::yard_session_contracts::derive_key(&capability_key));
     let state = AppState {
         repository,
         storage,
         capability_key,
+        yard_continuation_key,
         public_origin,
         web_yard_origin,
         staging_directory,
@@ -86,6 +90,8 @@ pub(crate) fn router_with_state(state: AppState) -> Router {
         .merge(crate::inboxes::routes())
         .merge(crate::previews::routes())
         .merge(crate::yards::routes())
+        .merge(crate::yard_login::routes())
+        .merge(crate::yard_session_runtime::routes())
         .fallback(crate::yards::public_fallback)
         .with_state(state)
 }

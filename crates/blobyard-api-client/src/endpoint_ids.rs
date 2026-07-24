@@ -10,7 +10,7 @@ impl Endpoint {
     }
 }
 
-const OPERATION_IDS: [&str; 85] = [
+const OPERATION_IDS: [&str; 87] = [
     "health",
     "exchangeBootstrapToken",
     "startDeviceLogin",
@@ -56,6 +56,8 @@ const OPERATION_IDS: [&str; 85] = [
     "setYardVisibility",
     "grantYardAccess",
     "revokeYardAccess",
+    "listYardSessions",
+    "revokeYardSession",
     "rollbackWebYard",
     "deleteWebYard",
     "listAuditEvents",

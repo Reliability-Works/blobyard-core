@@ -9,6 +9,7 @@ mod share;
 mod sharing;
 mod transfers;
 mod yard_requests;
+mod yard_sessions;
 mod yards;
 
 pub use auth::*;
@@ -19,4 +20,5 @@ pub use share::*;
 pub use sharing::*;
 pub use transfers::*;
 pub use yard_requests::*;
+pub use yard_sessions::*;
 pub use yards::*;

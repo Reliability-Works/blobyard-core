@@ -94,6 +94,14 @@ pub mod transfers_operations;
 #[doc(hidden)]
 pub mod yard_cleanup;
 #[doc(hidden)]
+pub mod yard_login;
+#[doc(hidden)]
+pub mod yard_session_contracts;
+#[doc(hidden)]
+pub mod yard_session_cookie;
+#[doc(hidden)]
+pub mod yard_session_runtime;
+#[doc(hidden)]
 pub mod yards;
 
 #[cfg(any(test, feature = "test-seams"))]

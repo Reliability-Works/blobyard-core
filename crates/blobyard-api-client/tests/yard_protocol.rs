@@ -4,8 +4,9 @@
 
 use blobyard_api_client::{
     DeleteWebYardRequest, FailYardDeployRequest, ListWebYardsQuery, ListYardDeploysQuery,
+    ListYardSessionsQuery, ListYardSessionsResponse, RevokeYardSessionRequest,
     RollbackWebYardRequest, StartYardDeployRequest, StartYardDeployResponse, WebYardPage,
-    YardDeployMutationRequest, YardDeployPage, YardDeploymentResponse,
+    YardDeployMutationRequest, YardDeployPage, YardDeploymentResponse, YardSessionStatus,
 };
 use blobyard_core::Slug;
 
@@ -84,6 +85,21 @@ fn web_yard_management_requests_encode_exactly() {
         serde_json::json!({ "yardId": "yard_1" })
     );
     assert_eq!(
+        ListYardSessionsQuery {
+            yard_id: "yard_1".into(),
+        }
+        .into_query(),
+        "yardId=yard_1"
+    );
+    assert_eq!(
+        RevokeYardSessionRequest {
+            session_id: "yardsession_1".into(),
+            yard_id: "yard_1".into(),
+        }
+        .into_json(),
+        serde_json::json!({ "sessionId": "yardsession_1", "yardId": "yard_1" })
+    );
+    assert_eq!(
         RollbackWebYardRequest {
             yard_id: "yard_1".into(),
             deploy_id: None,
@@ -140,4 +156,22 @@ fn web_yard_responses_decode_the_http_contract() {
     }))
     .expect("deployment response");
     assert_eq!(deployment.deploy_id, "deploy_1");
+
+    let sessions: ListYardSessionsResponse = serde_json::from_value(serde_json::json!({
+        "sessions": [{
+            "createdAt": "2026-07-24T10:00:00Z",
+            "environmentId": "yardenv_1",
+            "expiresAt": "2026-07-24T22:00:00Z",
+            "hostLabel": "docs-123456789-main",
+            "id": "yardsession_1",
+            "lastUsedAt": null,
+            "status": "active",
+            "userDisplayName": "Yard Reader",
+            "userId": "user_1",
+            "yardId": "yard_1"
+        }]
+    }))
+    .expect("session list");
+    assert_eq!(sessions.sessions[0].status, YardSessionStatus::Active);
+    assert_eq!(sessions.sessions[0].user_display_name, "Yard Reader");
 }
