@@ -87,9 +87,10 @@ impl LocalUserRepository for SqliteRepository {
                 .execute(
                     "UPDATE local_users SET status = 'deactivated', deactivated_at_ms = ?2 WHERE id = ?1 AND status = 'active'",
                     params![user.id, now],
-                )
-                .map_err(map_error)?;
+            )
+            .map_err(map_error)?;
             revoke_active_keys(transaction, &user.id, now)?;
+            super::yard_session_store::revoke_for_user(transaction, &user.id, now)?;
             lifecycle_audit::insert(transaction, event)
         })
     }

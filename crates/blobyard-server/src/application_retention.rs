@@ -1,7 +1,7 @@
 use crate::{RuntimeStorage, ServerError, storage_configuration::StorageConfiguration};
 use blobyard_contract::{
     AuditValue, LifecycleRepository, MetadataRepository, NewAuditEvent, ObjectStorage,
-    RepositoryError, StorageError, StorageKey,
+    RepositoryError, StorageError, StorageKey, YardSessionRepository,
 };
 use blobyard_repository_sqlite::SqliteRepository;
 use std::path::Path;
@@ -16,18 +16,28 @@ pub(super) fn enforce_retention_with_storage(
 ) -> Result<(), ServerError> {
     let repository = SqliteRepository::open(&data_directory.join("metadata.sqlite3"))?;
     let storage = storage_configuration.open(data_directory)?;
-    for project_id in repository.retained_projects()? {
-        enforce_project(&repository, storage.as_ref(), &project_id)?;
-    }
-    Ok(())
+    enforce_repository_with_housekeeping(
+        &repository,
+        storage.as_ref(),
+        current_time,
+        SqliteRepository::purge_yard_session_history,
+    )
 }
 
-fn enforce_project(
+fn enforce_repository_with_housekeeping<F>(
     repository: &SqliteRepository,
     storage: &dyn RuntimeStorage,
-    project_id: &str,
-) -> Result<(), ServerError> {
-    enforce_project_with_clock(repository, storage, project_id, current_time)
+    clock: fn() -> Result<u64, ServerError>,
+    housekeeping: F,
+) -> Result<(), ServerError>
+where
+    F: FnOnce(&SqliteRepository, u64) -> Result<(), RepositoryError>,
+{
+    housekeeping(repository, clock()?)?;
+    for project_id in repository.retained_projects()? {
+        enforce_project_with_clock(repository, storage, &project_id, clock)?;
+    }
+    Ok(())
 }
 
 pub(super) fn enforce_project_with_clock(
@@ -127,4 +137,52 @@ pub(super) fn project_workspace(
         }
     }
     Err(RepositoryError::NotFound.into())
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+
+    use super::*;
+    use blobyard_storage_filesystem::FilesystemStorage;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn housekeeping_runs_once_without_retained_projects_and_propagates_failure() {
+        let root = tempfile::tempdir().expect("root");
+        let repository =
+            SqliteRepository::open(&root.path().join("metadata.sqlite3")).expect("repository");
+        let storage = FilesystemStorage::open(&root.path().join("objects")).expect("storage");
+        let calls = AtomicUsize::new(0);
+
+        enforce_repository_with_housekeeping(
+            &repository,
+            &storage,
+            fixed_clock,
+            |_repository, _now_ms| {
+                calls.fetch_add(1, Ordering::Relaxed);
+                Ok(())
+            },
+        )
+        .expect("housekeeping");
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+
+        assert_eq!(
+            enforce_repository_with_housekeeping(
+                &repository,
+                &storage,
+                fixed_clock,
+                |_repository, _now_ms| Err(RepositoryError::Unavailable),
+            ),
+            Err(ServerError::Repository(RepositoryError::Unavailable))
+        );
+    }
+
+    #[allow(
+        clippy::unnecessary_wraps,
+        reason = "production housekeeping accepts a fallible clock"
+    )]
+    const fn fixed_clock() -> Result<u64, ServerError> {
+        Ok(1_000)
+    }
 }

@@ -1,8 +1,8 @@
-use super::{collect, map_error, rows, yard_rows};
+use super::{collect, map_error, rows, yard_rows, yard_session_admission};
 use blobyard_contract::{
     RepositoryError, WebYardRecord, YardDeployRecord, YardEnvironmentRecord, YardFileTarget,
 };
-use rusqlite::{Connection, OptionalExtension, Statement, params};
+use rusqlite::{Connection, OptionalExtension, Statement, Transaction, params};
 
 pub(super) fn yard_by_id(
     connection: &Connection,
@@ -104,21 +104,68 @@ pub(super) fn list_environments(
     )
 }
 
-pub(super) fn public_file(
-    connection: &Connection,
+pub(super) fn authorized_file(
+    transaction: &Transaction<'_>,
     host_label: &str,
     normalized_request_path: &str,
+    session_token_hash: Option<&str>,
+    now_ms: i64,
 ) -> Result<YardFileTarget, RepositoryError> {
-    let deploy = serving_deploy(connection, host_label)?;
+    let deploy = serving_deploy(transaction, host_label)?;
+    let visibility = effective_visibility(transaction, &deploy.yard_id)?;
+    let session_id = if visibility == "public" {
+        None
+    } else {
+        let hash = session_token_hash.ok_or(RepositoryError::NotFound)?;
+        super::auth_validation::validate_hash(hash)?;
+        yard_session_admission::session_id(
+            transaction,
+            hash,
+            host_label,
+            &deploy.yard_id,
+            &visibility,
+            now_ms,
+        )?
+        .ok_or(RepositoryError::NotFound)
+        .map(Some)?
+    };
     for (path, not_found_document) in resolution_candidates(normalized_request_path, &deploy) {
-        if let Some(object) = file_by_path(connection, &deploy.id, &path)? {
-            return Ok(YardFileTarget {
+        if let Some(object) = file_by_path(transaction, &deploy.id, &path)? {
+            let target = YardFileTarget {
                 object,
                 not_found_document,
-            });
+            };
+            if let Some(session_id) = session_id.as_deref() {
+                touch_session(transaction, session_id, now_ms)?;
+            }
+            return Ok(target);
         }
     }
     Err(RepositoryError::NotFound)
+}
+
+fn effective_visibility(connection: &Connection, yard_id: &str) -> Result<String, RepositoryError> {
+    connection
+        .query_row(
+            "SELECT COALESCE((SELECT visibility FROM yard_access_policies WHERE yard_id = ?1), 'public')",
+            [yard_id],
+            |row| row.get(0),
+        )
+        .map_err(map_error)
+}
+
+fn touch_session(
+    transaction: &Transaction<'_>,
+    session_id: &str,
+    now_ms: i64,
+) -> Result<(), RepositoryError> {
+    let changed = transaction
+        .execute(
+            "UPDATE yard_sessions SET last_used_at_ms = CASE WHEN last_used_at_ms IS NULL OR last_used_at_ms < ?2 THEN ?2 ELSE last_used_at_ms END WHERE id = ?1",
+            params![session_id, now_ms],
+        )
+        .map_err(map_error)?;
+    super::changed_once(changed)
 }
 
 fn serving_deploy(
@@ -138,7 +185,7 @@ fn stable_deploy(
     connection
         .query_row(
             &format!(
-                "SELECT {} FROM web_yards y JOIN yard_deploys d ON d.id = y.current_deploy_id WHERE y.host_label = ?1 AND y.status = 'active' AND d.yard_id = y.id AND d.status = 'live' AND NOT EXISTS (SELECT 1 FROM yard_access_policies p WHERE p.yard_id = y.id AND p.visibility != 'public')",
+                "SELECT {} FROM web_yards y JOIN yard_deploys d ON d.id = y.current_deploy_id WHERE y.host_label = ?1 AND y.status = 'active' AND d.yard_id = y.id AND d.status = 'live'",
                 yard_rows::QUALIFIED_DEPLOY_COLUMNS
             ),
             [host_label],
@@ -155,7 +202,7 @@ fn immutable_deploy(
     connection
         .query_row(
             &format!(
-                "SELECT {} FROM yard_deploys d JOIN web_yards y ON y.id = d.yard_id WHERE d.deployment_host_label = ?1 AND y.status = 'active' AND d.status IN ('live', 'superseded') AND NOT EXISTS (SELECT 1 FROM yard_access_policies p WHERE p.yard_id = y.id AND p.visibility != 'public')",
+                "SELECT {} FROM yard_deploys d JOIN web_yards y ON y.id = d.yard_id WHERE d.deployment_host_label = ?1 AND y.status = 'active' AND d.status IN ('live', 'superseded')",
                 yard_rows::QUALIFIED_DEPLOY_COLUMNS
             ),
             [host_label],

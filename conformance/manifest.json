@@ -38,8 +38,8 @@
     },
     {
       "path": "behavior/yard-sessions.json",
-      "sha256": "673ed2fb11839bb07f03332a3c7799f335a797c927c3f1fb0b1d0b159f44ed7d",
-      "size": 1340
+      "sha256": "b306ad5dce812dc0ebec10abcd6eb6d313047ac8a6d60253e594ff17b1a0cf88",
+      "size": 1327
     },
     {
       "path": "blobyard-core.openapi.json",

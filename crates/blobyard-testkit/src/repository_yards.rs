@@ -1,6 +1,7 @@
 use blobyard_contract::{
-    NewAuditEvent, NewYardFile, RepositoryError, TransferRepository, WebYardRepository,
-    WebYardStatus, YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus,
+    LifecycleRepository, LocalUserRepository, NewAuditEvent, NewYardFile, RepositoryError,
+    TransferRepository, WebYardRepository, WebYardStatus, YardDeployStatus, YardEnvironmentKind,
+    YardEnvironmentStatus, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -13,14 +14,33 @@ mod delivery;
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+#[path = "repository_yards_session_fixtures.rs"]
+mod session_fixtures;
+#[path = "repository_yards_sessions.rs"]
+mod sessions;
 use delivery::{assert_deleted_yard_cannot_finalise, assert_delivery, prune_history};
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
 pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 
 /// Combined repository surface needed by Web Yard conformance.
-pub trait YardConformanceRepository: WebYardRepository + TransferRepository {}
+pub trait YardConformanceRepository:
+    WebYardRepository
+    + TransferRepository
+    + LocalUserRepository
+    + YardSessionRepository
+    + LifecycleRepository
+{
+}
 
-impl<T: WebYardRepository + TransferRepository> YardConformanceRepository for T {}
+impl<
+    T: WebYardRepository
+        + TransferRepository
+        + LocalUserRepository
+        + YardSessionRepository
+        + LifecycleRepository,
+> YardConformanceRepository for T
+{
+}
 
 /// Validated names used to exercise distinct Web Yard lifecycles.
 pub struct YardConformanceFixture {
@@ -90,6 +110,7 @@ pub fn yard_conformance(
         return Err(RepositoryError::Unavailable);
     }
     access::assert_access_controls(repository, &first, &version_id)?;
+    sessions::assert_session_controls(repository, &first, &version_id)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
     assert_yard_deletion(repository, &first)

@@ -78,6 +78,16 @@ mod yard_lifecycle;
 mod yard_queries;
 #[path = "yard_rows.rs"]
 mod yard_rows;
+#[path = "yard_session_admission.rs"]
+mod yard_session_admission;
+#[path = "yard_session_rows.rs"]
+mod yard_session_rows;
+#[path = "yard_session_store.rs"]
+mod yard_session_store;
+#[path = "yard_session_validation.rs"]
+mod yard_session_validation;
+#[path = "yard_sessions.rs"]
+mod yard_sessions;
 #[path = "yard_start.rs"]
 mod yard_start;
 #[path = "yard_validation.rs"]

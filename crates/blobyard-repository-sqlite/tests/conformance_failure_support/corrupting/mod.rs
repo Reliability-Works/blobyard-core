@@ -7,6 +7,7 @@ mod previews;
 mod sharing;
 mod transfer;
 mod yard_access;
+mod yard_sessions;
 mod yards;
 
 use std::sync::atomic::AtomicUsize;
@@ -142,6 +143,11 @@ pub(crate) enum Corruption {
     YardSecondRevoke,
     YardGrantListOrder,
     YardAccessEnvironmentSeed,
+    YardSessionAdmission,
+    YardSessionExchange,
+    YardSessionList,
+    YardSessionFirstRevoke,
+    YardSessionLogoutRevoke,
 }
 
 pub(crate) struct Corrupting<'a, T> {

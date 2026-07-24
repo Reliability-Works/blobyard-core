@@ -16,6 +16,7 @@ fn assert_tables(repository: &SqliteRepository, tables: &[&str]) {
             .expect("table query");
         assert!(exists, "{table}");
     }
+    drop(connection);
 }
 
 #[test]
@@ -138,6 +139,7 @@ fn yard_session_migration_adds_empty_continuation_and_session_tables() {
             .expect("empty table");
         assert_eq!(count, 0);
     }
+    drop(connection);
 }
 
 #[test]

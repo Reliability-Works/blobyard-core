@@ -14,6 +14,7 @@ mod transfers;
 mod yard_access;
 mod yard_environments;
 mod yard_repository;
+mod yard_sessions;
 mod yards;
 
 fn is_valid_relative_path(value: &str, maximum_bytes: usize) -> bool {
@@ -75,6 +76,13 @@ pub use yard_access::{
 };
 pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};
+pub use yard_sessions::{
+    NewYardContinuation, NewYardSession, YARD_CONTINUATION_LIFETIME_MS,
+    YARD_EXCHANGE_CODE_LIFETIME_MS, YARD_LOGIN_RATE_LIMIT, YARD_LOGIN_RATE_WINDOW_MS,
+    YARD_SESSION_COOKIE_NAME, YARD_SESSION_LIFETIME_MS, YARD_SESSION_REVOCATION_BOUND_MS,
+    YardAdmission, YardContinuationRecord, YardSessionAuditContext, YardSessionExchange,
+    YardSessionListing, YardSessionRecord, YardSessionRepository, YardSessionStatus,
+};
 pub use yards::{
     MAXIMUM_YARD_PATH_BYTES, NewWebYard, NewYardDeploy, NewYardFile, WebYardRecord, WebYardStatus,
     YardDeployRecord, YardDeployStatus, YardDeploymentRecord, YardFileTarget, YardStartRecord,

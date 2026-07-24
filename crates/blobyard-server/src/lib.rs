@@ -145,6 +145,7 @@ repository_surface!(
     blobyard_contract::MetadataRepository,
     blobyard_contract::CredentialRepository,
     blobyard_contract::LocalUserRepository,
+    blobyard_contract::YardSessionRepository,
     blobyard_contract::CiRepository,
     blobyard_contract::TransferRepository,
     blobyard_contract::LifecycleRepository,

@@ -220,15 +220,23 @@ impl WebYardRepository for SqliteRepository {
         &self,
         host_label: &str,
         normalized_request_path: &str,
-        _session_token_hash: Option<&str>,
-        _now_ms: u64,
+        session_token_hash: Option<&str>,
+        now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError> {
         rows::validate_text(host_label)?;
         if !is_valid_yard_request_path(normalized_request_path) {
             return Err(RepositoryError::InvalidInput);
         }
-        let connection = self.connection()?;
-        yard_queries::public_file(&connection, host_label, normalized_request_path)
+        let now = transfer_validation::to_i64(now_ms)?;
+        self.write_transaction(|transaction| {
+            yard_queries::authorized_file(
+                transaction,
+                host_label,
+                normalized_request_path,
+                session_token_hash,
+                now,
+            )
+        })
     }
 }
 

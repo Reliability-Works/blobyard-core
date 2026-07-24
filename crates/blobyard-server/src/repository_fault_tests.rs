@@ -18,6 +18,8 @@ mod previews;
 mod sharing;
 #[path = "repository_fault_transfers.rs"]
 mod transfers;
+#[path = "repository_fault_yard_sessions.rs"]
+mod yard_sessions;
 #[path = "repository_fault_yards.rs"]
 mod yards;
 

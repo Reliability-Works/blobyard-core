@@ -17,7 +17,7 @@ cases:
       surface: session
   - expected:
       propagationMilliseconds: 0
-    id: yard-session-revocation-bound-is-zero-ms
+    id: revocation-bound-is-zero-ms
     input:
       surface: session-revocation
   - expected:
