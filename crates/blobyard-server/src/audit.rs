@@ -16,6 +16,8 @@ use blobyard_core::Slug;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+include!("audit_local_users.rs");
+
 pub(crate) fn routes() -> Router<AppState> {
     Router::new().route("/v1/audit", get(list))
 }
@@ -200,21 +202,6 @@ pub(crate) fn bootstrap_exchanged(
             "tokenId".to_owned(),
             AuditValue::String(principal.id.clone()),
         )],
-    )
-}
-
-pub(crate) fn local_user_event(
-    principal: &LocalApiTokenRecord,
-    action: &str,
-    user_id: &str,
-    created_at_ms: u64,
-) -> NewAuditEvent {
-    action_event(
-        principal,
-        action,
-        "local_user",
-        vec![("userId".to_owned(), AuditValue::String(user_id.to_owned()))],
-        created_at_ms,
     )
 }
 

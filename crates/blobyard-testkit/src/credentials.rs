@@ -1,3 +1,4 @@
+use crate::{ensure_equal, hash};
 use blobyard_contract::{
     AuditValue, CredentialRepository, LocalApiTokenRecord, LocalCliSessionRecord, NewAuditEvent,
     RepositoryError,
@@ -220,16 +221,4 @@ pub fn cli_session_revoked_event(
         )],
         created_at_ms,
     }
-}
-
-fn ensure_equal<T: Eq>(actual: &T, expected: &T) -> Result<(), RepositoryError> {
-    if actual == expected {
-        Ok(())
-    } else {
-        Err(RepositoryError::Unavailable)
-    }
-}
-
-fn hash(character: char) -> String {
-    std::iter::repeat_n(character, 64).collect()
 }

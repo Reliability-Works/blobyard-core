@@ -5,6 +5,8 @@
 use blobyard_cli::{Cli, CompletionShell, generate_completion};
 use clap::{CommandFactory, Parser};
 
+include!("grammar/local_users.rs");
+
 const COMPLETE_COMMANDS: &[&[&str]] = &[
     &["blobyard", "app", "init"],
     &["blobyard", "app", "validate"],
@@ -183,19 +185,6 @@ const COMPLETE_COMMANDS: &[&[&str]] = &[
     ],
     &["blobyard", "tokens", "list"],
     &["blobyard", "tokens", "revoke", "token_1"],
-    &["blobyard", "users", "list"],
-    &[
-        "blobyard",
-        "--workspace",
-        "team",
-        "users",
-        "create",
-        "Ada Lovelace",
-        "--email",
-        "ada@example.test",
-    ],
-    &["blobyard", "users", "reset-key", "user_1"],
-    &["blobyard", "users", "deactivate", "user_1"],
     &[
         "blobyard",
         "trusts",
@@ -220,7 +209,7 @@ const COMPLETE_COMMANDS: &[&[&str]] = &[
 
 #[test]
 fn accepts_the_complete_command_grammar() {
-    for args in COMPLETE_COMMANDS {
+    for args in COMPLETE_COMMANDS.iter().chain(LOCAL_USER_COMMANDS) {
         assert!(
             Cli::try_parse_from(*args).is_ok(),
             "failed grammar: {args:?}"

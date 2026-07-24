@@ -1,6 +1,7 @@
 mod auth;
 mod inboxes;
 mod lifecycle;
+mod local_users;
 mod metadata;
 mod previews;
 mod sharing;
@@ -57,6 +58,10 @@ pub(crate) enum Corruption {
     FinalTokenListError,
     FinalTokenListMismatch,
     TokenList,
+    LocalUserInitialList,
+    LocalUserFreshAuthentication,
+    LocalUserBoundaryAuthentication,
+    LocalUserResetAuthentication,
     DeletionComplete,
     DeletionItems,
     DeletionReplayIncomplete,

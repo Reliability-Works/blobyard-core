@@ -1,18 +1,12 @@
-use crate::{
-    api::AppState,
-    auth::{self, Principal},
-    error::ApiError,
-    response::{Success, success},
-    transfer_grants,
-};
-use axum::{
-    Json, Router,
-    extract::{
-        Query, State,
-        rejection::{JsonRejection, QueryRejection},
-    },
-    routing::{get, post},
-};
+use crate::api::AppState;
+use crate::auth::{self, Principal};
+use crate::error::ApiError;
+use crate::response::{Success, success};
+use crate::transfer_grants;
+use axum::extract::rejection::{JsonRejection, QueryRejection};
+use axum::extract::{Query, State};
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use blobyard_api_client::{
     CreateLocalUserRequest, CreateLocalUserResponse, DeactivateLocalUserRequest, EmptyResponse,
     ListLocalUsersQuery, ListLocalUsersResponse, LocalUserSummary, ResetLocalUserLoginKeyRequest,
@@ -40,13 +34,13 @@ async fn create(
 ) -> Result<Json<Success<CreateLocalUserResponse>>, ApiError> {
     require_users_manage(&principal)?;
     let Json(request) = ApiError::invalid_request_result(payload)?;
-    create_with_clock(&state, &principal, request, transfer_grants::now_ms())
+    create_with_clock(&state, &principal, &request, transfer_grants::now_ms())
 }
 
 fn create_with_clock(
     state: &AppState,
     principal: &Principal,
-    request: CreateLocalUserRequest,
+    request: &CreateLocalUserRequest,
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<CreateLocalUserResponse>>, ApiError> {
     let now_ms = now?;
@@ -65,18 +59,18 @@ fn create_with_clock(
     };
     let key = new_login_key(&user.id, &raw_key, now_ms);
     let event = crate::audit::local_user_event(&principal.0, "user.created", &user.id, now_ms);
+    let user_summary = summary(LocalUserListing {
+        user: user.clone(),
+        active_key_prefix: Some(key.token_prefix.clone()),
+    })?;
     state
         .repository
         .create_local_user(&user, &key, &event)
         .map_err(ApiError::from_repository)?;
-    let login_key_prefix = key.token_prefix.clone();
     Ok(success(CreateLocalUserResponse {
         login_key: raw_key,
-        login_key_prefix,
-        user: summary(LocalUserListing {
-            user,
-            active_key_prefix: Some(key.token_prefix),
-        })?,
+        login_key_prefix: key.token_prefix,
+        user: user_summary,
     }))
 }
 
@@ -94,8 +88,8 @@ async fn list(
         .map_err(ApiError::from_repository)?
         .into_iter()
         .map(summary)
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(success(ListLocalUsersResponse { users }))
+        .collect::<Result<Vec<_>, _>>();
+    users.map(|users| success(ListLocalUsersResponse { users }))
 }
 
 async fn reset_key(
@@ -246,3 +240,7 @@ const fn api_status(status: LocalUserStatus) -> blobyard_api_client::LocalUserSt
 #[cfg(test)]
 #[path = "api_local_users_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "api_local_users_edge_tests.rs"]
+mod edge_tests;

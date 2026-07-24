@@ -1,3 +1,4 @@
+use crate::{ensure_equal, hash};
 use blobyard_contract::{
     AuditValue, LocalUserListing, LocalUserLoginKeyRecord, LocalUserRecord, LocalUserRepository,
     LocalUserStatus, NewAuditEvent, RepositoryError,
@@ -60,7 +61,9 @@ fn assert_creation_failures(
     let foreign_key = login_key("userkey_foreign", "user_foreign", '1', 22);
     let duplicate_hash = local_user(workspace_id, "user_hash", None, 22);
     let mut duplicate_hash_key = login_key("userkey_hash", "user_hash", '2', 22);
-    duplicate_hash_key.secret_hash = first_key.secret_hash.clone();
+    duplicate_hash_key
+        .secret_hash
+        .clone_from(&first_key.secret_hash);
     let failures = [
         repository.create_local_user(first, first_key, created),
         repository.create_local_user(
@@ -100,8 +103,7 @@ fn reset_and_verify(
     first_key: &LocalUserLoginKeyRecord,
 ) -> Result<LocalUserLoginKeyRecord, RepositoryError> {
     let replacement = login_key("userkey_second", "user_first", '3', 30);
-    let mut orphan = login_key("userkey_orphan", "user_missing", '4', 30);
-    orphan.user_id = "user_missing".to_owned();
+    let orphan = login_key("userkey_orphan", "user_missing", '4', 30);
     let reset = local_user_event("audit_key_reset", first, "user.login_key_reset", 30);
     if repository.reset_local_user_login_key(&orphan, 30, &reset) != Err(RepositoryError::NotFound)
     {
@@ -237,16 +239,4 @@ fn listing(user: LocalUserRecord, active_key_prefix: Option<&str>) -> LocalUserL
         user,
         active_key_prefix: active_key_prefix.map(str::to_owned),
     }
-}
-
-fn ensure_equal<T: Eq>(actual: &T, expected: &T) -> Result<(), RepositoryError> {
-    if actual == expected {
-        Ok(())
-    } else {
-        Err(RepositoryError::Unavailable)
-    }
-}
-
-fn hash(character: char) -> String {
-    std::iter::repeat_n(character, 64).collect()
 }

@@ -13,6 +13,7 @@ pub mod corrupting;
 pub(crate) use corrupting::{Corrupting, Corruption};
 mod faulting_inboxes;
 mod faulting_lifecycle;
+mod faulting_local_users;
 mod faulting_previews;
 mod faulting_sharing;
 mod faulting_yards;

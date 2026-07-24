@@ -268,8 +268,7 @@ fn specific_keys(name: &str) -> &'static [&'static str] {
         "create_invite" => &["email", "role"],
         "revoke_invite" => &["confirm", "invite_id"],
         "update_member_role" => &["confirm", "role", "user_id"],
-        "remove_member" => &["confirm", "user_id"],
-        "deactivate_local_user" => &["confirm", "user_id"],
+        "remove_member" | "deactivate_local_user" => &["confirm", "user_id"],
         "revoke_api_token" => &["confirm", "token_id"],
         "create_ci_trust" => &[
             "allowed_actions",
@@ -337,3 +336,6 @@ mod confirmation_tests;
 #[cfg(test)]
 #[path = "admin_call_tests.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "admin_call_write_tests.rs"]
+mod write_tests;

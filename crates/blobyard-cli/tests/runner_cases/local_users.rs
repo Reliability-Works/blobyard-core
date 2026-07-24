@@ -3,7 +3,7 @@
 #![allow(clippy::expect_used, reason = "test fixture setup must fail loudly")]
 
 use super::dashboard_contract::contract_support::human_stdout;
-use super::support::{Fixture, ok};
+use super::support::{Fixture, api_failure, ok};
 use blobyard_api_client::Endpoint;
 use blobyard_core::ErrorCode;
 
@@ -80,6 +80,41 @@ async fn users_create_sends_the_exact_body_and_reveals_the_key_once() {
         Some(&serde_json::json!({
             "displayName": "Ada Lovelace",
             "email": "ada@example.test",
+            "workspace": "team"
+        }))
+    );
+}
+
+#[tokio::test]
+async fn users_create_without_email_omits_the_optional_field() {
+    let fixture = Fixture::new(
+        &[
+            "blobyard",
+            "--workspace",
+            "team",
+            "users",
+            "create",
+            "No email",
+        ],
+        vec![ok(
+            serde_json::json!({
+                "loginKey": "byuk_no_email",
+                "loginKeyPrefix": "byuk_no_email"
+            }),
+            "req_users_create",
+        )],
+        Some("token"),
+        None,
+    );
+    fixture
+        .runner
+        .execute(&fixture.command)
+        .await
+        .expect("user creation");
+    assert_eq!(
+        fixture.transport.requests()[0].body(),
+        Some(&serde_json::json!({
+            "displayName": "No email",
             "workspace": "team"
         }))
     );
@@ -180,4 +215,26 @@ async fn users_key_reveal_requires_the_raw_key_in_the_response() {
         .await
         .expect_err("missing raw key");
     assert_eq!(error.code(), ErrorCode::InternalError);
+}
+
+#[tokio::test]
+async fn users_commands_preserve_remote_failures() {
+    for args in [
+        &["blobyard", "--workspace", "team", "users", "list"][..],
+        &["blobyard", "users", "reset-key", "user_1"][..],
+    ] {
+        let fixture = Fixture::new(
+            args,
+            vec![api_failure(ErrorCode::Forbidden, "req_users_forbidden")],
+            Some("token"),
+            None,
+        );
+        let error = fixture
+            .runner
+            .execute(&fixture.command)
+            .await
+            .expect_err("remote failure");
+        assert_eq!(error.code(), ErrorCode::Forbidden);
+        assert_eq!(fixture.transport.requests().len(), 1);
+    }
 }

@@ -25,6 +25,21 @@ pub use repository::{
 };
 pub use storage::storage_conformance;
 
+pub(crate) fn ensure_equal<T: Eq>(
+    actual: &T,
+    expected: &T,
+) -> Result<(), blobyard_contract::RepositoryError> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(blobyard_contract::RepositoryError::Unavailable)
+    }
+}
+
+pub(crate) fn hash(character: char) -> String {
+    std::iter::repeat_n(character, 64).collect()
+}
+
 /// A stable valid URI suitable for tests that do not care about object identity.
 pub const SAMPLE_BLOBYARD_URI: &str = "blobyard://sample/default/builds/app.zip?version=1";
 

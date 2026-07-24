@@ -133,33 +133,26 @@ impl<T> RuntimeStorage for T where
 {
 }
 
-pub(crate) trait Repository:
-    blobyard_contract::MetadataRepository
-    + blobyard_contract::CredentialRepository
-    + blobyard_contract::LocalUserRepository
-    + blobyard_contract::CiRepository
-    + blobyard_contract::TransferRepository
-    + blobyard_contract::LifecycleRepository
-    + blobyard_contract::SharingRepository
-    + blobyard_contract::InboxRepository
-    + blobyard_contract::PreviewRepository
-    + blobyard_contract::WebYardRepository
-{
+macro_rules! repository_surface {
+    ($($bound:path),+ $(,)?) => {
+        pub(crate) trait Repository: $($bound +)+ Send + Sync {}
+
+        impl<T> Repository for T where T: $($bound +)+ Send + Sync {}
+    };
 }
 
-impl<T> Repository for T where
-    T: blobyard_contract::MetadataRepository
-        + blobyard_contract::CredentialRepository
-        + blobyard_contract::LocalUserRepository
-        + blobyard_contract::CiRepository
-        + blobyard_contract::TransferRepository
-        + blobyard_contract::LifecycleRepository
-        + blobyard_contract::SharingRepository
-        + blobyard_contract::InboxRepository
-        + blobyard_contract::PreviewRepository
-        + blobyard_contract::WebYardRepository
-{
-}
+repository_surface!(
+    blobyard_contract::MetadataRepository,
+    blobyard_contract::CredentialRepository,
+    blobyard_contract::LocalUserRepository,
+    blobyard_contract::CiRepository,
+    blobyard_contract::TransferRepository,
+    blobyard_contract::LifecycleRepository,
+    blobyard_contract::SharingRepository,
+    blobyard_contract::InboxRepository,
+    blobyard_contract::PreviewRepository,
+    blobyard_contract::WebYardRepository,
+);
 
 fn normalize_origin(value: &str) -> Result<String, ServerError> {
     let parsed = url::Url::parse(value).map_err(|_error| ServerError::PublicOrigin)?;

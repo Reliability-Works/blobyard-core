@@ -2,7 +2,8 @@ use super::{Runner, command_result};
 use crate::headless_commands::{CreateUserArgs, UserIdArgs, UsersCommand};
 use blobyard_api_client::{ApiRequest, Endpoint};
 use blobyard_core::{BlobyardError, ErrorCode};
-use blobyard_mcp::{AdminToolCall, Scope};
+use blobyard_mcp::AdminToolCall;
+use blobyard_mcp::Scope;
 use serde_json::{Value, json};
 
 impl Runner {

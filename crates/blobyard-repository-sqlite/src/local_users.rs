@@ -18,14 +18,18 @@ impl LocalUserRepository for SqliteRepository {
     ) -> Result<(), RepositoryError> {
         validate_new_user(user)?;
         validate_new_key(key)?;
-        if key.user_id != user.id || key.created_at_ms != user.created_at_ms {
+        if key.user_id != user.id {
+            return Err(RepositoryError::InvalidInput);
+        }
+        if key.created_at_ms != user.created_at_ms {
             return Err(RepositoryError::InvalidInput);
         }
         validate_user_event(event, "user.created", user, user.created_at_ms)?;
         self.write_transaction(|transaction| {
             require_workspace(transaction, &user.workspace_id)?;
-            insert_user(transaction, user)?;
-            insert_key(transaction, key)?;
+            let created_at_ms = sql_time(key.created_at_ms)?;
+            insert_user(transaction, user, created_at_ms)?;
+            insert_key(transaction, key, created_at_ms)?;
             lifecycle_audit::insert(transaction, event)
         })
     }
@@ -63,7 +67,7 @@ impl LocalUserRepository for SqliteRepository {
             let user = active_user(transaction, &key.user_id)?;
             validate_user_event(event, "user.login_key_reset", &user, now_ms)?;
             revoke_active_keys(transaction, &user.id, now)?;
-            insert_key(transaction, key)?;
+            insert_key(transaction, key, now)?;
             lifecycle_audit::insert(transaction, event)
         })
     }
@@ -216,6 +220,7 @@ fn revoke_active_keys(
 fn insert_user(
     transaction: &Transaction<'_>,
     user: &LocalUserRecord,
+    created_at_ms: i64,
 ) -> Result<(), RepositoryError> {
     transaction
         .execute(
@@ -225,7 +230,7 @@ fn insert_user(
                 user.workspace_id,
                 user.display_name,
                 user.email,
-                sql_time(user.created_at_ms)?,
+                created_at_ms,
             ],
         )
         .map(|_changed| ())
@@ -235,6 +240,7 @@ fn insert_user(
 fn insert_key(
     transaction: &Transaction<'_>,
     key: &LocalUserLoginKeyRecord,
+    created_at_ms: i64,
 ) -> Result<(), RepositoryError> {
     transaction
         .execute(
@@ -244,7 +250,7 @@ fn insert_key(
                 key.user_id,
                 key.token_prefix,
                 key.secret_hash,
-                sql_time(key.created_at_ms)?,
+                created_at_ms,
                 sql_time(key.expires_at_ms)?,
             ],
         )
@@ -256,11 +262,10 @@ fn query_listings(
     statement: &mut Statement<'_>,
     workspace_id: &str,
 ) -> Result<Vec<LocalUserListing>, RepositoryError> {
-    super::collect(
-        statement
-            .query_map([workspace_id], listing_row)
-            .map_err(map_error)?,
-    )
+    statement
+        .query_map([workspace_id], listing_row)
+        .map_err(map_error)
+        .and_then(super::collect)
 }
 
 fn listing_row(row: &Row<'_>) -> rusqlite::Result<LocalUserListing> {
