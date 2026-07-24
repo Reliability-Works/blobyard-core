@@ -6,7 +6,9 @@ use axum::{
     http::{HeaderMap, Method, Request, Response, StatusCode, header},
     routing::any,
 };
-use blobyard_contract::{NewYardSession, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext};
+use blobyard_contract::{
+    NewYardSession, RepositoryError, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
+};
 use blobyard_core::{GeneratedSecretKind, SecretString};
 
 pub(crate) fn routes() -> Router<AppState> {
@@ -60,8 +62,12 @@ fn exchange(
         &audit,
         now,
     );
-    let Ok(exchanged) = exchanged else {
-        return fresh_login_redirect(state, host_label);
+    let exchanged = match exchanged {
+        Ok(exchanged) => exchanged,
+        Err(error) => {
+            exchange_failure(error)?;
+            return fresh_login_redirect(state, host_label);
+        }
     };
     redirect(
         StatusCode::SEE_OTHER,
@@ -80,11 +86,11 @@ async fn logout_dispatch(
     let host_label = yard_host(&state, request.headers())?;
     require_same_origin(&state, &host_label, request.headers())?;
     if let Some(token) = yard_session_cookie::read(request.headers()) {
-        let _result = state.repository.revoke_yard_session_by_token(
+        logout_result(state.repository.revoke_yard_session_by_token(
             &crate::auth::hash(token.expose_secret()),
             &host_label,
             crate::transfer_grants::now_ms()?,
-        );
+        ))?;
     }
     redirect(
         StatusCode::SEE_OTHER,
@@ -181,3 +187,23 @@ fn single_code(query: &str) -> Option<String> {
         .into_owned();
     values.next().is_none().then_some(value)
 }
+
+const fn exchange_failure(error: RepositoryError) -> Result<(), ApiError> {
+    match error {
+        RepositoryError::NotFound => Ok(()),
+        RepositoryError::Conflict
+        | RepositoryError::InvalidInput
+        | RepositoryError::SchemaTooNew
+        | RepositoryError::Unavailable => Err(ApiError::internal()),
+    }
+}
+
+fn logout_result(result: Result<bool, RepositoryError>) -> Result<(), ApiError> {
+    result
+        .map(|_revoked| ())
+        .map_err(|_error| ApiError::internal())
+}
+
+#[cfg(test)]
+#[path = "yard_session_runtime_tests.rs"]
+mod tests;

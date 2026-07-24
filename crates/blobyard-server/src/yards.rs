@@ -1,12 +1,10 @@
 use crate::{api::AppState, auth::Principal, error::ApiError, response::Success};
 use axum::{
     Json, Router,
-    body::Body,
     extract::{
-        OriginalUri, Query, State,
+        Query, State,
         rejection::{JsonRejection, QueryRejection},
     },
-    http::{HeaderMap, Method, Response, StatusCode, header},
     routing::{get, post},
 };
 use blobyard_api_client::{
@@ -17,7 +15,7 @@ use blobyard_api_client::{
     YardAccessResponse, YardDeployMutationRequest, YardDeploySummary, YardDeploymentResponse,
     YardEnvironmentList, YardVisibilityResponse,
 };
-use blobyard_contract::{CiAction, RepositoryError};
+use blobyard_contract::CiAction;
 
 #[path = "yards_access.rs"]
 mod access;
@@ -29,6 +27,8 @@ mod deploy;
 mod lifecycle;
 #[path = "yards_presentation.rs"]
 mod presentation;
+#[path = "yards_public.rs"]
+mod public;
 #[path = "yards_read.rs"]
 mod read;
 #[path = "yards_sessions.rs"]
@@ -50,6 +50,15 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/yards/sessions", get(list_yard_sessions))
         .route("/v1/yards/sessions/revoke", post(revoke_yard_session))
         .route("/v1/yards/rollback", post(rollback_yard))
+}
+
+pub(crate) async fn public_fallback(
+    state: axum::extract::State<AppState>,
+    uri: axum::extract::OriginalUri,
+    method: axum::http::Method,
+    headers: axum::http::HeaderMap,
+) -> Result<axum::http::Response<axum::body::Body>, ApiError> {
+    public::public_fallback(state, uri, method, headers).await
 }
 
 async fn list_yards(
@@ -255,70 +264,6 @@ fn require_manage(principal: &Principal) -> Result<(), ApiError> {
     } else {
         principal.require("yard:manage")
     }
-}
-
-pub(crate) async fn public_fallback(
-    State(state): State<AppState>,
-    OriginalUri(uri): OriginalUri,
-    method: Method,
-    headers: HeaderMap,
-) -> Result<Response<Body>, ApiError> {
-    let authority = headers
-        .get(header::HOST)
-        .and_then(|value| value.to_str().ok());
-    let host_label =
-        authority.and_then(|value| contracts::public_host_label(&state.web_yard_origin, value));
-    let Some(host_label) = host_label else {
-        return crate::previews::public_fallback(State(state), OriginalUri(uri), method, headers)
-            .await;
-    };
-    if method != Method::GET && method != Method::HEAD {
-        return Err(ApiError::not_found());
-    }
-    let path = contracts::public_request_path(uri.path())?;
-    let session = crate::yard_session_cookie::read(&headers);
-    let session_hash = session
-        .as_ref()
-        .map(|token| crate::auth::hash(token.expose_secret()));
-    let target = state.repository.yard_file_by_host(
-        &host_label,
-        &path,
-        session_hash.as_deref(),
-        crate::transfer_grants::now_ms()?,
-    );
-    let target = match target {
-        Ok(target) => target,
-        Err(RepositoryError::NotFound | RepositoryError::InvalidInput)
-            if method == Method::GET && accepts_html(&headers) =>
-        {
-            let return_path = uri.path_and_query().map_or("/", |value| value.as_str());
-            return crate::yard_session_runtime::login_redirect(&state, &host_label, return_path);
-        }
-        Err(error) => return Err(ApiError::concealed_capability(error)),
-    };
-    let status = if target.not_found_document {
-        StatusCode::NOT_FOUND
-    } else {
-        StatusCode::OK
-    };
-    crate::download_io::public_site_response_with_status(
-        &state,
-        &target.object,
-        &headers,
-        &method,
-        status,
-    )
-    .await
-}
-
-fn accepts_html(headers: &HeaderMap) -> bool {
-    headers
-        .get_all(header::ACCEPT)
-        .iter()
-        .filter_map(|value| value.to_str().ok())
-        .flat_map(|value| value.split(','))
-        .filter_map(|media_range| media_range.split(';').next())
-        .any(|media_type| media_type.trim().eq_ignore_ascii_case("text/html"))
 }
 
 #[cfg(test)]

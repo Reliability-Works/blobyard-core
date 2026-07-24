@@ -10,12 +10,12 @@ pub(super) fn login(
     failed: bool,
 ) -> Result<Response<Body>, ApiError> {
     let error = if failed {
-        "<p class=\"error\" role=\"alert\">Sign-in failed. Check your login key and try again.</p>"
+        "<p class=\"error\" role=\"alert\">That sign-in key was not accepted</p>"
     } else {
         ""
     };
     page(&format!(
-        "<p class=\"eyebrow\">YARD SIGN IN</p><h1>Open {}</h1><p>Enter your Blob Yard login key to continue.</p>{error}<form method=\"post\" action=\"/account/yard-login\"><input type=\"hidden\" name=\"continuation\" value=\"{}\"><label for=\"login-key\">Login key</label><input id=\"login-key\" name=\"login_key\" type=\"password\" autocomplete=\"current-password\" required><button type=\"submit\">Sign in</button></form>",
+        "<p class=\"eyebrow\">YARD SIGN IN</p><h1>Open {}</h1><p>Enter your Blob Yard login key to continue.</p>{error}<form method=\"post\" action=\"/account/yard-login\"><input type=\"hidden\" name=\"continuation\" value=\"{}\"><label for=\"login-key\">Sign-in key</label><input id=\"login-key\" name=\"login_key\" type=\"password\" autocomplete=\"current-password\" required><button type=\"submit\">Sign in</button></form>",
         escape(host_label),
         escape(continuation),
     ))
@@ -24,14 +24,14 @@ pub(super) fn login(
 pub(super) fn invalid_link() -> Result<Response<Body>, ApiError> {
     message(
         "Invalid sign-in link",
-        "This sign-in link is invalid or has expired. Return to the Yard and try again.",
+        "This sign-in link is not valid or has expired",
     )
 }
 
 pub(super) fn access_denied() -> Result<Response<Body>, ApiError> {
     message(
         "Access denied",
-        "Your account does not have access to this Yard.",
+        "You do not have access to this Yard, or it does not exist.",
     )
 }
 

@@ -127,7 +127,7 @@ fn authenticate_and_redirect(
         };
     let code = crate::auth::generate_token(GeneratedSecretKind::YardExchangeCode);
     let durable = NewYardContinuation {
-        id: format!("yardcontinuation_{}", uuid::Uuid::new_v4().simple()),
+        id: continuation_id(),
         continuation_hash: crate::auth::hash(continuation.expose_secret()),
         code_hash: crate::auth::hash(code.expose_secret()),
         yard_id: admission.yard_id,
@@ -146,6 +146,10 @@ fn authenticate_and_redirect(
         Err(RepositoryError::NotFound) => page::access_denied(),
         Err(_) => Err(ApiError::internal()),
     }
+}
+
+fn continuation_id() -> String {
+    format!("yardcont_{}", uuid::Uuid::new_v4().simple())
 }
 
 fn exchange_redirect(
@@ -211,5 +215,15 @@ fn require_identity_host(
         Ok(())
     } else {
         Err(ApiError::not_found())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn durable_continuation_ids_use_the_normative_prefix() {
+        let id = super::continuation_id();
+        assert!(id.starts_with("yardcont_"));
+        assert_eq!(id.len(), "yardcont_".len() + 32);
     }
 }
