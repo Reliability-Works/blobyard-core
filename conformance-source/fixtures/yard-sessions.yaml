@@ -1,0 +1,43 @@
+schemaVersion: 1
+cases:
+  - expected:
+      lifetimeMilliseconds: 600000
+    id: continuation-lifetime-is-ten-minutes
+    input:
+      surface: continuation
+  - expected:
+      lifetimeMilliseconds: 60000
+    id: exchange-code-lifetime-is-sixty-seconds
+    input:
+      surface: exchange-code
+  - expected:
+      lifetimeMilliseconds: 43200000
+    id: session-lifetime-is-twelve-hours
+    input:
+      surface: session
+  - expected:
+      propagationMilliseconds: 0
+    id: yard-session-revocation-bound-is-zero-ms
+    input:
+      surface: session-revocation
+  - expected:
+      attributes:
+        - Secure
+        - HttpOnly
+        - SameSite=Lax
+        - Path=/
+        - Max-Age=43200
+      name: __Host-blobyard-yard-session
+    id: session-cookie-name-is-host-scoped
+    input:
+      surface: session-cookie
+  - expected:
+      responseClass: fresh-login-redirect
+    id: replay-is-indistinguishable-from-expiry
+    input:
+      surface: exchange-failure
+  - expected:
+      responseClass: concealed-not-found
+    id: non-public-non-navigation-matches-unknown-host
+    input:
+      surface: yard-delivery

@@ -274,5 +274,8 @@ mod workspace_behavior;
 #[path = "adapter_migration_tests.rs"]
 mod migration_behavior;
 
+#[path = "adapter_application_migration_tests.rs"]
+mod application_migration_behavior;
+
 #[path = "adapter_multipart_tests.rs"]
 mod multipart_behavior;

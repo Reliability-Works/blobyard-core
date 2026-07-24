@@ -70,7 +70,7 @@ fn finalisation_is_idempotent_and_missing_public_targets_fail_closed() {
     assert_eq!(
         fixture
             .repository
-            .yard_file_by_host(&fixture.yard.host_label, "missing.txt"),
+            .yard_file_by_host(&fixture.yard.host_label, "missing.txt", None, 0),
         Err(RepositoryError::NotFound)
     );
     assert_eq!(

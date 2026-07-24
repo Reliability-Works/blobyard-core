@@ -1295,6 +1295,82 @@
         }
       }
     },
+    "/yards/sessions": {
+      "get": {
+        "operationId": "listYardSessions",
+        "description": "Lists browser sessions for one Yard without exposing token material.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListYardSessionsSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["yard-sessions", "list"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_list_yard_sessions"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ]
+      }
+    },
+    "/yards/sessions/revoke": {
+      "post": {
+        "operationId": "revokeYardSession",
+        "description": "Revokes one Yard browser session. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeYardSessionSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["yard-sessions", "revoke"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_revoke_yard_session"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeYardSessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/yards/deploys": {
       "get": {
         "operationId": "listWebYardDeploys",
@@ -6247,6 +6323,145 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/RevokeYardAccessResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "YardSessionStatus": {
+        "type": "string",
+        "description": "Effective lifecycle state of one Yard browser session.",
+        "enum": ["active", "expired", "revoked"]
+      },
+      "YardSessionSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "environmentId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "hostLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253
+          },
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "lastUsedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IsoTimestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/YardSessionStatus"
+          },
+          "userDisplayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "hostLabel",
+          "id",
+          "lastUsedAt",
+          "status",
+          "userDisplayName",
+          "userId",
+          "yardId"
+        ]
+      },
+      "ListYardSessionsQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["yardId"]
+      },
+      "ListYardSessionsResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YardSessionSummary"
+            }
+          }
+        },
+        "required": ["sessions"]
+      },
+      "ListYardSessionsSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListYardSessionsResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "RevokeYardSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["sessionId", "yardId"]
+      },
+      "RevokeYardSessionResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "RevokeYardSessionSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevokeYardSessionResult"
           },
           "ok": {
             "type": "boolean",

@@ -207,6 +207,65 @@ vectors:
     resource:
       project: demo
       workspace: default
+  - action: yard:read
+    expected:
+      allowed: true
+    id: yard-reader-can-list-sessions
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:read
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: yard-session-listing-is-concealed
+    principalScopes:
+      - yard:read
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:read
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: object-reader-cannot-list-yard-sessions
+    principalScopes:
+      - object:read
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: true
+    id: yard-manager-can-revoke-session
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: NOT_FOUND
+    id: yard-session-revocation-is-concealed
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: other
+  - action: yard:manage
+    expected:
+      allowed: false
+      code: FORBIDDEN
+    id: machine-cannot-revoke-yard-session
+    principalKind: machine
+    principalScopes:
+      - yard:manage
+    resource:
+      project: demo
+      workspace: default
   - action: users:manage
     expected:
       allowed: true

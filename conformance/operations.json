@@ -690,6 +690,19 @@
       "risk": "read"
     },
     {
+      "id": "listYardSessions",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/sessions",
+      "requiredCiActions": ["yard:manage"],
+      "requiredUserScopes": ["yard:read"],
+      "risk": "read"
+    },
+    {
       "id": "logoutCliSession",
       "idempotency": {
         "required": false,
@@ -984,6 +997,19 @@
       "method": "POST",
       "ownership": "core",
       "path": "/yards/access/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeYardSession",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/sessions/revoke",
       "requiredCiActions": [],
       "requiredUserScopes": ["yard:manage"],
       "risk": "destructive"

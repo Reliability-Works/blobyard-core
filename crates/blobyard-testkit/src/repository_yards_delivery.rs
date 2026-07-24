@@ -8,12 +8,12 @@ pub(super) fn assert_delivery(
     host: &str,
     version_id: &str,
 ) -> Result<(), RepositoryError> {
-    let index = repository.yard_file_by_host(host, "")?;
-    let exact = repository.yard_file_by_host(host, "asset.js")?;
-    let directory = repository.yard_file_by_host(host, "docs/")?;
-    let clean = repository.yard_file_by_host(host, "guide")?;
-    let spa = repository.yard_file_by_host(host, "missing")?;
-    let missing = repository.yard_file_by_host(host, "missing.txt")?;
+    let index = repository.yard_file_by_host(host, "", None, 0)?;
+    let exact = repository.yard_file_by_host(host, "asset.js", None, 0)?;
+    let directory = repository.yard_file_by_host(host, "docs/", None, 0)?;
+    let clean = repository.yard_file_by_host(host, "guide", None, 0)?;
+    let spa = repository.yard_file_by_host(host, "missing", None, 0)?;
+    let missing = repository.yard_file_by_host(host, "missing.txt", None, 0)?;
     if index.object.version.id == version_id
         && !index.not_found_document
         && exact.object.version.id == version_id
@@ -63,7 +63,7 @@ pub(super) fn prune_history(
         finalise(repository, &started.deploy.id, version_id, 5, number + 100)?;
     }
     if repository.yard_deploy_by_id(&oldest.id)?.status != YardDeployStatus::Pruned
-        || repository.yard_file_by_host(&oldest.deployment_host_label, "")
+        || repository.yard_file_by_host(&oldest.deployment_host_label, "", None, 0)
             != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);

@@ -119,7 +119,7 @@ fn yard_fault_wrapper_fails_every_operation_at_the_boundary() {
         Err(RepositoryError::Unavailable)
     );
     assert_eq!(
-        fail().yard_file_by_host(&yard.host_label, ""),
+        fail().yard_file_by_host(&yard.host_label, "", None, 0),
         Err(RepositoryError::Unavailable)
     );
 }

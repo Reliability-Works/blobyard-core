@@ -47,7 +47,7 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
     unavailable(repository.fail_yard_deploy(&deploy.id, "FAILED", "failed", 1_001));
     unavailable(repository.rollback_web_yard(&yard.id, Some(&deploy.id), 1_001, &event));
     unavailable(repository.delete_web_yard(&yard.id, 1_001, &event));
-    unavailable(repository.yard_file_by_host(&yard.host_label, ""));
+    unavailable(repository.yard_file_by_host(&yard.host_label, "", None, 0));
     assert_poisoned_yard_access(repository, &yard.id, &event);
 }
 

@@ -421,6 +421,8 @@ dependencies = [
  "blobyard-testkit",
  "clap",
  "futures-util",
+ "hex",
+ "hmac",
  "http-body-util",
  "percent-encoding",
  "reqwest",

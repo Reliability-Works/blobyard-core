@@ -258,6 +258,11 @@
       "requiredCiActions": ["yard:manage"],
       "risk": "read"
     },
+    "listYardSessions": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
     "logoutCliSession": {
       "requiredUserScopes": [],
       "requiredCiActions": [],
@@ -353,6 +358,11 @@
       "risk": "destructive"
     },
     "revokeYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeYardSession": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
       "risk": "destructive"

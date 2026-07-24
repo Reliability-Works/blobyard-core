@@ -1833,6 +1833,68 @@
         "x-blobyard-mcp": { "tool": "blobyard_rollback_web_yard" },
         "x-blobyard-sdk": true
       }
+    },
+    "/yards/sessions": {
+      "get": {
+        "description": "Lists browser sessions for one Yard without exposing token material.",
+        "operationId": "listYardSessions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardSessionsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard-sessions", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_sessions" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/sessions/revoke": {
+      "post": {
+        "description": "Revokes one Yard browser session. Human sessions only.",
+        "operationId": "revokeYardSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardSessionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard-sessions", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_session" },
+        "x-blobyard-sdk": true
+      }
     }
   },
   "security": [{ "bearerAuth": [] }],

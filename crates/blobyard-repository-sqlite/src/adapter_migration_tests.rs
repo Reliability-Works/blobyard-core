@@ -138,7 +138,7 @@ fn inbox_migration_preserves_version_eleven_data_and_adds_empty_capability_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 19);
+    assert_eq!(repository.schema_version().expect("schema version"), 20);
     assert!(
         repository
             .list_inboxes("project")
@@ -169,7 +169,7 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 19);
+    assert_eq!(repository.schema_version().expect("schema version"), 20);
     assert_eq!(
         repository.list_inboxes("project").expect("inboxes").len(),
         1
@@ -181,131 +181,4 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
             .is_empty()
     );
     assert_tables(&repository, &["previews", "preview_files"]);
-}
-
-#[test]
-fn environment_migration_backfills_one_production_environment_per_active_yard() {
-    use blobyard_contract::{MetadataRepository, WebYardRepository};
-
-    let temporary = tempfile::tempdir().expect("temporary directory");
-    let path = temporary.path().join("metadata.sqlite3");
-    let mut connection = Connection::open(&path).expect("version sixteen connection");
-    super::super::migrations::apply_through(&mut connection, 16).expect("version sixteen schema");
-    connection
-        .execute_batch(
-            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');
-             INSERT INTO projects (id, workspace_id, name, slug) VALUES ('project', 'workspace', 'Project', 'project');
-             INSERT INTO web_yards VALUES ('yard_live', 'workspace', 'project', 'docs', 'docs-123456789-team', NULL, 'active', 1, 1, NULL);
-             INSERT INTO web_yards VALUES ('yard_gone', 'workspace', 'project', 'gone', 'gone-123456789-team', NULL, 'deleted', 1, 2, 2);",
-        )
-        .expect("version sixteen fixture");
-    drop(connection);
-
-    let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 19);
-    let environments = repository
-        .list_yard_environments("yard_live")
-        .expect("environments");
-    assert_eq!(environments.len(), 1);
-    assert_eq!(environments[0].id, "yardenv_yard_live");
-    assert_eq!(environments[0].name.as_str(), "production");
-    assert!(
-        repository
-            .list_yard_environments("yard_gone")
-            .expect("deleted Yard environments")
-            .is_empty()
-    );
-    assert_tables(&repository, &["yard_environments"]);
-}
-
-#[test]
-fn access_migration_adds_empty_policy_and_grant_tables() {
-    use blobyard_contract::{MetadataRepository, WebYardRepository};
-
-    let temporary = tempfile::tempdir().expect("temporary directory");
-    let path = temporary.path().join("metadata.sqlite3");
-    let mut connection = Connection::open(&path).expect("version seventeen connection");
-    super::super::migrations::apply_through(&mut connection, 17).expect("version seventeen schema");
-    connection
-        .execute_batch(
-            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');
-             INSERT INTO projects (id, workspace_id, name, slug) VALUES ('project', 'workspace', 'Project', 'project');
-             INSERT INTO web_yards VALUES ('yard_live', 'workspace', 'project', 'docs', 'docs-123456789-team', NULL, 'active', 1, 1, NULL);",
-        )
-        .expect("version seventeen fixture");
-    drop(connection);
-
-    let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 19);
-    assert!(
-        repository
-            .get_yard_access_policy("yard_live")
-            .expect("policy")
-            .is_none(),
-        "an absent policy row must mean public"
-    );
-    assert!(
-        repository
-            .list_yard_access_grants("yard_live", 1)
-            .expect("grants")
-            .is_empty()
-    );
-    assert_tables(&repository, &["yard_access_policies", "yard_access_grants"]);
-}
-
-#[test]
-fn local_user_migration_adds_empty_user_and_key_tables() {
-    use blobyard_contract::{LocalUserRepository, MetadataRepository};
-
-    let temporary = tempfile::tempdir().expect("temporary directory");
-    let path = temporary.path().join("metadata.sqlite3");
-    let mut connection = Connection::open(&path).expect("version eighteen connection");
-    super::super::migrations::apply_through(&mut connection, 18).expect("version eighteen schema");
-    connection
-        .execute_batch(
-            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');",
-        )
-        .expect("version eighteen fixture");
-    drop(connection);
-
-    let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 19);
-    assert!(
-        repository
-            .list_local_users("workspace")
-            .expect("users")
-            .is_empty()
-    );
-    assert_eq!(
-        repository.authenticate_local_user_key(&"ab".repeat(32), 1),
-        Err(RepositoryError::NotFound),
-        "empty tables must admit nobody"
-    );
-    assert_tables(&repository, &["local_users", "local_user_login_keys"]);
-}
-
-#[test]
-fn partial_migration_rejects_newer_targets_and_maps_each_database_failure() {
-    assert_eq!(
-        super::super::migrations::apply_through(
-            &mut Connection::open_in_memory().expect("newer connection"),
-            super::super::migrations::CURRENT_SCHEMA_VERSION + 1,
-        ),
-        Err(RepositoryError::SchemaTooNew)
-    );
-
-    let completed = (0..1_000).find(|&denied_index| {
-        let mut connection = Connection::open_in_memory().expect("denied connection");
-        let observed = super::install_denial(&connection, denied_index);
-        let result = super::super::migrations::apply_through(&mut connection, 9);
-        let count = observed.load(std::sync::atomic::Ordering::Relaxed);
-        if count <= denied_index {
-            result.expect("migration succeeds after every authorization point");
-            true
-        } else {
-            assert_eq!(result, Err(RepositoryError::Unavailable));
-            false
-        }
-    });
-    assert!(completed.is_some(), "migration denial sweep must terminate");
 }

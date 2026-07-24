@@ -784,6 +784,58 @@ paths:
           application/json:
             schema:
               $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessRequest
+  /yards/sessions:
+    get:
+      operationId: listYardSessions
+      description: Lists browser sessions for one Yard without exposing token material.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListYardSessionsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard-sessions
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_sessions
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/sessions/revoke:
+    post:
+      operationId: revokeYardSession
+      description: Revokes one Yard browser session. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardSessionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard-sessions
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_yard_session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardSessionRequest
   /yards/deploys:
     get:
       operationId: listWebYardDeploys

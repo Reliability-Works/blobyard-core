@@ -204,5 +204,7 @@ pub trait WebYardRepository: Send + Sync {
         &self,
         host_label: &str,
         normalized_request_path: &str,
+        session_token_hash: Option<&str>,
+        now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError>;
 }

@@ -53,9 +53,9 @@ fn assert_private_concealment(
     if !updated {
         return Err(RepositoryError::Unavailable);
     }
-    if repository.yard_file_by_host(&first.yard.host_label, "asset.js")
+    if repository.yard_file_by_host(&first.yard.host_label, "asset.js", None, 50)
         != Err(RepositoryError::NotFound)
-        || repository.yard_file_by_host(&first.deploy.deployment_host_label, "asset.js")
+        || repository.yard_file_by_host(&first.deploy.deployment_host_label, "asset.js", None, 50)
             != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);

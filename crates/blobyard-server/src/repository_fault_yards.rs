@@ -153,9 +153,15 @@ impl WebYardRepository for FaultingRepository {
         &self,
         host_label: &str,
         normalized_request_path: &str,
+        session_token_hash: Option<&str>,
+        now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError> {
         self.check()?;
-        self.inner
-            .yard_file_by_host(host_label, normalized_request_path)
+        self.inner.yard_file_by_host(
+            host_label,
+            normalized_request_path,
+            session_token_hash,
+            now_ms,
+        )
     }
 }

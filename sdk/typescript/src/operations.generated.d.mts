@@ -680,6 +680,38 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly YardSessionStatus: "active" | "expired" | "revoked";
+  readonly YardSessionSummary: Readonly<{
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly environmentId: Schemas["Identifier"];
+    readonly expiresAt: Schemas["IsoTimestamp"];
+    readonly hostLabel: string;
+    readonly id: Schemas["Identifier"];
+    readonly lastUsedAt: Schemas["IsoTimestamp"] | null;
+    readonly status: Schemas["YardSessionStatus"];
+    readonly userDisplayName: string;
+    readonly userId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly ListYardSessionsQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly ListYardSessionsResult: Readonly<{
+    readonly sessions: readonly Schemas["YardSessionSummary"][];
+  }>;
+  readonly ListYardSessionsSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListYardSessionsResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RevokeYardSessionRequest: Readonly<{
+    readonly sessionId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly RevokeYardSessionResult: Schemas["EmptyResult"];
+  readonly RevokeYardSessionSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RevokeYardSessionResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly ListWebYardDeploysQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly ListWebYardDeploysResult: Schemas["YardDeployPage"];
   readonly ListWebYardDeploysSuccessEnvelope: Readonly<{
@@ -1447,6 +1479,10 @@ export type ListYardEnvironmentsInput = Readonly<{
   readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly signal?: AbortSignal;
 }>;
+export type ListYardSessionsInput = Readonly<{
+  readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly signal?: AbortSignal;
+}>;
 export type LogoutCliSessionInput = Readonly<{
   readonly body: Schemas["LogoutCliSessionRequest"];
   readonly signal?: AbortSignal;
@@ -1540,6 +1576,10 @@ export type RevokeShareInput = Readonly<{
 }>;
 export type RevokeYardAccessInput = Readonly<{
   readonly body: Schemas["RevokeYardAccessRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type RevokeYardSessionInput = Readonly<{
+  readonly body: Schemas["RevokeYardSessionRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type RollbackWebYardInput = Readonly<{
@@ -2204,6 +2244,18 @@ export declare const operations: Readonly<{
     risk: "read";
     successStatus: 200;
   }>;
+  readonly listYardSessions: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/sessions";
+    public: false;
+    requiredCiActions: readonly ["yard:manage"];
+    requiredUserScopes: readonly ["yard:read"];
+    risk: "read";
+    successStatus: 200;
+  }>;
   readonly logoutCliSession: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2480,6 +2532,18 @@ export declare const operations: Readonly<{
     risk: "destructive";
     successStatus: 200;
   }>;
+  readonly revokeYardSession: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/sessions/revoke";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "destructive";
+    successStatus: 200;
+  }>;
   readonly rollbackWebYard: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2613,6 +2677,7 @@ export type RequiredOperationId =
   | "listWebYardDeploys"
   | "listWebYards"
   | "listYardEnvironments"
+  | "listYardSessions"
   | "logoutCliSession"
   | "pollDeviceLogin"
   | "prepareAccountDeletion"
@@ -2636,6 +2701,7 @@ export type RequiredOperationId =
   | "revokePreview"
   | "revokeShare"
   | "revokeYardAccess"
+  | "revokeYardSession"
   | "rollbackWebYard"
   | "setRetention"
   | "setYardVisibility"
@@ -2705,6 +2771,7 @@ export interface OperationInputs {
   readonly listWebYards: ListWebYardsInput;
   readonly listWorkspaces: ListWorkspacesInput;
   readonly listYardEnvironments: ListYardEnvironmentsInput;
+  readonly listYardSessions: ListYardSessionsInput;
   readonly logoutCliSession: LogoutCliSessionInput;
   readonly pollDeviceLogin: PollDeviceLoginInput;
   readonly prepareAccountDeletion: PrepareAccountDeletionInput;
@@ -2728,6 +2795,7 @@ export interface OperationInputs {
   readonly revokePreview: RevokePreviewInput;
   readonly revokeShare: RevokeShareInput;
   readonly revokeYardAccess: RevokeYardAccessInput;
+  readonly revokeYardSession: RevokeYardSessionInput;
   readonly rollbackWebYard: RollbackWebYardInput;
   readonly setRetention: SetRetentionInput;
   readonly setYardVisibility: SetYardVisibilityInput;
@@ -2790,6 +2858,7 @@ export interface OperationOutputs {
   readonly listWebYards: Schemas["ListWebYardsResult"];
   readonly listWorkspaces: Schemas["ListWorkspacesResult"];
   readonly listYardEnvironments: Schemas["ListYardEnvironmentsResult"];
+  readonly listYardSessions: Schemas["ListYardSessionsResult"];
   readonly logoutCliSession: Schemas["LogoutCliSessionResult"];
   readonly pollDeviceLogin: Schemas["PollDeviceLoginResult"];
   readonly prepareAccountDeletion: Schemas["PrepareAccountDeletionResult"];
@@ -2813,6 +2882,7 @@ export interface OperationOutputs {
   readonly revokePreview: Schemas["RevokePreviewResult"];
   readonly revokeShare: Schemas["RevokeShareResult"];
   readonly revokeYardAccess: Schemas["RevokeYardAccessResult"];
+  readonly revokeYardSession: Schemas["RevokeYardSessionResult"];
   readonly rollbackWebYard: Schemas["RollbackWebYardResult"];
   readonly setRetention: Schemas["SetRetentionResult"];
   readonly setYardVisibility: Schemas["SetYardVisibilityResult"];
@@ -2947,6 +3017,9 @@ export interface OperationBindings {
   readonly listYardEnvironments: (
     options: ListYardEnvironmentsInput,
   ) => Promise<OperationOutputs["listYardEnvironments"]>;
+  readonly listYardSessions: (
+    options: ListYardSessionsInput,
+  ) => Promise<OperationOutputs["listYardSessions"]>;
   readonly logoutCliSession: (
     options: LogoutCliSessionInput,
   ) => Promise<OperationOutputs["logoutCliSession"]>;
@@ -3004,6 +3077,9 @@ export interface OperationBindings {
   readonly revokeYardAccess: (
     options: RevokeYardAccessInput,
   ) => Promise<OperationOutputs["revokeYardAccess"]>;
+  readonly revokeYardSession: (
+    options: RevokeYardSessionInput,
+  ) => Promise<OperationOutputs["revokeYardSession"]>;
   readonly rollbackWebYard: (
     options: RollbackWebYardInput,
   ) => Promise<OperationOutputs["rollbackWebYard"]>;

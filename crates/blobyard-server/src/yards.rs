@@ -249,7 +249,7 @@ pub(crate) async fn public_fallback(
     let path = contracts::public_request_path(uri.path())?;
     let target = state
         .repository
-        .yard_file_by_host(&host_label, &path)
+        .yard_file_by_host(&host_label, &path, None, crate::transfer_grants::now_ms()?)
         .map_err(ApiError::concealed_capability)?;
     let status = if target.not_found_document {
         StatusCode::NOT_FOUND

@@ -17,7 +17,7 @@ fn public_yard_adapter_rejects_invalid_optional_ids_and_request_paths() {
         Err(RepositoryError::InvalidInput)
     );
     assert_eq!(
-        repository.yard_file_by_host("host-fixture", "../unsafe"),
+        repository.yard_file_by_host("host-fixture", "../unsafe", None, 0),
         Err(RepositoryError::InvalidInput)
     );
 }
@@ -49,7 +49,7 @@ fn public_yard_adapter_rejects_invalid_required_read_ids_before_database_access(
         Err(RepositoryError::InvalidInput)
     );
     assert_eq!(
-        repository.yard_file_by_host("", ""),
+        repository.yard_file_by_host("", "", None, 0),
         Err(RepositoryError::InvalidInput)
     );
     assert_eq!(

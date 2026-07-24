@@ -220,6 +220,8 @@ impl WebYardRepository for SqliteRepository {
         &self,
         host_label: &str,
         normalized_request_path: &str,
+        _session_token_hash: Option<&str>,
+        _now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError> {
         rows::validate_text(host_label)?;
         if !is_valid_yard_request_path(normalized_request_path) {

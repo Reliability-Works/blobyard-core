@@ -227,7 +227,7 @@ fn assert_yard_deletion(
             &event("yard.deleted", "web_yard", "yardId", &first.yard.id, 101),
         )?
         || repository.web_yard_by_id(&first.yard.id)?.status != WebYardStatus::Deleted
-        || repository.yard_file_by_host(&first.yard.host_label, "")
+        || repository.yard_file_by_host(&first.yard.host_label, "", None, 100)
             != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);

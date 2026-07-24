@@ -1815,6 +1815,33 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "ListYardSessionsQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListYardSessionsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "sessions": {
+            "items": { "$ref": "#/components/schemas/YardSessionSummary" },
+            "type": "array"
+          }
+        },
+        "required": ["sessions"],
+        "type": "object"
+      },
+      "ListYardSessionsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListYardSessionsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "LocalUserStatus": {
         "description": "Lifecycle state of one local user.",
         "enum": ["active", "deactivated"],
@@ -2591,6 +2618,26 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RevokeYardSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["sessionId", "yardId"],
+        "type": "object"
+      },
+      "RevokeYardSessionResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeYardSessionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeYardSessionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RollbackWebYardRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3168,6 +3215,41 @@
         "required": ["createdAt", "id", "kind", "name", "updatedAt"],
         "type": "object"
       },
+      "YardSessionStatus": {
+        "description": "Effective lifecycle state of one Yard browser session.",
+        "enum": ["active", "expired", "revoked"],
+        "type": "string"
+      },
+      "YardSessionSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "environmentId": { "$ref": "#/components/schemas/Identifier" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "hostLabel": { "maxLength": 253, "minLength": 1, "type": "string" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "lastUsedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "status": { "$ref": "#/components/schemas/YardSessionStatus" },
+          "userDisplayName": { "maxLength": 120, "minLength": 1, "type": "string" },
+          "userId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "hostLabel",
+          "id",
+          "lastUsedAt",
+          "status",
+          "userDisplayName",
+          "userId",
+          "yardId"
+        ],
+        "type": "object"
+      },
       "YardVisibility": {
         "description": "Audience allowed to open one Yard.",
         "enum": [
@@ -3234,6 +3316,8 @@
     "/yards/access/visibility",
     "/yards/access/grant",
     "/yards/access/revoke",
+    "/yards/sessions",
+    "/yards/sessions/revoke",
     "/yards/deploys",
     "/yards/deploys/start",
     "/yards/deploys/finalise",
