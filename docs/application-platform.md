@@ -50,8 +50,14 @@ policy:
 
 Visibility modes: owner only, selected people and groups, workspace, authenticated link, any
 authenticated user, public. Access changes are explicit policy operations with audit evidence, and
-revocation is enforced promptly. Until Yard sessions land, non-public Yards are not served: every
-visibility other than public answers public requests exactly like an unknown host.
+revocation is enforced promptly. Public Yards serve anonymously without consulting browser sessions.
+Every other mode requires a live, host-bound Yard session and resolves the current user, policy,
+grants, environment, and deployment on every request. `selected` and `authenticated-link` admit only
+an active explicit grant in Core; link redemption arrives later. `workspace` admits an active local
+user from the Yard workspace, `any-authenticated` admits any active local user, and `owner` admits
+no browser-session principal in Core. A navigation request without admission redirects to sign-in
+only for `GET` plus `Accept: text/html`, including an unknown Yard-shaped host. Other requests
+remain concealed as not found.
 
 Two permission planes stay distinct everywhere. The management plane (owner, admin, developer,
 auditor) controls who configures and operates the Yard. The application plane (roles the manifest
@@ -78,11 +84,15 @@ type YardIdentity = {
 };
 ```
 
-Yard sessions are host- and environment-scoped, short-lived, revocable, and HttpOnly. A private Yard
-redirects through the configured identity provider with a signed, single-use continuation, and a
-short-lived single-use code is exchanged for the session on the Yard origin. Session claims are
-resolved server-side; client-supplied tenant identifiers are never authorization inputs. Core
-provides local users, groups, guest invitations, and generic OIDC.
+Yard sessions are host- and environment-scoped, revocable, and stored only as hashes. A private Yard
+redirects to the identity origin with a signed ten-minute continuation. Core verifies a local user's
+`byuk_` sign-in key, evaluates the current policy, and issues a one-minute, host-bound, single-use
+exchange code. The Yard origin consumes that code and sets a twelve-hour
+`__Host-blobyard-yard-session` cookie with `Secure`, `HttpOnly`, `SameSite=Lax`, and `Path=/`. The
+identity origin sets no cookie, so each Yard sign-in re-enters the key. Session claims are resolved
+server-side on every delivery request; client-supplied tenant identifiers are never authorization
+inputs, and revocation takes effect on the next request. Groups, guest invitations, link redemption,
+and OIDC identities arrive in later slices.
 
 ## The application manifest
 

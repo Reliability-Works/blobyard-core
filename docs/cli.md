@@ -77,10 +77,12 @@ The server reuses the browser-approved CLI session and typed API client. It writ
 messages to standard output, keeps diagnostics on standard error, and never returns refresh tokens,
 R2 credentials, or signed transfer URLs to the agent.
 
-The MCP catalog covers workspace rename and safe account-export operations. Stripe-hosted billing
-sessions and both phases of account deletion are intentionally absent because they would return a
-hosted payment URL or destructive confirmation capability to model context. Use the authenticated
-CLI or API for those operations, and keep final deletion confirmation under direct human control.
+The MCP catalog covers workspace rename, safe account-export operations, and redacted Yard session
+management through `blobyard_list_yard_sessions` and `blobyard_revoke_yard_session`. Stripe-hosted
+billing sessions and both phases of account deletion are intentionally absent because they would
+return a hosted payment URL or destructive confirmation capability to model context. Use the
+authenticated CLI or API for those operations, and keep final deletion confirmation under direct
+human control.
 
 ## Projects and objects
 
@@ -156,7 +158,8 @@ blobyard users reset-key user_123
 blobyard users deactivate user_123
 ```
 
-Deactivation tombstones the user and revokes every active sign-in key in the same transaction.
+Deactivation tombstones the user and revokes every active sign-in key and Yard browser session in
+the same transaction.
 
 ## Billing and account lifecycle
 
@@ -302,9 +305,10 @@ Inspect and control who may open one Web Yard. `access list` shows the effective
 active grants, `set-visibility` accepts `public`, `owner`, `selected`, `workspace`,
 `authenticated-link`, or `any-authenticated`, and grants admit one principal with optional
 application roles, an optional environment restriction, and an optional RFC 3339 expiry. The three
-mutations require a signed-in human session; CI tokens cannot change access policy. Until Yard
-sessions ship, only `public` Yards are served: any other visibility answers exactly like an unknown
-host.
+mutations require a signed-in human session; CI tokens cannot change access policy. Public Yards
+serve anonymously. Other modes use a live Yard browser session and re-evaluate policy on every
+request. In Core, `owner` admits no browser principal, while `authenticated-link` currently requires
+an explicit active grant like `selected`; link redemption arrives later.
 
 ```bash
 blobyard access list marketing
@@ -313,6 +317,24 @@ blobyard access grant marketing --principal-kind user --principal-id user_123 \
   --role editor --role viewer --expires 2027-01-01T00:00:00Z
 blobyard access revoke marketing <grant-id>
 ```
+
+Opening a non-public Yard with `GET` plus `Accept: text/html` redirects to the Core sign-in page.
+Enter the local user's `byuk_` sign-in key. Core returns through a one-time exchange on the exact
+Yard host and sets a host-only HttpOnly cookie. The identity origin does not retain a login cookie,
+so signing into another Yard requires the key again. Missing, revoked, expired, wrong-host, or
+no-longer-authorized sessions are rejected on the next request.
+
+List retained browser sessions for one Yard or revoke a session by its stable identifier. The Yard
+name may be omitted from `list` when the project contains exactly one Yard. Listings contain
+identity, host, lifecycle, creation, expiry, and last-used metadata, never raw cookie material.
+
+```bash
+blobyard yard-sessions list marketing
+blobyard yard-sessions revoke marketing yardsession_123
+```
+
+The same redacted operations are available to agents as `blobyard_list_yard_sessions` and
+`blobyard_revoke_yard_session`.
 
 See [web-yards.md](web-yards.md) for routing behavior, API and MCP automation, retention, plan
 limits, public-content isolation, and recovery guidance.

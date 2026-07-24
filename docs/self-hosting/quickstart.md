@@ -103,6 +103,26 @@ requiring no local DNS changes.
 Production installations must point `--web-yard-origin` at a dedicated origin whose first-level
 subdomains resolve to the server. Do not serve user HTML from the authenticated application origin.
 
+For a private Yard, create a local user, retain the returned `byuk_` sign-in key, grant that user
+access, and change the Yard visibility:
+
+```bash
+blobyard --profile local users create "Yard Reader" --workspace default
+blobyard --profile local access grant documentation \
+  --principal-kind user --principal-id user_123
+blobyard --profile local access set-visibility documentation selected
+```
+
+Open the stable Yard URL in a browser and enter the sign-in key. Core returns through the exact Yard
+host and stores a twelve-hour, host-only HttpOnly session cookie. Access changes and user
+deactivation take effect on the next request. Inspect or revoke retained sessions without exposing
+cookie material:
+
+```bash
+blobyard --profile local yard-sessions list documentation
+blobyard --profile local yard-sessions revoke documentation yardsession_123
+```
+
 ## Restart and inspect
 
 Restart Core without removing its durable volume:

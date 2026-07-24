@@ -166,8 +166,38 @@ that classification explicitly and excludes it from SDK, CLI, and MCP generation
 | POST   | `/v1/yards/access/visibility` | Set one Yard's visibility policy (human sessions only)  |
 | POST   | `/v1/yards/access/grant`      | Grant one principal scoped access (human sessions only) |
 | POST   | `/v1/yards/access/revoke`     | Revoke one access grant (human sessions only)           |
+| GET    | `/v1/yards/sessions`          | List retained browser sessions for one Yard             |
+| POST   | `/v1/yards/sessions/revoke`   | Revoke one browser session (human sessions only)        |
 | POST   | `/v1/yards/rollback`          | Repoint the stable host to an earlier ready deployment  |
 | POST   | `/v1/yards/delete`            | Delete a Yard and schedule its retained bytes           |
+
+## Yard sessions and the browser flow
+
+Public Yards serve without consulting a session. A non-public navigation request, defined as `GET`
+with an `Accept` value containing `text/html`, redirects from the exact Yard host to
+`GET /account/yard-login` on the configured identity origin. Other methods, `HEAD`, and non-HTML
+requests remain concealed as not found. Unknown Yard-shaped hosts use the same redirect shape, so
+the response does not disclose whether a Yard exists.
+
+The identity route verifies a signed ten-minute continuation and accepts a local user's raw `byuk_`
+sign-in key through an `application/x-www-form-urlencoded` POST. It evaluates the current Yard
+policy and returns a one-minute, single-use `byx_` exchange code to
+`GET /.blobyard/session/exchange` on the exact Yard origin. The Yard origin consumes the code
+atomically and sets `__Host-blobyard-yard-session` with `Secure`, `HttpOnly`, `SameSite=Lax`, and
+`Path=/`. The absolute session lifetime is twelve hours. The identity origin sets no cookie.
+
+Every private delivery request resolves the hashed session token, active local user, exact host,
+environment, current deployment, policy, and grants in one live repository path. Revoking a session
+or grant, tightening visibility, deactivating the user, deleting the Yard, or expiring a grant
+therefore denies the next request. `owner` admits no browser-session principal in Core.
+`authenticated-link` currently requires an explicit active grant like `selected`; link redemption
+arrives later. `POST /.blobyard/session/logout` requires a matching Origin when supplied, revokes
+the current session, and clears the cookie idempotently.
+
+`GET /v1/yards/sessions` requires Yard read authority and returns retained metadata without raw
+tokens. `POST /v1/yards/sessions/revoke` requires a human Yard manager, is idempotent for an already
+revoked session, and records `yard.session_revoked`. Both operations conceal cross-workspace Yard
+and session identifiers.
 
 ## Local user routes
 
@@ -182,8 +212,8 @@ Local users are the self-hosted identities behind non-public Yard access. All fo
 require the operator scope `users:manage` and reject machine principals. Raw `byuk_` sign-in keys
 are returned exactly once from create and reset-key, stored only as SHA-256 digests, and never
 appear in listings, audit events, or logs; listings expose only the non-secret key prefix.
-Deactivation is a tombstone: it revokes every active sign-in key in the same transaction and repeat
-deactivation answers `CONFLICT`.
+Deactivation is a tombstone: it revokes every active sign-in key and Yard browser session in the
+same transaction, and repeat deactivation answers `CONFLICT`.
 
 `GET /v1/yards/resolve` is reserved for the Cloudflare edge and requires the server-only edge
 credential. It is not a customer API. User HTML is returned only from isolated `blobyard.app` hosts,
