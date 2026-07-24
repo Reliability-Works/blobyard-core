@@ -2,7 +2,7 @@
 
 use super::{
     exchange_at, exchange_failure, exchanged_redirect, expected_origin, fresh_login_redirect_at,
-    login_redirect_at, logout_result, parsed_origin, redirect, require_same_origin, revoke_cookie,
+    login_redirect_at, logout_result, parsed_origin, require_same_origin, revoke_cookie,
     session_cookie_result, single_code,
 };
 use crate::test_support::error_status;
@@ -59,7 +59,7 @@ fn exchange_query_accepts_exactly_one_code() {
 
 #[test]
 fn redirects_reject_invalid_header_values() {
-    assert!(redirect(StatusCode::FOUND, "bad\nlocation", None).is_err());
+    assert!(crate::response::redirect(StatusCode::FOUND, "bad\nlocation", None).is_err());
 }
 
 #[test]

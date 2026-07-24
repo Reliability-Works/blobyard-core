@@ -219,22 +219,11 @@ fn exchange_redirect_from_url(
     location
         .query_pairs_mut()
         .append_pair("code", code.expose_secret());
-    redirect(StatusCode::SEE_OTHER, location.as_str())
+    crate::response::redirect(StatusCode::SEE_OTHER, location.as_str(), None)
 }
 
 fn parse_location(value: &str) -> Result<url::Url, ApiError> {
     url::Url::parse(value).map_err(|_error| ApiError::internal())
-}
-
-fn redirect(status: StatusCode, location: &str) -> Result<Response<Body>, ApiError> {
-    ApiError::internal_result(
-        Response::builder()
-            .status(status)
-            .header(header::LOCATION, location)
-            .header(header::CACHE_CONTROL, "no-store")
-            .header(header::REFERRER_POLICY, "no-referrer")
-            .body(Body::empty()),
-    )
 }
 
 fn single_parameter(input: &str, name: &str) -> Option<String> {

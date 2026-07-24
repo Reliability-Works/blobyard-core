@@ -85,7 +85,7 @@ fn exchanged_redirect(
     return_path: &str,
     cookie: Result<axum::http::HeaderValue, ApiError>,
 ) -> Result<Response<Body>, ApiError> {
-    redirect(StatusCode::SEE_OTHER, return_path, Some(cookie?))
+    crate::response::redirect(StatusCode::SEE_OTHER, return_path, Some(cookie?))
 }
 
 async fn logout_dispatch(
@@ -105,7 +105,7 @@ async fn logout_dispatch(
             crate::transfer_grants::now_ms(),
         )?;
     }
-    redirect(
+    crate::response::redirect(
         StatusCode::SEE_OTHER,
         "/",
         Some(yard_session_cookie::clear_header()),
@@ -127,7 +127,7 @@ fn fresh_login_redirect_at(
     let continuation =
         yard_session_contracts::issue(&state.yard_continuation_key, host_label, "/", now?)?;
     let location = yard_session_contracts::login_url(&state.public_origin, &continuation)?;
-    redirect(StatusCode::FOUND, &location, None)
+    crate::response::redirect(StatusCode::FOUND, &location, None)
 }
 
 pub(crate) fn login_redirect(
@@ -152,26 +152,7 @@ fn login_redirect_at(
     let continuation =
         yard_session_contracts::issue(&state.yard_continuation_key, host_label, return_path, now?)?;
     let location = yard_session_contracts::login_url(&state.public_origin, &continuation)?;
-    redirect(StatusCode::FOUND, &location, None)
-}
-
-fn redirect(
-    status: StatusCode,
-    location: &str,
-    cookie: Option<axum::http::HeaderValue>,
-) -> Result<Response<Body>, ApiError> {
-    let mut response = ApiError::internal_result(
-        Response::builder()
-            .status(status)
-            .header(header::LOCATION, location)
-            .header(header::CACHE_CONTROL, "no-store")
-            .header(header::REFERRER_POLICY, "no-referrer")
-            .body(Body::empty()),
-    )?;
-    if let Some(cookie) = cookie {
-        response.headers_mut().insert(header::SET_COOKIE, cookie);
-    }
-    Ok(response)
+    crate::response::redirect(StatusCode::FOUND, &location, None)
 }
 
 fn yard_host(state: &AppState, headers: &HeaderMap) -> Result<String, ApiError> {

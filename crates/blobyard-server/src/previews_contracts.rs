@@ -65,10 +65,7 @@ pub(super) fn preview_url(
 }
 
 pub(super) fn public_host_capability(origin: &str, authority: &str) -> Option<String> {
-    let origin = WebYardOrigin::new(origin).ok()?;
-    let suffix = format!(".{}", origin.authority());
-    let capability = authority.strip_suffix(&suffix)?;
-    valid_host_capability(capability).then(|| capability.to_owned())
+    site_contracts::public_host_label(origin, authority, valid_host_capability)
 }
 
 fn valid_host_capability(value: &str) -> bool {

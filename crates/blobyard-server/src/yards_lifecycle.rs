@@ -1,4 +1,4 @@
-use super::{presentation::deployment_response, read::authorize_yard};
+use super::{EmptyMutation, presentation::deployment_response, read::yard_at};
 use crate::{
     api::AppState,
     audit,
@@ -18,12 +18,7 @@ pub(super) fn rollback(
     request: &RollbackWebYardRequest,
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<YardDeploymentResponse>>, ApiError> {
-    let yard = state
-        .repository
-        .web_yard_by_id(&request.yard_id)
-        .map_err(ApiError::from_repository)?;
-    authorize_yard(principal, &yard)?;
-    let now = now?;
+    let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
     let selected = selected_rollback_id(state, &yard, request.deploy_id.as_deref())?;
     let event = audit::event(
         yard.workspace_id.clone(),
@@ -51,13 +46,8 @@ pub(super) fn delete(
     principal: &Principal,
     request: &DeleteWebYardRequest,
     now: Result<u64, ApiError>,
-) -> Result<Json<Success<EmptyResponse>>, ApiError> {
-    let yard = state
-        .repository
-        .web_yard_by_id(&request.yard_id)
-        .map_err(ApiError::from_repository)?;
-    authorize_yard(principal, &yard)?;
-    let now = now?;
+) -> EmptyMutation {
+    let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
     let event = audit::event(
         yard.workspace_id.clone(),
         principal.0.id.clone(),

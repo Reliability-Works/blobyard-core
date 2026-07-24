@@ -45,7 +45,7 @@ fn login_parameters_reject_missing_duplicate_and_unknown_fields() {
 
 #[test]
 fn redirect_rejects_invalid_header_values() {
-    assert!(super::redirect(StatusCode::FOUND, "bad\nlocation").is_err());
+    assert!(crate::response::redirect(StatusCode::FOUND, "bad\nlocation", None).is_err());
     assert!(super::parse_location("not a URL").is_err());
     let code = SecretString::new("code").expect("code");
     assert!(super::exchange_redirect_from_url(Ok("not a URL".to_owned()), &code).is_err());

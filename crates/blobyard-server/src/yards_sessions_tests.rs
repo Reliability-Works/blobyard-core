@@ -3,7 +3,7 @@
 use super::super::sessions::{list, revoke, status, summary};
 use super::{
     faulted_state,
-    session_support::{setup, sign_in},
+    session_support::{SessionFixture, setup, sign_in},
 };
 use crate::{
     Repository,
@@ -36,6 +36,32 @@ fn listing() -> YardSessionListing {
     }
 }
 
+struct OperationFixture {
+    session: SessionFixture,
+    principal: Principal,
+    query: ListYardSessionsQuery,
+    request: RevokeYardSessionRequest,
+}
+
+async fn operation_fixture() -> OperationFixture {
+    let session = setup().await;
+    let _signed_in = sign_in(&session, "/").await;
+    let principal = Principal(session.fixture.principal.clone());
+    let query = ListYardSessionsQuery {
+        yard_id: session.yard_id.clone(),
+    };
+    let request = RevokeYardSessionRequest {
+        yard_id: session.yard_id.clone(),
+        session_id: "yardsession_missing".to_owned(),
+    };
+    OperationFixture {
+        session,
+        principal,
+        query,
+        request,
+    }
+}
+
 #[test]
 fn session_summaries_cover_statuses_and_invalid_timestamps() {
     assert_eq!(status(YardSessionStatus::Active), ApiStatus::Active);
@@ -58,16 +84,12 @@ fn session_summaries_cover_statuses_and_invalid_timestamps() {
 
 #[tokio::test]
 async fn session_management_maps_lookup_and_clock_failures() {
-    let session = setup().await;
-    let _signed_in = sign_in(&session, "/").await;
-    let principal = Principal(session.fixture.principal.clone());
-    let query = ListYardSessionsQuery {
-        yard_id: session.yard_id.clone(),
-    };
-    let request = RevokeYardSessionRequest {
-        yard_id: session.yard_id,
-        session_id: "yardsession_missing".to_owned(),
-    };
+    let OperationFixture {
+        session,
+        principal,
+        query,
+        request,
+    } = operation_fixture().await;
     let mut foreign = principal.clone();
     foreign.0.workspace_id = "workspace_foreign".to_owned();
     assert_eq!(
@@ -101,16 +123,12 @@ async fn session_management_maps_lookup_and_clock_failures() {
 
 #[tokio::test]
 async fn session_management_maps_repository_and_summary_failures() {
-    let session = setup().await;
-    let _signed_in = sign_in(&session, "/").await;
-    let principal = Principal(session.fixture.principal.clone());
-    let query = ListYardSessionsQuery {
-        yard_id: session.yard_id.clone(),
-    };
-    let request = RevokeYardSessionRequest {
-        yard_id: session.yard_id,
-        session_id: "yardsession_missing".to_owned(),
-    };
+    let OperationFixture {
+        session,
+        principal,
+        query,
+        request,
+    } = operation_fixture().await;
     for failure_index in [0, 1] {
         assert_eq!(
             error_status(list(

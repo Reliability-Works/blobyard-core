@@ -2,30 +2,12 @@
 //! Exhaustive Yard session input-validation coverage.
 
 use blobyard_contract::{
-    NewAuditEvent, NewYardContinuation, NewYardSession, RepositoryError, WebYardRepository,
-    YARD_EXCHANGE_CODE_LIFETIME_MS, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
-    YardSessionRepository,
+    NewAuditEvent, NewYardSession, RepositoryError, WebYardRepository, YARD_SESSION_LIFETIME_MS,
+    YardSessionAuditContext, YardSessionRepository,
 };
 use blobyard_repository_sqlite::SqliteRepository;
 
-fn hash(value: char) -> String {
-    value.to_string().repeat(64)
-}
-
-fn continuation(return_path: &str) -> NewYardContinuation {
-    NewYardContinuation {
-        id: "continuation_fixture".to_owned(),
-        continuation_hash: hash('a'),
-        code_hash: hash('b'),
-        yard_id: "yard_fixture".to_owned(),
-        environment_id: "environment_fixture".to_owned(),
-        host_label: "docs-fixture".to_owned(),
-        user_id: "user_fixture".to_owned(),
-        return_path: return_path.to_owned(),
-        created_at_ms: 10,
-        expires_at_ms: 10 + YARD_EXCHANGE_CODE_LIFETIME_MS,
-    }
-}
+include!("support/yard_sessions.rs");
 
 fn repository() -> (tempfile::TempDir, SqliteRepository) {
     let temporary = tempfile::tempdir().expect("temporary");

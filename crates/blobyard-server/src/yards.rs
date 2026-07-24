@@ -34,6 +34,16 @@ mod read;
 #[path = "yards_sessions.rs"]
 mod sessions;
 
+type EmptyMutation = Result<Json<Success<EmptyResponse>>, ApiError>;
+
+pub(crate) fn public_host_label(origin: &str, authority: &str) -> Option<String> {
+    contracts::public_host_label(origin, authority)
+}
+
+pub(crate) fn web_yard_url(origin: &str, host_label: &str) -> Result<String, ApiError> {
+    contracts::web_yard_url(origin, host_label)
+}
+
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/v1/yards", get(list_yards))

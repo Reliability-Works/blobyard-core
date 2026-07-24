@@ -4,9 +4,9 @@ use crate::{Repository, api::AppState, error::ApiError};
 use axum::{http::StatusCode, response::IntoResponse};
 use blobyard_contract::{
     MultipartId, ObjectChecksum, ObjectStorage, ObjectVersionRecord, StorageError, StorageKey,
-    StorageMetadata, StoredObjectRecord, UploadState, WorkspaceRecord,
+    StorageMetadata, StoredObjectRecord, UploadState,
 };
-use blobyard_core::{SecretString, Slug};
+use blobyard_core::SecretString;
 use blobyard_repository_sqlite::SqliteRepository;
 use blobyard_storage_filesystem::FilesystemStorage;
 use std::path::PathBuf;
@@ -79,23 +79,11 @@ pub(crate) fn state(
     let repository: Arc<dyn Repository> = Arc::new(
         SqliteRepository::open(&root.path().join("metadata.sqlite3")).expect("repository"),
     );
-    let default_workspace = WorkspaceRecord {
-        id: "workspace_fixture".to_owned(),
-        name: "Fixture".to_owned(),
-        slug: Slug::new("fixture").expect("slug"),
-    };
-    let capability_key = Arc::new(SecretString::new("capability").expect("secret"));
-    AppState {
+    crate::transfers::test_seams::fixture_state_with_repository(
+        staging_directory,
         repository,
         storage,
-        yard_continuation_key: Arc::new(crate::yard_session_contracts::derive_key(&capability_key)),
-        capability_key,
-        public_origin: "http://127.0.0.1:8787".to_owned(),
-        web_yard_origin: "http://localhost:8787".to_owned(),
-        staging_directory,
-        default_workspace,
-        oidc_verifier: Arc::new(crate::oidc::UnavailableGithubOidcVerifier),
-    }
+    )
 }
 
 pub(crate) fn filesystem_state(root: &TempDir, staging_directory: PathBuf) -> AppState {

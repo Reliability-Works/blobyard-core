@@ -1,7 +1,8 @@
+use super::EmptyMutation;
 use super::presentation::{
     api_visibility, domain_principal_kind, domain_visibility, grant_summary,
 };
-use super::read::authorize_yard;
+use super::read::yard_at;
 use crate::{
     api::AppState,
     audit,
@@ -14,7 +15,7 @@ use blobyard_api_client::{
     EmptyResponse, GetYardAccessQuery, GrantYardAccessRequest, RevokeYardAccessRequest,
     SetYardVisibilityRequest, YardAccessGrantResponse, YardAccessResponse, YardVisibilityResponse,
 };
-use blobyard_contract::{AuditValue, NewYardAccessGrant, WebYardRecord, YardVisibility};
+use blobyard_contract::{AuditValue, NewYardAccessGrant, YardVisibility};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 const MAXIMUM_PRINCIPAL_LENGTH: usize = 256;
@@ -25,8 +26,7 @@ pub(super) fn get(
     query: &GetYardAccessQuery,
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<YardAccessResponse>>, ApiError> {
-    let yard = authorized_yard(state, principal, &query.yard_id)?;
-    let now = now?;
+    let (yard, now) = yard_at(state, principal, &query.yard_id, now)?;
     let visibility = effective_visibility(state, &yard.id)?;
     let grants = state
         .repository
@@ -47,8 +47,7 @@ pub(super) fn set_visibility(
     request: &SetYardVisibilityRequest,
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<YardVisibilityResponse>>, ApiError> {
-    let yard = authorized_yard(state, principal, &request.yard_id)?;
-    let now = now?;
+    let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
     let visibility = domain_visibility(request.visibility);
     let previous = effective_visibility(state, &yard.id)?;
     let event = audit::event(
@@ -84,8 +83,7 @@ pub(super) fn grant(
     request: &GrantYardAccessRequest,
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<YardAccessGrantResponse>>, ApiError> {
-    let yard = authorized_yard(state, principal, &request.yard_id)?;
-    let now = now?;
+    let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
     validate_principal_id(&request.principal_id)?;
     if let Some(environment_id) = &request.environment_id {
         require_environment(state, &yard.id, environment_id)?;
@@ -142,12 +140,12 @@ pub(super) fn revoke(
     principal: &Principal,
     request: &RevokeYardAccessRequest,
     now: Result<u64, ApiError>,
-) -> Result<Json<Success<EmptyResponse>>, ApiError> {
-    let yard = authorized_yard(state, principal, &request.yard_id)?;
-    let now = now?;
+) -> EmptyMutation {
+    let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
+    let actor = principal.0.id.clone();
     let event = audit::event(
         yard.workspace_id.clone(),
-        principal.0.id.clone(),
+        actor,
         "yard.access_revoked",
         "yard_access_grant",
         vec![
@@ -164,19 +162,6 @@ pub(super) fn revoke(
         .revoke_yard_access_grant(&yard.id, &request.grant_id, now, &event)
         .map_err(ApiError::from_repository)?;
     Ok(success(EmptyResponse::default()))
-}
-
-fn authorized_yard(
-    state: &AppState,
-    principal: &Principal,
-    yard_id: &str,
-) -> Result<WebYardRecord, ApiError> {
-    let yard = state
-        .repository
-        .web_yard_by_id(yard_id)
-        .map_err(ApiError::from_repository)?;
-    authorize_yard(principal, &yard)?;
-    Ok(yard)
 }
 
 fn effective_visibility(state: &AppState, yard_id: &str) -> Result<YardVisibility, ApiError> {

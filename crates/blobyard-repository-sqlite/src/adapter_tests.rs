@@ -51,6 +51,21 @@ pub(super) fn install_denial(connection: &Connection, denied_index: usize) -> Ar
     observed
 }
 
+fn assert_tables(repository: &SqliteRepository, tables: &[&str]) {
+    let connection = repository.test_connection().expect("connection");
+    for table in tables {
+        let exists: bool = connection
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
+                [table],
+                |row| row.get(0),
+            )
+            .expect("table query");
+        assert!(exists, "{table}");
+    }
+    drop(connection);
+}
+
 fn run_contract(repository: &SqliteRepository) -> Result<(), RepositoryError> {
     blobyard_testkit::repository_conformance(repository)?;
     let workspace = repository

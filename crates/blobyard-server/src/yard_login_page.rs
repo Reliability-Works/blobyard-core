@@ -16,8 +16,8 @@ pub(super) fn login(
     };
     page(&format!(
         "<p class=\"eyebrow\">YARD SIGN IN</p><h1>Open {}</h1><p>Enter your Blob Yard login key to continue.</p>{error}<form method=\"post\" action=\"/account/yard-login\"><input type=\"hidden\" name=\"continuation\" value=\"{}\"><label for=\"login-key\">Sign-in key</label><input id=\"login-key\" name=\"login_key\" type=\"password\" autocomplete=\"current-password\" required><button type=\"submit\">Sign in</button></form>",
-        escape(host_label),
-        escape(continuation),
+        crate::response::escape_html(host_label),
+        crate::response::escape_html(continuation),
     ))
 }
 
@@ -38,8 +38,8 @@ pub(super) fn access_denied() -> Result<Response<Body>, ApiError> {
 fn message(title: &str, description: &str) -> Result<Response<Body>, ApiError> {
     page(&format!(
         "<p class=\"eyebrow\">YARD SIGN IN</p><h1>{}</h1><p>{}</p>",
-        escape(title),
-        escape(description)
+        crate::response::escape_html(title),
+        crate::response::escape_html(description)
     ))
 }
 
@@ -50,13 +50,4 @@ fn page(content: &str) -> Result<Response<Body>, ApiError> {
         ),
         POLICY,
     )
-}
-
-fn escape(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
 }

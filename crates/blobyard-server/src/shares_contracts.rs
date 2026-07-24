@@ -66,8 +66,8 @@ pub(super) fn share_summary(value: ShareRecord, now: u64) -> Result<ShareSummary
 }
 
 pub(super) fn share_page_html(value: &ShareTarget, action: &str) -> Result<String, ApiError> {
-    let filename = escape_html(&value.object.filename);
-    let action = escape_html(action);
+    let filename = crate::response::escape_html(&value.object.filename);
+    let action = crate::response::escape_html(action);
     let expires_at = grants::format_expiry(value.share.expires_at_ms)?;
     let available = value.share.status == ShareStatus::Active;
     let control = if available {
@@ -80,23 +80,8 @@ pub(super) fn share_page_html(value: &ShareTarget, action: &str) -> Result<Strin
     Ok(format!(
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Shared file | Blob Yard</title></head><body><main><p>Shared through Blob Yard</p><h1>{filename}</h1><p>{} bytes. Available until {} UTC.</p>{control}</main></body></html>",
         value.object.version.size.ok_or_else(ApiError::not_found)?,
-        escape_html(&expires_at)
+        crate::response::escape_html(&expires_at)
     ))
-}
-
-fn escape_html(value: &str) -> String {
-    let mut escaped = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            _ => escaped.push(character),
-        }
-    }
-    escaped
 }
 
 pub(super) fn content_type_class(value: &str) -> &'static str {

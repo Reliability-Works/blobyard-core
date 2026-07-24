@@ -1,7 +1,7 @@
 use crate::error::ApiError;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use blobyard_contract::YARD_CONTINUATION_LIFETIME_MS;
-use blobyard_core::{SecretString, WebYardOrigin};
+use blobyard_core::SecretString;
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -59,16 +59,9 @@ pub(crate) fn issue(
         p: normalize_return_path(return_path).to_owned(),
         v: VERSION,
     };
-    encoded_continuation(serde_json::to_vec(&claims), HmacSha256::new_from_slice(key))
-}
-
-fn encoded_continuation(
-    payload: serde_json::Result<Vec<u8>>,
-    signer: Result<HmacSha256, hmac::digest::InvalidLength>,
-) -> Result<SecretString, ApiError> {
-    let payload = issue_payload(payload)?;
-    let signature = signature_from(signer, &payload)?;
-    issued_secret(SecretString::new(format!(
+    let payload = internal_result(serialize_claims(&claims))?;
+    let signature = signature(key, &payload)?;
+    internal_result(SecretString::new(format!(
         "{CONTINUATION_PREFIX}{}.{}",
         URL_SAFE_NO_PAD.encode(payload),
         hex::encode(signature)
@@ -94,37 +87,25 @@ pub(crate) fn verify(
         return Err(());
     }
     let payload = URL_SAFE_NO_PAD.decode(encoded).map_err(|_error| ())?;
-    verified_payload(
-        &payload,
-        hex::decode(signature_hex),
-        HmacSha256::new_from_slice(key),
-    )?;
-
-    let claims: ContinuationClaims = serde_json::from_slice(&payload).map_err(|_error| ())?;
-    let canonical = serde_json::to_vec(&claims);
-    validate_claims(claims, &payload, now_ms, canonical)
-}
-
-fn verified_payload(
-    payload: &[u8],
-    supplied_signature: Result<Vec<u8>, hex::FromHexError>,
-    verifier: Result<HmacSha256, hmac::digest::InvalidLength>,
-) -> Result<(), ()> {
-    let supplied_signature = decoded_signature(supplied_signature)?;
-    let mut verifier = verifier_result(verifier)?;
-    verifier.update(payload);
+    let supplied_signature = invalid_result(decode_signature(signature_hex))?;
+    let mut verifier = invalid_result(mac(key))?;
+    verifier.update(&payload);
     verifier
         .verify_slice(&supplied_signature)
-        .map_err(|_error| ())
+        .map_err(|_error| ())?;
+
+    let claims: ContinuationClaims = serde_json::from_slice(&payload).map_err(|_error| ())?;
+    let canonical = invalid_result(serialize_claims(&claims))?;
+    validate_claims(claims, &payload, now_ms, &canonical)
 }
 
 fn validate_claims(
     mut claims: ContinuationClaims,
     payload: &[u8],
     now_ms: u64,
-    canonical: serde_json::Result<Vec<u8>>,
+    canonical: &[u8],
 ) -> Result<ContinuationClaims, ()> {
-    if canonical_payload(canonical)? != payload
+    if canonical != payload
         || claims.v != VERSION
         || claims.e <= now_ms
         || !valid_host_label(&claims.h)
@@ -164,17 +145,11 @@ pub(crate) fn identity_authority(origin: &str) -> Option<String> {
 }
 
 pub(crate) fn yard_host_label(origin: &str, authority: &str) -> Option<String> {
-    let origin = WebYardOrigin::new(origin).ok()?;
-    let suffix = format!(".{}", origin.authority());
-    let label = authority.strip_suffix(&suffix)?;
-    valid_host_label(label).then(|| label.to_owned())
+    crate::yards::public_host_label(origin, authority)
 }
 
 pub(crate) fn yard_url(origin: &str, host_label: &str) -> Result<String, ApiError> {
-    WebYardOrigin::new(origin)
-        .map_err(|_error| ApiError::internal())?
-        .url_for(host_label)
-        .map_err(|_error| ApiError::internal())
+    crate::yards::web_yard_url(origin, host_label)
 }
 
 pub(crate) fn login_url(origin: &str, continuation: &SecretString) -> Result<String, ApiError> {
@@ -186,57 +161,42 @@ pub(crate) fn login_url(origin: &str, continuation: &SecretString) -> Result<Str
     Ok(parsed.into())
 }
 
-#[cfg(test)]
 fn signature(key: &[u8; 32], payload: &[u8]) -> Result<[u8; 32], ApiError> {
-    signature_from(HmacSha256::new_from_slice(key), payload)
-}
-
-fn signature_from(
-    signer: Result<HmacSha256, hmac::digest::InvalidLength>,
-    payload: &[u8],
-) -> Result<[u8; 32], ApiError> {
-    let mut signer = signer_result(signer)?;
+    let mut signer = internal_result(mac(key))?;
     signer.update(payload);
     Ok(signer.finalize().into_bytes().into())
 }
 
-fn issue_payload(result: serde_json::Result<Vec<u8>>) -> Result<Vec<u8>, ApiError> {
-    match result {
-        Ok(value) => Ok(value),
-        Err(_error) => Err(ApiError::internal()),
+fn serialize_claims(claims: &ContinuationClaims) -> Result<Vec<u8>, serde_json::Error> {
+    #[cfg(test)]
+    if fault_is(ContractFault::Serialization) {
+        return serde_json::from_slice(b"{");
     }
+    serde_json::to_vec(claims)
 }
 
-fn issued_secret(
-    result: Result<SecretString, blobyard_core::BlobyardError>,
-) -> Result<SecretString, ApiError> {
-    match result {
-        Ok(value) => Ok(value),
-        Err(_error) => Err(ApiError::internal()),
+fn decode_signature(value: &str) -> Result<Vec<u8>, hex::FromHexError> {
+    #[cfg(test)]
+    if fault_is(ContractFault::SignatureDecode) {
+        return hex::decode("x");
     }
+    hex::decode(value)
 }
 
-fn decoded_signature(result: Result<Vec<u8>, hex::FromHexError>) -> Result<Vec<u8>, ()> {
+fn mac(key: &[u8; 32]) -> Result<HmacSha256, hmac::digest::InvalidLength> {
+    #[cfg(test)]
+    if fault_is(ContractFault::Mac) {
+        return Err(hmac::digest::InvalidLength);
+    }
+    HmacSha256::new_from_slice(key)
+}
+
+fn invalid_result<T, E>(result: Result<T, E>) -> Result<T, ()> {
     result.map_err(|_error| ())
 }
 
-fn verifier_result(
-    result: Result<HmacSha256, hmac::digest::InvalidLength>,
-) -> Result<HmacSha256, ()> {
-    result.map_err(|_error| ())
-}
-
-fn canonical_payload(result: serde_json::Result<Vec<u8>>) -> Result<Vec<u8>, ()> {
-    result.map_err(|_error| ())
-}
-
-const fn signer_result(
-    result: Result<HmacSha256, hmac::digest::InvalidLength>,
-) -> Result<HmacSha256, ApiError> {
-    match result {
-        Ok(value) => Ok(value),
-        Err(_error) => Err(ApiError::internal()),
-    }
+fn internal_result<T, E>(result: Result<T, E>) -> Result<T, ApiError> {
+    result.map_err(|_error| ApiError::internal())
 }
 
 fn is_lower_hex(value: &str, length: usize) -> bool {
@@ -244,6 +204,42 @@ fn is_lower_hex(value: &str, length: usize) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum ContractFault {
+    Mac,
+    Serialization,
+    SignatureDecode,
+}
+
+#[cfg(test)]
+thread_local! {
+    static CONTRACT_FAULT: std::cell::Cell<Option<ContractFault>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+
+#[cfg(test)]
+struct FaultGuard;
+
+#[cfg(test)]
+impl Drop for FaultGuard {
+    fn drop(&mut self) {
+        CONTRACT_FAULT.with(|slot| slot.set(None));
+    }
+}
+
+#[cfg(test)]
+fn activate(fault: ContractFault) -> FaultGuard {
+    CONTRACT_FAULT.with(|slot| slot.set(Some(fault)));
+    FaultGuard
+}
+
+#[cfg(test)]
+fn fault_is(fault: ContractFault) -> bool {
+    CONTRACT_FAULT.with(|slot| slot.get() == Some(fault))
 }
 
 fn valid_host_label(value: &str) -> bool {

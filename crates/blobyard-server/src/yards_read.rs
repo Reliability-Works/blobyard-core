@@ -92,6 +92,28 @@ pub(super) fn authorize_yard(principal: &Principal, yard: &WebYardRecord) -> Res
     }
 }
 
+pub(super) fn yard_by_id(
+    state: &AppState,
+    principal: &Principal,
+    yard_id: &str,
+) -> Result<WebYardRecord, ApiError> {
+    let yard = state
+        .repository
+        .web_yard_by_id(yard_id)
+        .map_err(ApiError::from_repository)?;
+    authorize_yard(principal, &yard)?;
+    Ok(yard)
+}
+
+pub(super) fn yard_at(
+    state: &AppState,
+    principal: &Principal,
+    yard_id: &str,
+    now: Result<u64, ApiError>,
+) -> Result<(WebYardRecord, u64), ApiError> {
+    Ok((yard_by_id(state, principal, yard_id)?, now?))
+}
+
 pub(super) fn yard_for_deploy(
     state: &AppState,
     principal: &Principal,

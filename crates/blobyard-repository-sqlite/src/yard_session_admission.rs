@@ -92,12 +92,12 @@ pub(super) fn session_id(
                    ?4 IN ('selected', 'authenticated-link')
                    AND EXISTS (
                      SELECT 1 FROM yard_access_grants g
-                     WHERE g.yard_id = y.id
-                       AND g.principal_kind = 'user'
-                       AND g.principal_id = u.id
+                     WHERE g.yard_id = s.yard_id
                        AND g.status = 'active'
-                       AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?5)
+                       AND g.principal_id = s.user_id
+                       AND g.principal_kind = 'user'
                        AND (g.environment_id IS NULL OR g.environment_id = s.environment_id)
+                       AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?5)
                    )
                  )
                )",

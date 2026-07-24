@@ -2,34 +2,17 @@
 //! Yard session validation and housekeeping boundary coverage.
 
 use blobyard_contract::{
-    NewYardContinuation, NewYardSession, RepositoryError, YARD_EXCHANGE_CODE_LIFETIME_MS,
-    YARD_SESSION_LIFETIME_MS, YardSessionAuditContext, YardSessionRepository,
+    NewYardSession, RepositoryError, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
+    YardSessionRepository,
 };
 use blobyard_repository_sqlite::SqliteRepository;
 use rusqlite::{Connection, params};
 
+include!("support/yard_sessions.rs");
+
 const NOW_MS: u64 = 3_000_000_000;
 const CONTINUATION_BEFORE: u64 = NOW_MS - 86_400_000;
 const SESSION_BEFORE: u64 = NOW_MS - 2_592_000_000;
-
-fn hash(value: char) -> String {
-    value.to_string().repeat(64)
-}
-
-fn continuation(return_path: &str) -> NewYardContinuation {
-    NewYardContinuation {
-        id: "continuation_fixture".to_owned(),
-        continuation_hash: hash('a'),
-        code_hash: hash('b'),
-        yard_id: "yard_fixture".to_owned(),
-        environment_id: "environment_fixture".to_owned(),
-        host_label: "docs-fixture".to_owned(),
-        user_id: "user_fixture".to_owned(),
-        return_path: return_path.to_owned(),
-        created_at_ms: 10,
-        expires_at_ms: 10 + YARD_EXCHANGE_CODE_LIFETIME_MS,
-    }
-}
 
 #[test]
 fn malformed_admission_and_continuation_inputs_fail_before_lookup() {
@@ -111,21 +94,12 @@ fn malformed_session_and_housekeeping_inputs_fail_before_lookup() {
 
 #[test]
 fn malformed_persisted_session_rows_fail_closed() {
-    let temporary = tempfile::tempdir().expect("temporary");
-    let path = temporary.path().join("metadata.sqlite3");
-    let repository = SqliteRepository::open(&path).expect("repository");
-    let connection = Connection::open(&path).expect("fixture connection");
-    connection
-        .execute_batch(
-            "PRAGMA foreign_keys = OFF;
-             PRAGMA ignore_check_constraints = ON;
-             INSERT INTO local_users (id, workspace_id, display_name, status, created_at_ms)
+    let (_temporary, repository) = corrupted_repository(
+        "INSERT INTO local_users (id, workspace_id, display_name, status, created_at_ms)
              VALUES ('user_fixture', 'workspace_fixture', 'Fixture user', 'active', 1);
              INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms)
              VALUES ('session_corrupt', 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc', 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', -1, 100);",
-        )
-        .expect("corrupt session fixture");
-    drop(connection);
+    );
 
     assert_eq!(
         repository.list_yard_sessions("yard_fixture"),
@@ -135,19 +109,10 @@ fn malformed_persisted_session_rows_fail_closed() {
 
 #[test]
 fn malformed_persisted_continuation_rows_fail_closed() {
-    let temporary = tempfile::tempdir().expect("temporary");
-    let path = temporary.path().join("metadata.sqlite3");
-    let repository = SqliteRepository::open(&path).expect("repository");
-    let connection = Connection::open(&path).expect("fixture connection");
-    connection
-        .execute_batch(
-            "PRAGMA foreign_keys = OFF;
-             PRAGMA ignore_check_constraints = ON;
-             INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms)
+    let (_temporary, repository) = corrupted_repository(
+        "INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms)
              VALUES ('continuation_corrupt', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', '/', -1, 100);",
-        )
-        .expect("corrupt continuation fixture");
-    drop(connection);
+    );
 
     assert_eq!(
         repository.exchange_yard_session_code(
@@ -167,6 +132,21 @@ fn malformed_persisted_continuation_rows_fail_closed() {
         ),
         Err(RepositoryError::Unavailable)
     );
+}
+
+fn corrupted_repository(sql: &str) -> (tempfile::TempDir, SqliteRepository) {
+    let temporary = tempfile::tempdir().expect("temporary");
+    let path = temporary.path().join("metadata.sqlite3");
+    let repository = SqliteRepository::open(&path).expect("repository");
+    Connection::open(path)
+        .expect("fixture connection")
+        .execute_batch(&format!(
+            "PRAGMA foreign_keys = OFF;
+             PRAGMA ignore_check_constraints = ON;
+             {sql}"
+        ))
+        .expect("corrupt fixture");
+    (temporary, repository)
 }
 
 #[test]

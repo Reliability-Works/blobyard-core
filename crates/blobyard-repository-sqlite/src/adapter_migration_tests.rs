@@ -1,23 +1,8 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::SqliteRepository;
+use super::{SqliteRepository, assert_tables};
 use blobyard_contract::RepositoryError;
 use rusqlite::Connection;
-
-fn assert_tables(repository: &SqliteRepository, tables: &[&str]) {
-    let connection = repository.test_connection().expect("connection");
-    for table in tables {
-        let exists: bool = connection
-            .query_row(
-                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
-                [table],
-                |row| row.get(0),
-            )
-            .expect("table query");
-        assert!(exists, "{table}");
-    }
-    drop(connection);
-}
 
 fn legacy_upload_fixture(path: &std::path::Path, schema: u32, upload_sql: &str) {
     let mut connection = Connection::open(path).expect("legacy connection");

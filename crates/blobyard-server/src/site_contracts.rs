@@ -1,4 +1,5 @@
 use blobyard_contract::StoredObjectRecord;
+use blobyard_core::WebYardOrigin;
 use percent_encoding::percent_decode_str;
 use std::collections::HashSet;
 
@@ -55,6 +56,17 @@ pub(crate) fn snapshot_manifest(
 pub(crate) enum PublicPathError {
     InvalidPath,
     NotFound,
+}
+
+pub(crate) fn public_host_label(
+    origin: &str,
+    authority: &str,
+    valid_label: fn(&str) -> bool,
+) -> Option<String> {
+    let origin = WebYardOrigin::new(origin).ok()?;
+    let suffix = format!(".{}", origin.authority());
+    let label = authority.strip_suffix(&suffix)?;
+    valid_label(label).then(|| label.to_owned())
 }
 
 pub(crate) fn public_path(

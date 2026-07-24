@@ -1,17 +1,14 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
 use super::{
-    CONTINUATION_PREFIX, ContinuationClaims, HmacSha256, canonical_payload, decoded_signature,
-    derive_key, encoded_continuation, has_token_shape, identity_authority, issue, issue_payload,
-    issued_secret, login_url, normalize_return_path, signature, signature_from, signer_result,
-    valid_host_label, validate_claims, verified_payload, verifier_result, verify, yard_host_label,
-    yard_url,
+    CONTINUATION_PREFIX, ContinuationClaims, ContractFault, activate, derive_key, has_token_shape,
+    identity_authority, issue, login_url, normalize_return_path, signature, valid_host_label,
+    verify, yard_host_label, yard_url,
 };
 use crate::test_support::error_status;
 use axum::http::StatusCode;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use blobyard_core::SecretString;
-use hmac::Mac;
 
 fn key() -> ([u8; 32], SecretString) {
     let capability = SecretString::new("test-capability").expect("valid fixture");
@@ -172,60 +169,29 @@ fn token_and_host_shape_helpers_cover_positive_and_negative_inputs() {
 }
 
 #[test]
-fn issuance_encoders_map_injected_failures_safely() {
-    let json_error = serde_json::from_str::<Vec<u8>>("{").expect_err("malformed JSON fixture");
-    assert_eq!(
-        error_status(issue_payload(Err(json_error))),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    assert_eq!(
-        error_status(issued_secret(SecretString::new(""))),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    assert_eq!(
-        error_status(signer_result(Err(hmac::digest::InvalidLength))),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    let json_error = serde_json::from_str::<Vec<u8>>("{").expect_err("malformed JSON fixture");
-    assert_eq!(
-        error_status(encoded_continuation(
-            Err(json_error),
-            Err(hmac::digest::InvalidLength),
-        )),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    let payload = serde_json::to_vec(&claims()).expect("claims");
-    assert_eq!(
-        error_status(encoded_continuation(
-            Ok(payload.clone()),
-            Err(hmac::digest::InvalidLength),
-        )),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    assert_eq!(
-        error_status(signature_from(Err(hmac::digest::InvalidLength), &payload,)),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-}
-
-#[test]
-fn verification_decoders_map_injected_failures_safely() {
-    assert!(decoded_signature(hex::decode("x")).is_err());
-    let json_error = serde_json::from_str::<Vec<u8>>("{").expect_err("malformed JSON fixture");
-    assert!(canonical_payload(Err(json_error)).is_err());
-    assert!(verifier_result(Err(hmac::digest::InvalidLength)).is_err());
-    let payload = serde_json::to_vec(&claims()).expect("claims");
-    assert!(
-        verified_payload(
-            &payload,
-            hex::decode("x"),
-            HmacSha256::new_from_slice(&key().0),
-        )
-        .is_err()
-    );
-    assert!(
-        verified_payload(&payload, Ok(vec![0; 32]), Err(hmac::digest::InvalidLength),).is_err()
-    );
-    let json_error = serde_json::from_str::<Vec<u8>>("{").expect_err("malformed JSON fixture");
-    assert!(validate_claims(claims(), &payload, 0, Err(json_error)).is_err());
+fn injected_codec_failures_propagate_through_the_real_contract_paths() {
+    let (key, _capability) = key();
+    {
+        let _guard = activate(ContractFault::Serialization);
+        assert_eq!(
+            error_status(issue(&key, "docs-a1b2c3d4e-workspace", "/", 1)),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
+    {
+        let _guard = activate(ContractFault::Mac);
+        assert_eq!(
+            error_status(issue(&key, "docs-a1b2c3d4e-workspace", "/", 1)),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
+    let continuation = issue(&key, "docs-a1b2c3d4e-workspace", "/", 1).expect("continuation");
+    for fault in [
+        ContractFault::Serialization,
+        ContractFault::Mac,
+        ContractFault::SignatureDecode,
+    ] {
+        let _guard = activate(fault);
+        assert!(verify(&key, &continuation, 2).is_err());
+    }
 }

@@ -56,22 +56,13 @@ fn page(metadata: &blobyard_api_client::InboxMetadata) -> String {
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Guest upload | Blob Yard</title><style>{}</style><script defer src=\"/assets/inbox-upload.js\"></script></head><body><main data-inbox data-max-bytes=\"{}\"><p class=\"brand\">BLOB YARD</p><p class=\"eyebrow\">GUEST UPLOAD</p><h1>{}</h1><p>Send one file securely. This inbox accepts up to {} files and {} bytes, and is available until {}.</p><form><label for=\"inbox-file\">File</label><input id=\"inbox-file\" name=\"file\" type=\"file\" required{}><button type=\"submit\"{}>Upload file</button></form><p data-status role=\"status\" aria-live=\"polite\"></p></main></body></html>",
         STYLE,
         metadata.max_bytes,
-        escape(&metadata.name),
+        crate::response::escape_html(&metadata.name),
         metadata.max_files,
         metadata.max_bytes,
-        escape(&metadata.expires_at),
+        crate::response::escape_html(&metadata.expires_at),
         disabled,
         disabled,
     )
-}
-
-fn escape(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
 }
 
 const STYLE: &str = "*{box-sizing:border-box}body{margin:0;background:#f4f6f1;color:#10130f;font:16px system-ui,sans-serif}main{width:min(42rem,calc(100% - 2rem));margin:10vh auto;padding:2rem;border:1px solid #c8cdc5;background:#fff}.brand,.eyebrow{font:700 .75rem ui-monospace,monospace;letter-spacing:.12em}.eyebrow{color:#4c6500;margin-top:3rem}h1{font-size:clamp(2rem,8vw,4rem);line-height:.95}form{display:grid;gap:1rem;margin-top:2rem}input{padding:1rem;border:1px solid #747a70}button{width:max-content;padding:.8rem 1rem;border:0;background:#b6ff00;color:#10130f;font-weight:700}button:disabled,input:disabled{opacity:.5}[data-status][data-error]{color:#9e251b}";
