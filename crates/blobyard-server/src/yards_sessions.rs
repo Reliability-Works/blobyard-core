@@ -71,7 +71,10 @@ pub(super) fn revoke(
     Ok(success(EmptyResponse::default()))
 }
 
-fn summary(listing: YardSessionListing, now_ms: u64) -> Result<YardSessionSummary, ApiError> {
+pub(super) fn summary(
+    listing: YardSessionListing,
+    now_ms: u64,
+) -> Result<YardSessionSummary, ApiError> {
     let session = listing.session;
     let effective_status = session.status_at(now_ms);
     Ok(YardSessionSummary {
@@ -91,7 +94,7 @@ fn summary(listing: YardSessionListing, now_ms: u64) -> Result<YardSessionSummar
     })
 }
 
-const fn status(status: YardSessionStatus) -> ApiStatus {
+pub(super) const fn status(status: YardSessionStatus) -> ApiStatus {
     match status {
         YardSessionStatus::Active => ApiStatus::Active,
         YardSessionStatus::Expired => ApiStatus::Expired,

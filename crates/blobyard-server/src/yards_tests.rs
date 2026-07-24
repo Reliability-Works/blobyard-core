@@ -37,10 +37,14 @@ mod operation_edge_tests;
 mod presentation_edge_tests;
 #[path = "yards_tests/read_edges.rs"]
 mod read_edge_tests;
+#[path = "yards_tests/session_coverage.rs"]
+mod session_coverage_tests;
 #[path = "yards_tests/session_edges.rs"]
 mod session_edge_tests;
 #[path = "yards_tests/session_journey.rs"]
 mod session_journey_tests;
+#[path = "yards_sessions_tests.rs"]
+mod session_operation_tests;
 #[path = "yards_tests/session_support.rs"]
 mod session_support;
 

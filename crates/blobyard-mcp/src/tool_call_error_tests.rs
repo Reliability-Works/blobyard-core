@@ -177,6 +177,17 @@ fn rejects_malformed_web_yard_management_calls() {
             json!({}),
             "missing required",
         ),
+        ("blobyard_list_yard_sessions", json!({}), "missing required"),
+        (
+            "blobyard_revoke_yard_session",
+            json!({}),
+            "missing required",
+        ),
+        (
+            "blobyard_revoke_yard_session",
+            json!({ "yard": "site" }),
+            "missing required",
+        ),
         ("blobyard_rollback_web_yard", json!({}), "missing required"),
         (
             "blobyard_rollback_web_yard",

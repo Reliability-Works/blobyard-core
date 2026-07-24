@@ -143,11 +143,15 @@ pub(crate) enum Corruption {
     YardSecondRevoke,
     YardGrantListOrder,
     YardAccessEnvironmentSeed,
+    YardSessionEnvironmentSeed,
     YardSessionAdmission,
     YardSessionExchange,
     YardSessionList,
+    YardSessionLiveTarget,
+    YardSessionPublicTarget,
     YardSessionFirstRevoke,
     YardSessionLogoutRevoke,
+    YardSessionDeactivation,
 }
 
 pub(crate) struct Corrupting<'a, T> {

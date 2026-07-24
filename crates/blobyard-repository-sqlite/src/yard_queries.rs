@@ -116,7 +116,7 @@ pub(super) fn authorized_file(
     let session_id = if visibility == "public" {
         None
     } else {
-        let hash = session_token_hash.ok_or(RepositoryError::NotFound)?;
+        let hash = required_session_hash(session_token_hash)?;
         super::auth_validation::validate_hash(hash)?;
         yard_session_admission::session_id(
             transaction,
@@ -142,6 +142,10 @@ pub(super) fn authorized_file(
         }
     }
     Err(RepositoryError::NotFound)
+}
+
+fn required_session_hash(value: Option<&str>) -> Result<&str, RepositoryError> {
+    value.ok_or(RepositoryError::NotFound)
 }
 
 fn effective_visibility(connection: &Connection, yard_id: &str) -> Result<String, RepositoryError> {
@@ -262,3 +266,7 @@ fn file_by_path(
         .optional()
         .map_err(map_error)
 }
+
+#[cfg(test)]
+#[path = "yard_queries_tests.rs"]
+mod tests;

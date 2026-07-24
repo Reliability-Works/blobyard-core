@@ -7,6 +7,12 @@ use blobyard_contract::{
     YardStartRecord, YardVisibility,
 };
 
+pub(super) fn production_environment(
+    mut environments: Vec<blobyard_contract::YardEnvironmentRecord>,
+) -> Result<blobyard_contract::YardEnvironmentRecord, RepositoryError> {
+    environments.pop().ok_or(RepositoryError::Unavailable)
+}
+
 pub(super) fn issue_session(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
@@ -88,5 +94,42 @@ const fn previous_character(value: char) -> char {
         'e' => 'd',
         'f' => 'e',
         _ => '0',
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+mod tests {
+    use super::{new_session, production_environment};
+    use crate::hash;
+
+    #[test]
+    fn session_fixture_helpers_cover_normative_and_fallback_values() {
+        assert_eq!(super::previous_character('7'), '0');
+        let session = new_session("session_fixture", 'a', 10);
+        assert_eq!(session.id, "session_fixture");
+        assert_eq!(session.token_hash, hash('a'));
+        assert_eq!(session.created_at_ms, 10);
+        assert_eq!(
+            session.expires_at_ms,
+            10 + blobyard_contract::YARD_SESSION_LIFETIME_MS
+        );
+        assert_eq!(
+            production_environment(Vec::new()),
+            Err(blobyard_contract::RepositoryError::Unavailable)
+        );
+        let environment = blobyard_contract::YardEnvironmentRecord {
+            id: "environment_fixture".to_owned(),
+            yard_id: "yard_fixture".to_owned(),
+            name: blobyard_core::Slug::new("production").expect("slug"),
+            kind: blobyard_contract::YardEnvironmentKind::Production,
+            status: blobyard_contract::YardEnvironmentStatus::Active,
+            created_at_ms: 1,
+            updated_at_ms: 1,
+        };
+        assert_eq!(
+            production_environment(vec![environment.clone()]),
+            Ok(environment)
+        );
     }
 }

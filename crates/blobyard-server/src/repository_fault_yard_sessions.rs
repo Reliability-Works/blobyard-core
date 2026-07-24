@@ -1,4 +1,4 @@
-use super::FaultingRepository;
+use super::{Corruption, FaultingRepository};
 use blobyard_contract::{
     NewAuditEvent, NewYardContinuation, NewYardSession, RepositoryError, YardAdmission,
     YardSessionAuditContext, YardSessionExchange, YardSessionListing, YardSessionRepository,
@@ -42,7 +42,14 @@ impl YardSessionRepository for FaultingRepository {
         yard_id: &str,
     ) -> Result<Vec<YardSessionListing>, RepositoryError> {
         self.check()?;
-        self.inner.list_yard_sessions(yard_id)
+        self.inner.list_yard_sessions(yard_id).map(|mut listings| {
+            if matches!(self.corruption, Some(Corruption::YardSessionCreatedAt))
+                && let Some(listing) = listings.first_mut()
+            {
+                listing.session.created_at_ms = u64::MAX;
+            }
+            listings
+        })
     }
 
     fn revoke_yard_session(

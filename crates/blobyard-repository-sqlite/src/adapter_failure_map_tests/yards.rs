@@ -48,7 +48,34 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
     unavailable(repository.rollback_web_yard(&yard.id, Some(&deploy.id), 1_001, &event));
     unavailable(repository.delete_web_yard(&yard.id, 1_001, &event));
     unavailable(repository.yard_file_by_host(&yard.host_label, "", None, 0));
+    assert_poisoned_yard_sessions(repository, &yard, &event);
     assert_poisoned_yard_access(repository, &yard.id, &event);
+}
+
+fn assert_poisoned_yard_sessions(
+    repository: &SqliteRepository,
+    yard: &blobyard_contract::NewWebYard,
+    event: &blobyard_contract::NewAuditEvent,
+) {
+    unavailable(repository.evaluate_yard_admission(&yard.host_label, "user_failure_map", 1_000));
+    unavailable(
+        repository.issue_yard_exchange_code(&blobyard_contract::NewYardContinuation {
+            id: "continuation_failure_map".to_owned(),
+            continuation_hash: checksum('1'),
+            code_hash: checksum('2'),
+            yard_id: yard.id.clone(),
+            environment_id: "environment_failure_map".to_owned(),
+            host_label: yard.host_label.clone(),
+            user_id: "user_failure_map".to_owned(),
+            return_path: "/".to_owned(),
+            created_at_ms: 1_000,
+            expires_at_ms: 301_000,
+        }),
+    );
+    unavailable(repository.list_yard_sessions(&yard.id));
+    unavailable(repository.revoke_yard_session(&yard.id, "session_failure_map", 1_001, event));
+    unavailable(repository.revoke_yard_session_by_token(&checksum('3'), &yard.host_label, 1_001));
+    unavailable(repository.purge_yard_session_history(1_001));
 }
 
 fn assert_poisoned_yard_access(

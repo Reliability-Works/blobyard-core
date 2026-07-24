@@ -15,9 +15,8 @@ impl YardSessionRepository for SqliteRepository {
         now_ms: u64,
     ) -> Result<YardAdmission, RepositoryError> {
         let now = transfer_validation::to_i64(now_ms)?;
-        self.connection().and_then(|connection| {
-            yard_session_admission::evaluate(&connection, host_label, user_id, now)
-        })
+        let connection = self.connection()?;
+        yard_session_admission::evaluate(&connection, host_label, user_id, now)
     }
 
     fn issue_yard_exchange_code(

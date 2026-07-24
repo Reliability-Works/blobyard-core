@@ -41,7 +41,16 @@ fn exchange(
     host_label: &str,
     code: &SecretString,
 ) -> Result<Response<Body>, ApiError> {
-    let now = crate::transfer_grants::now_ms()?;
+    exchange_at(state, host_label, code, crate::transfer_grants::now_ms())
+}
+
+fn exchange_at(
+    state: &AppState,
+    host_label: &str,
+    code: &SecretString,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let now = now?;
     let token = crate::auth::generate_token(GeneratedSecretKind::YardSession);
     let session = NewYardSession {
         id: format!("yardsession_{}", uuid::Uuid::new_v4().simple()),
@@ -69,11 +78,14 @@ fn exchange(
             return fresh_login_redirect(state, host_label);
         }
     };
-    redirect(
-        StatusCode::SEE_OTHER,
-        &exchanged.return_path,
-        Some(yard_session_cookie::set_header(&token).map_err(|()| ApiError::internal())?),
-    )
+    exchanged_redirect(&exchanged.return_path, session_cookie(&token))
+}
+
+fn exchanged_redirect(
+    return_path: &str,
+    cookie: Result<axum::http::HeaderValue, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    redirect(StatusCode::SEE_OTHER, return_path, Some(cookie?))
 }
 
 async fn logout_dispatch(
@@ -86,11 +98,12 @@ async fn logout_dispatch(
     let host_label = yard_host(&state, request.headers())?;
     require_same_origin(&state, &host_label, request.headers())?;
     if let Some(token) = yard_session_cookie::read(request.headers()) {
-        logout_result(state.repository.revoke_yard_session_by_token(
-            &crate::auth::hash(token.expose_secret()),
+        revoke_cookie(
+            &state,
             &host_label,
-            crate::transfer_grants::now_ms()?,
-        ))?;
+            &token,
+            crate::transfer_grants::now_ms(),
+        )?;
     }
     redirect(
         StatusCode::SEE_OTHER,
@@ -103,12 +116,16 @@ pub(crate) fn fresh_login_redirect(
     state: &AppState,
     host_label: &str,
 ) -> Result<Response<Body>, ApiError> {
-    let continuation = yard_session_contracts::issue(
-        &state.yard_continuation_key,
-        host_label,
-        "/",
-        crate::transfer_grants::now_ms()?,
-    )?;
+    fresh_login_redirect_at(state, host_label, crate::transfer_grants::now_ms())
+}
+
+fn fresh_login_redirect_at(
+    state: &AppState,
+    host_label: &str,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let continuation =
+        yard_session_contracts::issue(&state.yard_continuation_key, host_label, "/", now?)?;
     let location = yard_session_contracts::login_url(&state.public_origin, &continuation)?;
     redirect(StatusCode::FOUND, &location, None)
 }
@@ -118,12 +135,22 @@ pub(crate) fn login_redirect(
     host_label: &str,
     return_path: &str,
 ) -> Result<Response<Body>, ApiError> {
-    let continuation = yard_session_contracts::issue(
-        &state.yard_continuation_key,
+    login_redirect_at(
+        state,
         host_label,
         return_path,
-        crate::transfer_grants::now_ms()?,
-    )?;
+        crate::transfer_grants::now_ms(),
+    )
+}
+
+fn login_redirect_at(
+    state: &AppState,
+    host_label: &str,
+    return_path: &str,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let continuation =
+        yard_session_contracts::issue(&state.yard_continuation_key, host_label, return_path, now?)?;
     let location = yard_session_contracts::login_url(&state.public_origin, &continuation)?;
     redirect(StatusCode::FOUND, &location, None)
 }
@@ -166,16 +193,46 @@ fn require_same_origin(
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok());
     if let Some(supplied) = supplied {
-        let yard_url = yard_session_contracts::yard_url(&state.web_yard_origin, host_label)?;
-        let expected = url::Url::parse(&yard_url)
-            .map_err(|_error| ApiError::internal())?
-            .origin()
-            .ascii_serialization();
+        let expected = expected_origin(yard_session_contracts::yard_url(
+            &state.web_yard_origin,
+            host_label,
+        ))?;
         if supplied != expected {
             return Err(ApiError::not_found());
         }
     }
     Ok(())
+}
+
+fn expected_origin(yard_url: Result<String, ApiError>) -> Result<String, ApiError> {
+    Ok(parsed_origin(&yard_url?)?.origin().ascii_serialization())
+}
+
+fn parsed_origin(value: &str) -> Result<url::Url, ApiError> {
+    url::Url::parse(value).map_err(|_error| ApiError::internal())
+}
+
+fn session_cookie(token: &SecretString) -> Result<axum::http::HeaderValue, ApiError> {
+    session_cookie_result(yard_session_cookie::set_header(token))
+}
+
+fn session_cookie_result(
+    result: Result<axum::http::HeaderValue, ()>,
+) -> Result<axum::http::HeaderValue, ApiError> {
+    result.map_err(|()| ApiError::internal())
+}
+
+fn revoke_cookie(
+    state: &AppState,
+    host_label: &str,
+    token: &SecretString,
+    now: Result<u64, ApiError>,
+) -> Result<(), ApiError> {
+    logout_result(state.repository.revoke_yard_session_by_token(
+        &crate::auth::hash(token.expose_secret()),
+        host_label,
+        now?,
+    ))
 }
 
 fn single_code(query: &str) -> Option<String> {

@@ -24,15 +24,12 @@ pub(super) fn enforce_retention_with_storage(
     )
 }
 
-fn enforce_repository_with_housekeeping<F>(
+fn enforce_repository_with_housekeeping(
     repository: &SqliteRepository,
     storage: &dyn RuntimeStorage,
     clock: fn() -> Result<u64, ServerError>,
-    housekeeping: F,
-) -> Result<(), ServerError>
-where
-    F: FnOnce(&SqliteRepository, u64) -> Result<(), RepositoryError>,
-{
+    housekeeping: fn(&SqliteRepository, u64) -> Result<(), RepositoryError>,
+) -> Result<(), ServerError> {
     housekeeping(repository, clock()?)?;
     for project_id in repository.retained_projects()? {
         enforce_project_with_clock(repository, storage, &project_id, clock)?;
@@ -145,36 +142,82 @@ mod tests {
 
     use super::*;
     use blobyard_storage_filesystem::FilesystemStorage;
-    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
-    fn housekeeping_runs_once_without_retained_projects_and_propagates_failure() {
+    fn housekeeping_and_clock_failures_propagate() {
         let root = tempfile::tempdir().expect("root");
         let repository =
             SqliteRepository::open(&root.path().join("metadata.sqlite3")).expect("repository");
         let storage = FilesystemStorage::open(&root.path().join("objects")).expect("storage");
-        let calls = AtomicUsize::new(0);
-
         enforce_repository_with_housekeeping(
             &repository,
             &storage,
             fixed_clock,
-            |_repository, _now_ms| {
-                calls.fetch_add(1, Ordering::Relaxed);
-                Ok(())
-            },
+            successful_housekeeping,
         )
         .expect("housekeeping");
-        assert_eq!(calls.load(Ordering::Relaxed), 1);
 
         assert_eq!(
             enforce_repository_with_housekeeping(
                 &repository,
                 &storage,
                 fixed_clock,
-                |_repository, _now_ms| Err(RepositoryError::Unavailable),
+                failing_housekeeping,
             ),
             Err(ServerError::Repository(RepositoryError::Unavailable))
+        );
+        assert_eq!(
+            enforce_repository_with_housekeeping(
+                &repository,
+                &storage,
+                failing_clock,
+                successful_housekeeping,
+            ),
+            Err(ServerError::Initialization)
+        );
+    }
+
+    #[test]
+    fn retained_project_lookup_failures_propagate() {
+        let root = tempfile::tempdir().expect("root");
+        let storage = FilesystemStorage::open(&root.path().join("objects")).expect("storage");
+        let unavailable_root = tempfile::tempdir().expect("unavailable root");
+        let unavailable = SqliteRepository::open(&unavailable_root.path().join("metadata.sqlite3"))
+            .expect("unavailable repository");
+        unavailable
+            .test_connection()
+            .expect("connection")
+            .execute_batch("DROP TABLE retention_policies")
+            .expect("drop retention policies");
+        assert_eq!(
+            enforce_repository_with_housekeeping(
+                &unavailable,
+                &storage,
+                fixed_clock,
+                successful_housekeeping,
+            ),
+            Err(ServerError::Repository(RepositoryError::Unavailable))
+        );
+
+        let orphan_root = tempfile::tempdir().expect("orphan root");
+        let orphan = SqliteRepository::open(&orphan_root.path().join("metadata.sqlite3"))
+            .expect("orphan repository");
+        orphan
+            .test_connection()
+            .expect("connection")
+            .execute_batch(
+                "PRAGMA foreign_keys = OFF;
+                 INSERT INTO retention_policies (project_id, keep_latest, enabled, created_at_ms, updated_at_ms) VALUES ('project_missing', 1, 1, 1, 1);",
+            )
+            .expect("orphan retention policy");
+        assert_eq!(
+            enforce_repository_with_housekeeping(
+                &orphan,
+                &storage,
+                fixed_clock,
+                successful_housekeeping,
+            ),
+            Err(ServerError::Repository(RepositoryError::NotFound))
         );
     }
 
@@ -184,5 +227,27 @@ mod tests {
     )]
     const fn fixed_clock() -> Result<u64, ServerError> {
         Ok(1_000)
+    }
+
+    const fn failing_clock() -> Result<u64, ServerError> {
+        Err(ServerError::Initialization)
+    }
+
+    #[allow(
+        clippy::unnecessary_wraps,
+        reason = "production housekeeping accepts a fallible operation"
+    )]
+    const fn successful_housekeeping(
+        _repository: &SqliteRepository,
+        _now_ms: u64,
+    ) -> Result<(), RepositoryError> {
+        Ok(())
+    }
+
+    const fn failing_housekeeping(
+        _repository: &SqliteRepository,
+        _now_ms: u64,
+    ) -> Result<(), RepositoryError> {
+        Err(RepositoryError::Unavailable)
     }
 }

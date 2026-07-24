@@ -1,6 +1,6 @@
 use super::{map_error, rows, yard_session_rows};
 use blobyard_contract::{RepositoryError, YardAdmission};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, Row, params};
 
 pub(super) fn evaluate(
     connection: &Connection,
@@ -48,15 +48,17 @@ pub(super) fn evaluate(
                )
              LIMIT 1",
             params![host_label, user_id, now_ms],
-            |row| {
-                Ok(YardAdmission {
-                    yard_id: row.get(0)?,
-                    environment_id: row.get(1)?,
-                    workspace_id: row.get(2)?,
-                })
-            },
+            admission,
         )
         .map_err(map_error)
+}
+
+fn admission(row: &Row<'_>) -> rusqlite::Result<YardAdmission> {
+    Ok(YardAdmission {
+        yard_id: row.get(0)?,
+        environment_id: row.get(1)?,
+        workspace_id: row.get(2)?,
+    })
 }
 
 pub(super) fn session_id(
@@ -105,3 +107,7 @@ pub(super) fn session_id(
         .optional()
         .map_err(map_error)
 }
+
+#[cfg(test)]
+#[path = "yard_session_admission_tests.rs"]
+mod tests;

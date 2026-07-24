@@ -71,3 +71,7 @@ pub(super) fn validate_return_path(value: &str) -> Result<(), blobyard_contract:
         Err(blobyard_contract::RepositoryError::InvalidInput)
     }
 }
+
+#[cfg(test)]
+#[path = "yard_session_rows_tests.rs"]
+mod tests;

@@ -10,6 +10,7 @@ fn public_repository_inputs_fail_closed_at_each_field_boundary() {
     assert_invalid_credentials(&repository);
     assert_invalid_transfers(&repository);
     assert_invalid_lifecycle(&repository);
+    assert_invalid_yard_sessions(&repository);
 }
 
 fn assert_invalid_metadata(repository: &SqliteRepository) {
@@ -117,6 +118,12 @@ fn assert_invalid_lifecycle(repository: &SqliteRepository) {
     }
     invalid(repository.fail_retention("", 1));
     invalid(repository.fail_retention("run_fixture", u64::MAX));
+}
+
+fn assert_invalid_yard_sessions(repository: &SqliteRepository) {
+    invalid(repository.evaluate_yard_admission("docs-fixture", "user_fixture", u64::MAX));
+    invalid(repository.list_yard_sessions(""));
+    invalid(repository.purge_yard_session_history(u64::MAX));
 }
 
 fn invalid_versions() -> Vec<NewObjectVersion> {

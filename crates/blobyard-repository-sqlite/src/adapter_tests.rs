@@ -7,7 +7,7 @@ use blobyard_contract::{
     NewInboxUpload, NewObjectDeletion, NewObjectVersion, NewPreview, NewPreviewFile, NewShare,
     NewUploadReservation, ObjectDeletionTarget, PreviewRepository, ProjectRecord, RepositoryError,
     RetentionPolicyRecord, SharingRepository, TransferRepository, WebYardRepository,
-    WorkspaceRecord,
+    WorkspaceRecord, YardSessionRepository,
 };
 use blobyard_core::Slug;
 use rusqlite::{

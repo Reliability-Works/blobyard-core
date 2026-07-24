@@ -40,12 +40,20 @@ async fn dispatch(
 }
 
 fn get(state: &AppState, query: Option<&str>) -> Result<Response<Body>, ApiError> {
+    get_at(state, query, crate::transfer_grants::now_ms())
+}
+
+fn get_at(
+    state: &AppState,
+    query: Option<&str>,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
     let continuation = single_parameter(query.unwrap_or_default(), "continuation")
         .and_then(|value| SecretString::new(value).ok());
     let Some(continuation) = continuation else {
         return page::invalid_link();
     };
-    let now = crate::transfer_grants::now_ms()?;
+    let now = now?;
     let Ok(claims) =
         yard_session_contracts::verify(&state.yard_continuation_key, &continuation, now)
     else {
@@ -59,7 +67,22 @@ async fn post(
     fingerprint: &str,
     request: Request<Body>,
 ) -> Result<Response<Body>, ApiError> {
-    let now = crate::transfer_grants::now_ms()?;
+    post_at(
+        state,
+        fingerprint,
+        request,
+        crate::transfer_grants::now_ms(),
+    )
+    .await
+}
+
+async fn post_at(
+    state: &AppState,
+    fingerprint: &str,
+    request: Request<Body>,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let now = now?;
     let rate_key = crate::auth::hash(&format!("yard-login\0{fingerprint}"));
     crate::inbox_rate::consume(
         state,
@@ -126,7 +149,7 @@ fn authenticate_and_redirect(
             Err(_) => return Err(ApiError::internal()),
         };
     let code = crate::auth::generate_token(GeneratedSecretKind::YardExchangeCode);
-    let durable = NewYardContinuation {
+    let durable = exchange_expiry(now).map(|expires_at_ms| NewYardContinuation {
         id: continuation_id(),
         continuation_hash: crate::auth::hash(continuation.expose_secret()),
         code_hash: crate::auth::hash(code.expose_secret()),
@@ -136,12 +159,39 @@ fn authenticate_and_redirect(
         user_id: user.id,
         return_path: claims.return_path().to_owned(),
         created_at_ms: now,
-        expires_at_ms: now
-            .checked_add(YARD_EXCHANGE_CODE_LIFETIME_MS)
-            .ok_or_else(ApiError::internal)?,
-    };
-    match state.repository.issue_yard_exchange_code(&durable) {
-        Ok(()) => exchange_redirect(&state.web_yard_origin, claims.host_label(), &code),
+        expires_at_ms,
+    });
+    issue_durable_redirect(state, claims.host_label(), &code, durable)
+}
+
+fn exchange_expiry(now: u64) -> Result<u64, ApiError> {
+    now.checked_add(YARD_EXCHANGE_CODE_LIFETIME_MS)
+        .ok_or_else(ApiError::internal)
+}
+
+fn issue_durable_redirect(
+    state: &AppState,
+    host_label: &str,
+    code: &SecretString,
+    durable: Result<NewYardContinuation, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let durable = durable?;
+    issue_redirect(
+        state.repository.issue_yard_exchange_code(&durable),
+        &state.web_yard_origin,
+        host_label,
+        code,
+    )
+}
+
+fn issue_redirect(
+    result: Result<(), RepositoryError>,
+    origin: &str,
+    host_label: &str,
+    code: &SecretString,
+) -> Result<Response<Body>, ApiError> {
+    match result {
+        Ok(()) => exchange_redirect(origin, host_label, code),
         Err(RepositoryError::Conflict) => page::invalid_link(),
         Err(RepositoryError::NotFound) => page::access_denied(),
         Err(_) => Err(ApiError::internal()),
@@ -157,13 +207,23 @@ fn exchange_redirect(
     host_label: &str,
     code: &SecretString,
 ) -> Result<Response<Body>, ApiError> {
-    let mut location = url::Url::parse(&yard_session_contracts::yard_url(origin, host_label)?)
-        .map_err(|_error| ApiError::internal())?;
+    exchange_redirect_from_url(yard_session_contracts::yard_url(origin, host_label), code)
+}
+
+fn exchange_redirect_from_url(
+    location: Result<String, ApiError>,
+    code: &SecretString,
+) -> Result<Response<Body>, ApiError> {
+    let mut location = parse_location(&location?)?;
     location.set_path("/.blobyard/session/exchange");
     location
         .query_pairs_mut()
         .append_pair("code", code.expose_secret());
     redirect(StatusCode::SEE_OTHER, location.as_str())
+}
+
+fn parse_location(value: &str) -> Result<url::Url, ApiError> {
+    url::Url::parse(value).map_err(|_error| ApiError::internal())
 }
 
 fn redirect(status: StatusCode, location: &str) -> Result<Response<Body>, ApiError> {
@@ -219,11 +279,5 @@ fn require_identity_host(
 }
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn durable_continuation_ids_use_the_normative_prefix() {
-        let id = super::continuation_id();
-        assert!(id.starts_with("yardcont_"));
-        assert_eq!(id.len(), "yardcont_".len() + 32);
-    }
-}
+#[path = "yard_login_tests.rs"]
+mod tests;

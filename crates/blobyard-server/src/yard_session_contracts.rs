@@ -59,14 +59,20 @@ pub(crate) fn issue(
         p: normalize_return_path(return_path).to_owned(),
         v: VERSION,
     };
-    let payload = serde_json::to_vec(&claims).map_err(|_error| ApiError::internal())?;
-    let signature = signature(key, &payload)?;
-    SecretString::new(format!(
+    encoded_continuation(serde_json::to_vec(&claims), HmacSha256::new_from_slice(key))
+}
+
+fn encoded_continuation(
+    payload: serde_json::Result<Vec<u8>>,
+    signer: Result<HmacSha256, hmac::digest::InvalidLength>,
+) -> Result<SecretString, ApiError> {
+    let payload = issue_payload(payload)?;
+    let signature = signature_from(signer, &payload)?;
+    issued_secret(SecretString::new(format!(
         "{CONTINUATION_PREFIX}{}.{}",
         URL_SAFE_NO_PAD.encode(payload),
         hex::encode(signature)
-    ))
-    .map_err(|_error| ApiError::internal())
+    )))
 }
 
 pub(crate) fn verify(
@@ -88,15 +94,37 @@ pub(crate) fn verify(
         return Err(());
     }
     let payload = URL_SAFE_NO_PAD.decode(encoded).map_err(|_error| ())?;
-    let supplied_signature = hex::decode(signature_hex).map_err(|_error| ())?;
-    let mut verifier = HmacSha256::new_from_slice(key).map_err(|_error| ())?;
-    verifier.update(&payload);
+    verified_payload(
+        &payload,
+        hex::decode(signature_hex),
+        HmacSha256::new_from_slice(key),
+    )?;
+
+    let claims: ContinuationClaims = serde_json::from_slice(&payload).map_err(|_error| ())?;
+    let canonical = serde_json::to_vec(&claims);
+    validate_claims(claims, &payload, now_ms, canonical)
+}
+
+fn verified_payload(
+    payload: &[u8],
+    supplied_signature: Result<Vec<u8>, hex::FromHexError>,
+    verifier: Result<HmacSha256, hmac::digest::InvalidLength>,
+) -> Result<(), ()> {
+    let supplied_signature = decoded_signature(supplied_signature)?;
+    let mut verifier = verifier_result(verifier)?;
+    verifier.update(payload);
     verifier
         .verify_slice(&supplied_signature)
-        .map_err(|_error| ())?;
+        .map_err(|_error| ())
+}
 
-    let mut claims: ContinuationClaims = serde_json::from_slice(&payload).map_err(|_error| ())?;
-    if serde_json::to_vec(&claims).map_err(|_error| ())? != payload
+fn validate_claims(
+    mut claims: ContinuationClaims,
+    payload: &[u8],
+    now_ms: u64,
+    canonical: serde_json::Result<Vec<u8>>,
+) -> Result<ContinuationClaims, ()> {
+    if canonical_payload(canonical)? != payload
         || claims.v != VERSION
         || claims.e <= now_ms
         || !valid_host_label(&claims.h)
@@ -158,10 +186,57 @@ pub(crate) fn login_url(origin: &str, continuation: &SecretString) -> Result<Str
     Ok(parsed.into())
 }
 
+#[cfg(test)]
 fn signature(key: &[u8; 32], payload: &[u8]) -> Result<[u8; 32], ApiError> {
-    let mut signer = HmacSha256::new_from_slice(key).map_err(|_error| ApiError::internal())?;
+    signature_from(HmacSha256::new_from_slice(key), payload)
+}
+
+fn signature_from(
+    signer: Result<HmacSha256, hmac::digest::InvalidLength>,
+    payload: &[u8],
+) -> Result<[u8; 32], ApiError> {
+    let mut signer = signer_result(signer)?;
     signer.update(payload);
     Ok(signer.finalize().into_bytes().into())
+}
+
+fn issue_payload(result: serde_json::Result<Vec<u8>>) -> Result<Vec<u8>, ApiError> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(_error) => Err(ApiError::internal()),
+    }
+}
+
+fn issued_secret(
+    result: Result<SecretString, blobyard_core::BlobyardError>,
+) -> Result<SecretString, ApiError> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(_error) => Err(ApiError::internal()),
+    }
+}
+
+fn decoded_signature(result: Result<Vec<u8>, hex::FromHexError>) -> Result<Vec<u8>, ()> {
+    result.map_err(|_error| ())
+}
+
+fn verifier_result(
+    result: Result<HmacSha256, hmac::digest::InvalidLength>,
+) -> Result<HmacSha256, ()> {
+    result.map_err(|_error| ())
+}
+
+fn canonical_payload(result: serde_json::Result<Vec<u8>>) -> Result<Vec<u8>, ()> {
+    result.map_err(|_error| ())
+}
+
+const fn signer_result(
+    result: Result<HmacSha256, hmac::digest::InvalidLength>,
+) -> Result<HmacSha256, ApiError> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(_error) => Err(ApiError::internal()),
+    }
 }
 
 fn is_lower_hex(value: &str, length: usize) -> bool {

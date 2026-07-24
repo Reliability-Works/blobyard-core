@@ -3,7 +3,7 @@ use super::{
     yard_validation,
 };
 use blobyard_contract::{
-    AuditValue, NewAuditEvent, NewYardContinuation, NewYardSession, RepositoryError,
+    AuditValue, NewAuditEvent, NewYardContinuation, NewYardSession, RepositoryError, YardAdmission,
     YardContinuationRecord, YardSessionAuditContext, YardSessionExchange, YardSessionListing,
     YardSessionRecord,
 };
@@ -24,11 +24,11 @@ pub(super) fn issue(
         &continuation.user_id,
         now,
     )?;
-    if admission.yard_id != continuation.yard_id
-        || admission.environment_id != continuation.environment_id
-    {
-        return Err(RepositoryError::NotFound);
-    }
+    require_admission(
+        &admission,
+        &continuation.yard_id,
+        &continuation.environment_id,
+    )?;
     transaction
         .execute(
             "INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms, consumed_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)",
@@ -68,11 +68,11 @@ pub(super) fn exchange(
         &continuation.continuation.user_id,
         now,
     )?;
-    if admission.yard_id != continuation.continuation.yard_id
-        || admission.environment_id != continuation.continuation.environment_id
-    {
-        return Err(RepositoryError::NotFound);
-    }
+    require_admission(
+        &admission,
+        &continuation.continuation.yard_id,
+        &continuation.continuation.environment_id,
+    )?;
     let record = yard_session_validation::record(session, &continuation);
     insert_session(transaction, &record)?;
     insert_issued_audit(transaction, audit, &admission, &record, now_ms)?;
@@ -104,6 +104,7 @@ fn insert_session(
     transaction: &Transaction<'_>,
     session: &YardSessionRecord,
 ) -> Result<(), RepositoryError> {
+    let (created_at, expires_at) = session_times(session)?;
     transaction
         .execute(
             "INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL)",
@@ -114,8 +115,8 @@ fn insert_session(
                 session.environment_id,
                 session.host_label,
                 session.user_id,
-                super::auth_validation::sql_time(session.created_at_ms)?,
-                super::auth_validation::sql_time(session.expires_at_ms)?,
+                created_at,
+                expires_at,
             ],
         )
         .map(|_changed| ())
@@ -172,9 +173,7 @@ pub(super) fn revoke(
     event: &NewAuditEvent,
 ) -> Result<bool, RepositoryError> {
     let session = session_by_id(transaction, session_id)?.ok_or(RepositoryError::NotFound)?;
-    if session.yard_id != yard_id {
-        return Err(RepositoryError::NotFound);
-    }
+    require_session_yard(&session, yard_id)?;
     if session.revoked_at_ms.is_some() {
         return Ok(false);
     }
@@ -190,13 +189,12 @@ pub(super) fn revoke(
             ("yardId", AuditValue::String(yard.id)),
         ],
     )?;
-    let changed = transaction
+    transaction
         .execute(
             "UPDATE yard_sessions SET revoked_at_ms = ?2 WHERE id = ?1 AND revoked_at_ms IS NULL",
             params![session.id, revoked_at],
         )
         .map_err(map_error)?;
-    super::changed_once(changed)?;
     lifecycle_audit::insert(transaction, event)?;
     Ok(true)
 }
@@ -234,10 +232,9 @@ pub(super) fn revoke_for_user(
 }
 
 pub(super) fn purge(transaction: &Transaction<'_>, now_ms: u64) -> Result<(), RepositoryError> {
-    let continuation_before =
-        super::auth_validation::sql_time(now_ms.saturating_sub(CONTINUATION_HISTORY_MS))?;
-    let session_before =
-        super::auth_validation::sql_time(now_ms.saturating_sub(SESSION_HISTORY_MS))?;
+    let now = super::auth_validation::sql_time(now_ms)?;
+    let continuation_before = now.saturating_sub(CONTINUATION_HISTORY_MS.cast_signed());
+    let session_before = now.saturating_sub(SESSION_HISTORY_MS.cast_signed());
     transaction
         .execute(
             "DELETE FROM yard_continuations WHERE expires_at_ms < ?1",
@@ -269,3 +266,34 @@ fn session_by_id(
         .optional()
         .map_err(map_error)
 }
+
+fn require_admission(
+    admission: &YardAdmission,
+    yard_id: &str,
+    environment_id: &str,
+) -> Result<(), RepositoryError> {
+    if admission.yard_id == yard_id && admission.environment_id == environment_id {
+        Ok(())
+    } else {
+        Err(RepositoryError::NotFound)
+    }
+}
+
+fn session_times(session: &YardSessionRecord) -> Result<(i64, i64), RepositoryError> {
+    Ok((
+        super::auth_validation::sql_time(session.created_at_ms)?,
+        super::auth_validation::sql_time(session.expires_at_ms)?,
+    ))
+}
+
+fn require_session_yard(session: &YardSessionRecord, yard_id: &str) -> Result<(), RepositoryError> {
+    if session.yard_id == yard_id {
+        Ok(())
+    } else {
+        Err(RepositoryError::NotFound)
+    }
+}
+
+#[cfg(test)]
+#[path = "yard_session_store_tests.rs"]
+mod tests;

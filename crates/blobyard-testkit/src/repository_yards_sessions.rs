@@ -1,5 +1,7 @@
 use super::YardConformanceRepository;
-use super::session_fixtures::{issue_session, new_session, session_revoked_event, set_visibility};
+use super::session_fixtures::{
+    issue_session, new_session, production_environment, session_revoked_event, set_visibility,
+};
 use crate::{hash, local_user, local_user_event, login_key};
 use blobyard_contract::{
     NewYardContinuation, RepositoryError, YARD_EXCHANGE_CODE_LIFETIME_MS, YardSessionAuditContext,
@@ -60,10 +62,7 @@ fn assert_visibility_admission(
         "user_fixture",
         104,
     )?;
-    let environment = repository
-        .list_yard_environments(&first.yard.id)?
-        .pop()
-        .ok_or(RepositoryError::Unavailable)?;
+    let environment = production_environment(repository.list_yard_environments(&first.yard.id)?)?;
     if stable.yard_id != first.yard.id
         || stable.environment_id != environment.id
         || stable.workspace_id != first.yard.workspace_id
@@ -265,14 +264,21 @@ fn assert_logout_and_deactivation(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
 ) -> Result<(), RepositoryError> {
+    let fallback = issue_session(repository, first, "fallback", '7', 145)?;
     let logout = issue_session(repository, first, "logout", 'e', 150)?;
-    if !repository.revoke_yard_session_by_token(&logout.token_hash, &first.yard.host_label, 151)?
-        || repository.revoke_yard_session_by_token(
-            &logout.token_hash,
-            &first.yard.host_label,
-            152,
-        )?
-    {
+    if !repository.revoke_yard_session_by_token(
+        &fallback.token_hash,
+        &first.yard.host_label,
+        146,
+    )? || !repository.revoke_yard_session_by_token(
+        &logout.token_hash,
+        &first.yard.host_label,
+        151,
+    )? || repository.revoke_yard_session_by_token(
+        &logout.token_hash,
+        &first.yard.host_label,
+        152,
+    )? {
         return Err(RepositoryError::Unavailable);
     }
     let deactivated = issue_session(repository, first, "deactivated", 'f', 160)?;

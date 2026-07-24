@@ -56,6 +56,12 @@ impl<T: YardSessionRepository> YardSessionRepository for Corrupting<'_, T> {
                 && let Some(listing) = listings.first_mut()
             {
                 listing.user_display_name.push_str("_corrupt");
+            } else if matches!(self.corruption, Corruption::YardSessionDeactivation)
+                && let Some(listing) = listings
+                    .iter_mut()
+                    .find(|listing| listing.session.id == "yardsession_deactivated")
+            {
+                listing.session.revoked_at_ms = None;
             }
             listings
         })

@@ -75,6 +75,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
                 records.push(unexpected_environment(yard_id)?);
             }
             Corruption::YardAccessEnvironmentSeed if populated_calls > 1 => records.clear(),
+            Corruption::YardSessionEnvironmentSeed if populated_calls > 2 => records.clear(),
             _ => {}
         }
         Ok(records)
@@ -233,6 +234,14 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
             now_ms,
         );
         match self.corruption {
+            Corruption::YardSessionLiveTarget if now_ms == 130 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
+            Corruption::YardSessionPublicTarget if now_ms == 134 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
             Corruption::YardDeliveryTarget if normalized_request_path.is_empty() => {
                 result.map(|mut target| {
                     target.not_found_document = true;

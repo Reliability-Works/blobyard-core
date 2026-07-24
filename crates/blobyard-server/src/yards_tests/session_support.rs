@@ -82,6 +82,11 @@ pub(super) async fn setup() -> SessionFixture {
 }
 
 pub(super) async fn sign_in(session: &SessionFixture, return_path: &str) -> SignedIn {
+    let exchange_url = exchange_location(session, return_path).await;
+    exchange_code(session, &exchange_url, return_path).await
+}
+
+pub(super) async fn exchange_location(session: &SessionFixture, return_path: &str) -> String {
     let challenge = browser_request(
         &session.fixture,
         "GET",
@@ -110,11 +115,10 @@ pub(super) async fn sign_in(session: &SessionFixture, return_path: &str) -> Sign
     .await;
     assert_eq!(login.status(), StatusCode::SEE_OTHER);
     assert!(login.headers().get(header::SET_COOKIE).is_none());
-    let exchange_url = login.headers()[header::LOCATION]
+    login.headers()[header::LOCATION]
         .to_str()
         .expect("exchange URL")
-        .to_owned();
-    exchange_code(session, &exchange_url, return_path).await
+        .to_owned()
 }
 
 async fn exchange_code(
@@ -268,7 +272,7 @@ pub(super) async fn body(response: Response) -> axum::body::Bytes {
         .to_bytes()
 }
 
-fn path_and_query(url: &url::Url) -> String {
+pub(super) fn path_and_query(url: &url::Url) -> String {
     url.query().map_or_else(
         || url.path().to_owned(),
         |query| format!("{}?{query}", url.path()),

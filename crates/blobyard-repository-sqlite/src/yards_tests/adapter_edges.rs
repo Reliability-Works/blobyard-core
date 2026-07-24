@@ -20,6 +20,10 @@ fn public_yard_adapter_rejects_invalid_optional_ids_and_request_paths() {
         repository.yard_file_by_host("host-fixture", "../unsafe", None, 0),
         Err(RepositoryError::InvalidInput)
     );
+    assert_eq!(
+        repository.yard_file_by_host("host-fixture", "", None, u64::MAX),
+        Err(RepositoryError::InvalidInput)
+    );
 }
 
 #[test]

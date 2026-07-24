@@ -1,8 +1,9 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::mcp_yard_command;
+use super::{mcp_yard_command, yard_policy_command};
 use crate::Command;
 use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
+use blobyard_core::ErrorCode;
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
 
 #[test]
@@ -169,4 +170,24 @@ fn web_yard_session_tools_map_to_cli_contracts() {
             command: YardSessionsCommand::Revoke(arguments)
         } if arguments.name == "site" && arguments.session_id == "byys_session"
     ));
+}
+
+#[test]
+fn yard_mapper_rejects_non_yard_calls() {
+    assert_eq!(
+        mcp_yard_command(ToolCall::Whoami {
+            scope: Scope::default(),
+        })
+        .expect_err("wrong call kind")
+        .code(),
+        ErrorCode::InternalError
+    );
+    assert_eq!(
+        yard_policy_command(WebYardToolCall::ListWebYards {
+            scope: Scope::default(),
+        })
+        .expect_err("wrong policy call")
+        .code(),
+        ErrorCode::InternalError
+    );
 }
