@@ -1,6 +1,29 @@
 {
   "cases": [
     {
+      "expected": {
+        "admitted": true,
+        "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
+      },
+      "id": "active-group-grant-admits-current-member",
+      "input": {
+        "grantStatus": "active",
+        "groupStatus": "active",
+        "membershipStatus": "active",
+        "principalKind": "group",
+        "surface": "selected-yard"
+      }
+    },
+    {
+      "expected": { "admitted": true, "propagationMilliseconds": 0 },
+      "id": "alternate-direct-or-group-grant-preserves-admission",
+      "input": {
+        "change": "one-group-membership-removed",
+        "otherGrantStatus": "active",
+        "surface": "private-delivery"
+      }
+    },
+    {
       "expected": { "lifetimeMilliseconds": 600000 },
       "id": "continuation-lifetime-is-ten-minutes",
       "input": { "surface": "continuation" }
@@ -9,6 +32,24 @@
       "expected": { "lifetimeMilliseconds": 60000 },
       "id": "exchange-code-lifetime-is-sixty-seconds",
       "input": { "surface": "exchange-code" }
+    },
+    {
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "group-deactivation-denies-on-next-private-request",
+      "input": {
+        "change": "group-deactivated",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "membership-removal-denies-on-next-private-request",
+      "input": {
+        "change": "membership-removed",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
     },
     {
       "expected": { "responseClass": "concealed-not-found" },
@@ -37,6 +78,17 @@
       "expected": { "lifetimeMilliseconds": 43200000 },
       "id": "session-lifetime-is-twelve-hours",
       "input": { "surface": "session" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "unresolved-legacy-group-grant-remains-inert",
+      "input": {
+        "grantStatus": "active",
+        "groupStatus": "unresolved",
+        "membershipStatus": "absent",
+        "principalKind": "group",
+        "surface": "selected-yard"
+      }
     }
   ],
   "schemaVersion": 1

@@ -1,7 +1,7 @@
 use blobyard_contract::{
     LifecycleRepository, LocalUserRepository, NewAuditEvent, NewYardFile, RepositoryError,
-    TransferRepository, WebYardRepository, WebYardStatus, YardDeployStatus, YardEnvironmentKind,
-    YardEnvironmentStatus, YardSessionRepository,
+    TransferRepository, WebYardRepository, WebYardStatus, WorkspaceGroupRepository,
+    YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -16,6 +16,8 @@ mod fixture_tests;
 mod fixtures;
 #[path = "repository_yards_session_fixtures.rs"]
 mod session_fixtures;
+#[path = "repository_yards_session_groups.rs"]
+mod session_groups;
 #[path = "repository_yards_sessions.rs"]
 mod sessions;
 use delivery::{assert_deleted_yard_cannot_finalise, assert_delivery, prune_history};
@@ -27,6 +29,7 @@ pub trait YardConformanceRepository:
     WebYardRepository
     + TransferRepository
     + LocalUserRepository
+    + WorkspaceGroupRepository
     + YardSessionRepository
     + LifecycleRepository
 {
@@ -36,6 +39,7 @@ impl<
     T: WebYardRepository
         + TransferRepository
         + LocalUserRepository
+        + WorkspaceGroupRepository
         + YardSessionRepository
         + LifecycleRepository,
 > YardConformanceRepository for T
@@ -109,6 +113,7 @@ pub fn yard_conformance(
     {
         return Err(RepositoryError::Unavailable);
     }
+    sessions::create_session_user(repository)?;
     access::assert_access_controls(repository, &first, &version_id)?;
     sessions::assert_session_controls(repository, &first, &version_id)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;

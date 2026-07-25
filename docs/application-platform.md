@@ -52,12 +52,13 @@ Visibility modes: owner only, selected people and groups, workspace, authenticat
 authenticated user, public. Access changes are explicit policy operations with audit evidence, and
 revocation is enforced promptly. Public Yards serve anonymously without consulting browser sessions.
 Every other mode requires a live, host-bound Yard session and resolves the current user, policy,
-grants, environment, and deployment on every request. `selected` and `authenticated-link` admit only
-an active explicit grant in Core; link redemption arrives later. `workspace` admits an active local
-user from the Yard workspace, `any-authenticated` admits any active local user, and `owner` admits
-no browser-session principal in Core. A navigation request without admission redirects to sign-in
-only for `GET` plus `Accept: text/html`, including an unknown Yard-shaped host. Other requests
-remain concealed as not found.
+grants, environment, and deployment on every request. `selected` and `authenticated-link` admit an
+active same-workspace user through either a direct user grant or current membership in an actively
+granted group; link redemption arrives later. `workspace` admits an active local user from the Yard
+workspace, `any-authenticated` admits any active local user, and `owner` admits no browser-session
+principal in Core. A navigation request without admission redirects to sign-in only for `GET` plus
+`Accept: text/html`, including an unknown Yard-shaped host. Other requests remain concealed as not
+found.
 
 Two permission planes stay distinct everywhere. The management plane (owner, admin, developer,
 auditor) controls who configures and operates the Yard. The application plane (roles the manifest
@@ -91,8 +92,28 @@ exchange code. The Yard origin consumes that code and sets a twelve-hour
 `__Host-blobyard-yard-session` cookie with `Secure`, `HttpOnly`, `SameSite=Lax`, and `Path=/`. The
 identity origin sets no cookie, so each Yard sign-in re-enters the key. Session claims are resolved
 server-side on every delivery request; client-supplied tenant identifiers are never authorization
-inputs, and revocation takes effect on the next request. Groups, guest invitations, link redemption,
-and OIDC identities arrive in later slices.
+inputs, and revocation takes effect on the next request. Guest invitations, link redemption, and
+OIDC identities arrive in later slices.
+
+## Workspace groups
+
+Workspace groups are human-managed collections of active local users. Group management requires a
+human session with `users:manage`; machine identities cannot list or mutate groups. A group name is
+stored in NFC after Unicode-whitespace trimming, contains no controls, and has 2-80 scalar values.
+Core permits at most 500 active groups per workspace, 500 members per group, 100 memberships per
+user, and 500 active Yard grants per group.
+
+Group and member listings use opaque newest-first keyset cursors with pages of 50. Group listings
+retain deactivated tombstones; member listings require an active group. Deactivating a group
+atomically deletes all memberships, revokes every active grant for that group, and records one
+`group.deactivated` audit event with `revokedGrantCount`. Deactivating a local user atomically
+removes all of that user's memberships without revoking unrelated group grants or browser sessions.
+Because admission is recalculated during issue, exchange, and every delivery, member removal, group
+deactivation, or grant revocation denies the next request without a blanket session revoke.
+
+Group IDs use `group_` followed by a lowercase UUID without separators. A group grant is accepted
+only when the group is active and belongs to the Yard workspace. Legacy group-principal grants that
+do not resolve to a current group remain stored but fail closed.
 
 ## The application manifest
 

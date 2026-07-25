@@ -49,9 +49,23 @@ pub(super) fn started_yard_id(
 
 pub(super) fn manager_fixture() -> (test_seams::TransferFixture, Principal, String) {
     let fixture = test_seams::fixture(&["yard:manage"]);
+    seed_reader(&fixture);
     let principal = Principal(fixture.principal.clone());
     let yard_id = started_yard_id(&fixture, &principal);
     (fixture, principal, yard_id)
+}
+
+pub(super) fn seed_reader(fixture: &test_seams::TransferFixture) {
+    let user = blobyard_testkit::local_user("workspace_fixture", "user_reader", None, 1);
+    fixture
+        .state
+        .repository
+        .create_local_user(
+            &user,
+            &blobyard_testkit::login_key("userkey_reader", &user.id, '8', 1),
+            &blobyard_testkit::local_user_event("audit_user_reader", &user, "user.created", 1),
+        )
+        .expect("reader fixture");
 }
 
 #[test]

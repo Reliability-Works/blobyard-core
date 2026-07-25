@@ -101,6 +101,26 @@
         "required": ["artifactCount", "errorCode", "expiresAt", "id", "status"],
         "type": "object"
       },
+      "AddGroupMemberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "userId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId", "userId"],
+        "type": "object"
+      },
+      "AddGroupMemberResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "AddGroupMemberSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AddGroupMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "ApiError": {
         "additionalProperties": false,
         "properties": {
@@ -648,6 +668,31 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "CreateGroupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": { "description": "Human-readable group name.", "type": "string" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace", "name"],
+        "type": "object"
+      },
+      "CreateGroupResult": {
+        "additionalProperties": false,
+        "properties": { "group": { "$ref": "#/components/schemas/GroupSummary" } },
+        "required": ["group"],
+        "type": "object"
+      },
+      "CreateGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateGroupResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "CreateInboxRequest": {
         "additionalProperties": false,
         "properties": {
@@ -979,6 +1024,23 @@
         "maxLength": 1024,
         "minLength": 1,
         "type": "string"
+      },
+      "DeactivateGroupRequest": {
+        "additionalProperties": false,
+        "properties": { "groupId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["groupId"],
+        "type": "object"
+      },
+      "DeactivateGroupResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "DeactivateGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeactivateGroupResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
       },
       "DeactivateLocalUserRequest": {
         "additionalProperties": false,
@@ -1421,6 +1483,63 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "GroupMemberPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/Identifier" }, "type": "array" },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "GroupPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/GroupSummary" }, "type": "array" },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "GroupStatus": {
+        "description": "Persisted workspace-group lifecycle state.",
+        "enum": ["active", "deactivated"],
+        "type": "string"
+      },
+      "GroupSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "deactivatedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "memberCount": {
+            "description": "Current active membership count.",
+            "maximum": 500,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "description": "NFC-normalized human-readable group name.",
+            "maxLength": 80,
+            "minLength": 2,
+            "type": "string"
+          },
+          "status": { "$ref": "#/components/schemas/GroupStatus" },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "status",
+          "createdAt",
+          "deactivatedAt",
+          "memberCount"
+        ],
+        "type": "object"
+      },
       "HealthResult": {
         "additionalProperties": false,
         "properties": {
@@ -1565,6 +1684,46 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/ListCliSessionsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListGroupMembersQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "groupId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId"],
+        "type": "object"
+      },
+      "ListGroupMembersResult": { "$ref": "#/components/schemas/GroupMemberPage" },
+      "ListGroupMembersSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListGroupMembersResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListGroupsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListGroupsResult": { "$ref": "#/components/schemas/GroupPage" },
+      "ListGroupsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListGroupsResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2128,6 +2287,26 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RemoveGroupMemberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "userId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId", "userId"],
+        "type": "object"
+      },
+      "RemoveGroupMemberResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RemoveGroupMemberSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RemoveGroupMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RemoveMemberRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2142,6 +2321,31 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/RemoveMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RenameGroupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Replacement human-readable group name.", "type": "string" }
+        },
+        "required": ["groupId", "name"],
+        "type": "object"
+      },
+      "RenameGroupResult": {
+        "additionalProperties": false,
+        "properties": { "group": { "$ref": "#/components/schemas/GroupSummary" } },
+        "required": ["group"],
+        "type": "object"
+      },
+      "RenameGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RenameGroupResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -3337,6 +3541,11 @@
     "/members/remove",
     "/api-tokens",
     "/api-tokens/revoke",
+    "/groups",
+    "/groups/rename",
+    "/groups/members",
+    "/groups/members/remove",
+    "/groups/deactivate",
     "/users",
     "/users/reset-key",
     "/users/deactivate",

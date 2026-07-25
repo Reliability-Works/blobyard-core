@@ -150,7 +150,7 @@ fn deactivate_with_clock(
     Ok(success(EmptyResponse::default()))
 }
 
-fn require_users_manage(principal: &Principal) -> Result<(), ApiError> {
+pub(crate) fn require_users_manage(principal: &Principal) -> Result<(), ApiError> {
     if principal.is_machine() {
         Err(ApiError::forbidden())
     } else {
@@ -158,7 +158,7 @@ fn require_users_manage(principal: &Principal) -> Result<(), ApiError> {
     }
 }
 
-fn authorized_workspace(
+pub(crate) fn authorized_workspace(
     state: &AppState,
     principal: &Principal,
     workspace: &blobyard_core::Slug,

@@ -8,6 +8,9 @@ use crate::catalog_contracts::{
     tool_schema, upload_contract,
 };
 
+#[path = "group_catalog.rs"]
+mod group_catalog;
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 enum ToolKind {
     Whoami,
@@ -87,6 +90,7 @@ pub(super) fn tools() -> Vec<Value> {
         .map(tool)
         .chain(crate::dashboard_catalog::tools())
         .chain(crate::admin_catalog::tools())
+        .chain(group_catalog::tools())
         .collect()
 }
 

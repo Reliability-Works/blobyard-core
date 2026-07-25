@@ -76,6 +76,74 @@ pub struct CursorArgs {
     pub cursor: Option<String>,
 }
 
+/// Workspace-group operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum GroupsCommand {
+    /// List active and deactivated groups.
+    List(CursorArgs),
+    /// Create an empty active group.
+    Create(GroupNameArgs),
+    /// Rename one active group.
+    Rename(RenameGroupArgs),
+    /// List current members of one active group.
+    Members(GroupCursorArgs),
+    /// Add one active local user to a group.
+    AddMember(GroupMemberArgs),
+    /// Remove one current group member.
+    RemoveMember(GroupMemberArgs),
+    /// Deactivate one group and revoke its active grants.
+    Deactivate(GroupIdArgs),
+}
+
+/// Arguments naming a new group.
+#[derive(Clone, Debug, Args)]
+pub struct GroupNameArgs {
+    /// Human-readable group name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+}
+
+/// Arguments renaming one group.
+#[derive(Clone, Debug, Args)]
+pub struct RenameGroupArgs {
+    /// Stable group identifier.
+    #[arg(value_name = "GROUP_ID")]
+    pub group_id: String,
+    /// Replacement human-readable name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+}
+
+/// Arguments listing one group's current members.
+#[derive(Clone, Debug, Args)]
+pub struct GroupCursorArgs {
+    /// Stable group identifier.
+    #[arg(value_name = "GROUP_ID")]
+    pub group_id: String,
+    /// Opaque continuation cursor from the previous page.
+    #[arg(long)]
+    pub cursor: Option<String>,
+}
+
+/// Arguments naming one group membership.
+#[derive(Clone, Debug, Args)]
+pub struct GroupMemberArgs {
+    /// Stable group identifier.
+    #[arg(value_name = "GROUP_ID")]
+    pub group_id: String,
+    /// Stable local-user identifier.
+    #[arg(value_name = "USER_ID")]
+    pub user_id: String,
+}
+
+/// Arguments naming one group.
+#[derive(Clone, Debug, Args)]
+pub struct GroupIdArgs {
+    /// Stable group identifier.
+    #[arg(value_name = "GROUP_ID")]
+    pub group_id: String,
+}
+
 /// Member-management operations.
 #[derive(Clone, Debug, Subcommand)]
 pub enum MembersCommand {

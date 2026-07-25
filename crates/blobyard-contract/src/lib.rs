@@ -11,6 +11,7 @@ mod repository;
 mod sharing;
 mod storage;
 mod transfers;
+mod workspace_groups;
 mod yard_access;
 mod yard_environments;
 mod yard_repository;
@@ -69,6 +70,12 @@ pub use transfers::{
     NewDownloadGrant, NewUploadPartGrant, NewUploadReservation, ReservationState,
     ReservationStrategy, StoredObjectRecord, TransferRepository, UploadPartRecord,
     UploadReservationRecord,
+};
+pub use workspace_groups::{
+    MAXIMUM_ACTIVE_GROUP_GRANTS, MAXIMUM_ACTIVE_GROUPS, MAXIMUM_GROUP_MEMBERS, MAXIMUM_USER_GROUPS,
+    WorkspaceGroupCursor, WorkspaceGroupMemberCursor, WorkspaceGroupMemberPage,
+    WorkspaceGroupMemberRecord, WorkspaceGroupPage, WorkspaceGroupRecord, WorkspaceGroupRepository,
+    WorkspaceGroupStatus, normalize_group_name,
 };
 pub use yard_access::{
     NewYardAccessGrant, YardAccessGrantRecord, YardAccessPolicyRecord, YardAccessPrincipalKind,

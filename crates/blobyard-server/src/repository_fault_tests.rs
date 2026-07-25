@@ -11,6 +11,8 @@ use std::sync::Arc;
 mod ci;
 #[path = "repository_fault_credentials.rs"]
 mod credentials;
+#[path = "repository_fault_groups.rs"]
+mod groups;
 #[path = "repository_fault_inboxes.rs"]
 mod inboxes;
 #[path = "repository_fault_local_users.rs"]
@@ -102,7 +104,7 @@ fn faulting_repository_forwards_before_its_exact_failure_index() {
         FaultingRepository::new(Arc::clone(&inner), 0).schema_version(),
         Err(RepositoryError::Unavailable)
     );
-    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(20));
+    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(21));
 }
 
 #[test]

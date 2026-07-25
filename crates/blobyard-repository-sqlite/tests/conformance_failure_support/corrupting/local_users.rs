@@ -25,6 +25,9 @@ impl<T: LocalUserRepository> LocalUserRepository for Corrupting<'_, T> {
                 active_key_prefix: None,
             });
         }
+        if matches!(self.corruption, Corruption::GroupMissingUser) {
+            records.retain(|listing| listing.user.id != "user_first");
+        }
         Ok(records)
     }
 

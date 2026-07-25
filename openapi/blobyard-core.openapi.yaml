@@ -1311,6 +1311,196 @@ paths:
           application/json:
             schema:
               $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeApiTokenRequest
+  /groups:
+    get:
+      operationId: listGroups
+      description: Lists active and deactivated groups in one workspace. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListGroupsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_groups
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+    post:
+      operationId: createGroup
+      description: Creates one empty workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateGroupRequest
+  /groups/rename:
+    post:
+      operationId: renameGroup
+      description: Renames one active workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - rename
+      x-blobyard-mcp:
+        tool: blobyard_rename_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameGroupRequest
+  /groups/members:
+    get:
+      operationId: listGroupMembers
+      description: Lists current members of one active workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListGroupMembersSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - members
+      x-blobyard-mcp:
+        tool: blobyard_list_group_members
+      parameters:
+        - in: query
+          name: groupId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+    post:
+      operationId: addGroupMember
+      description: Adds one active same-workspace user to a group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AddGroupMemberSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - add-member
+      x-blobyard-mcp:
+        tool: blobyard_add_group_member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AddGroupMemberRequest
+  /groups/members/remove:
+    post:
+      operationId: removeGroupMember
+      description: Removes one current group membership. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveGroupMemberSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - remove-member
+      x-blobyard-mcp:
+        tool: blobyard_remove_group_member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveGroupMemberRequest
+  /groups/deactivate:
+    post:
+      operationId: deactivateGroup
+      description: Tombstones one group and revokes its active Yard grants. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - deactivate
+      x-blobyard-mcp:
+        tool: blobyard_deactivate_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateGroupRequest
   /users:
     get:
       operationId: listLocalUsers

@@ -33,6 +33,8 @@ impl Endpoint {
             | Self::ListMembers
             | Self::ListInvites
             | Self::ListApiTokens
+            | Self::ListGroups
+            | Self::ListGroupMembers
             | Self::ListLocalUsers
             | Self::ListCiTrusts
             | Self::ListCliSessions
@@ -47,7 +49,7 @@ impl Endpoint {
     }
 }
 
-const ENDPOINT_PATHS: [&str; 87] = [
+const ENDPOINT_PATHS: [&str; 94] = [
     "/v1/health",
     "/v1/bootstrap/exchange",
     "/v1/cli/device/start",
@@ -107,6 +109,13 @@ const ENDPOINT_PATHS: [&str; 87] = [
     "/v1/api-tokens",
     "/v1/api-tokens",
     "/v1/api-tokens/revoke",
+    "/v1/groups",
+    "/v1/groups",
+    "/v1/groups/rename",
+    "/v1/groups/members",
+    "/v1/groups/members",
+    "/v1/groups/members/remove",
+    "/v1/groups/deactivate",
     "/v1/users",
     "/v1/users",
     "/v1/users/reset-key",

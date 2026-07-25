@@ -3,6 +3,7 @@
 use super::{SqliteRepository, assert_tables};
 use blobyard_contract::RepositoryError;
 use rusqlite::Connection;
+use std::path::Path;
 
 #[test]
 fn environment_migration_backfills_one_production_environment_per_active_yard() {
@@ -23,7 +24,7 @@ fn environment_migration_backfills_one_production_environment_per_active_yard() 
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 20);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     let environments = repository
         .list_yard_environments("yard_live")
         .expect("environments");
@@ -57,7 +58,7 @@ fn access_migration_adds_empty_policy_and_grant_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 20);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     assert!(
         repository
             .get_yard_access_policy("yard_live")
@@ -89,7 +90,7 @@ fn local_user_migration_adds_empty_user_and_key_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 20);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     assert!(
         repository
             .list_local_users("workspace")
@@ -114,7 +115,7 @@ fn yard_session_migration_adds_empty_continuation_and_session_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 20);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     let connection = repository.test_connection().expect("connection");
     for table in ["yard_continuations", "yard_sessions"] {
         let count: i64 = connection
@@ -125,6 +126,84 @@ fn yard_session_migration_adds_empty_continuation_and_session_tables() {
         assert_eq!(count, 0);
     }
     drop(connection);
+}
+
+#[test]
+fn group_migration_preserves_unresolved_grants_and_adds_empty_group_tables() {
+    use blobyard_contract::{
+        AuditValue, LifecycleRepository, MetadataRepository, WebYardRepository,
+        WorkspaceGroupRecord, WorkspaceGroupRepository, WorkspaceGroupStatus,
+    };
+
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let path = temporary.path().join("metadata.sqlite3");
+    seed_version_twenty_legacy_group_grant(&path);
+    let repository = SqliteRepository::open(&path).expect("migrated repository");
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert!(
+        repository
+            .list_workspace_groups("workspace", None, 50)
+            .expect("groups")
+            .items
+            .is_empty()
+    );
+    assert_eq!(
+        repository
+            .list_yard_access_grants("yard_live", 2)
+            .expect("legacy grants")
+            .len(),
+        1
+    );
+    let group = WorkspaceGroupRecord {
+        id: "group_00000000000000000000000000000001".to_owned(),
+        workspace_id: "workspace".to_owned(),
+        name: "Legacy collision".to_owned(),
+        status: WorkspaceGroupStatus::Active,
+        member_count: 0,
+        created_at_ms: 3,
+        deactivated_at_ms: None,
+    };
+    assert_eq!(
+        repository.create_workspace_group(
+            &group,
+            &blobyard_testkit::group_event(
+                "audit_legacy_group_collision",
+                "group.created",
+                &group,
+                3,
+                [("name", AuditValue::String(group.name.clone()))],
+            ),
+        ),
+        Err(RepositoryError::Conflict)
+    );
+    assert!(
+        repository
+            .list_audit("workspace", None, 20)
+            .expect("audit")
+            .items
+            .is_empty()
+    );
+    assert_tables(
+        &repository,
+        &["workspace_groups", "workspace_group_members"],
+    );
+}
+
+fn seed_version_twenty_legacy_group_grant(path: &Path) {
+    let mut connection = Connection::open(path).expect("version twenty connection");
+    super::super::migrations::apply_through(&mut connection, 20).expect("version twenty schema");
+    connection
+        .execute_batch(
+            "INSERT INTO workspaces (id, name, slug) VALUES ('workspace', 'Workspace', 'workspace');
+             INSERT INTO projects (id, workspace_id, name, slug) VALUES ('project', 'workspace', 'Project', 'project');
+             INSERT INTO web_yards VALUES ('yard_live', 'workspace', 'project', 'docs', 'docs-123456789-team', NULL, 'active', 1, 1, NULL);
+             INSERT INTO yard_access_grants VALUES (
+               'grant_legacy_group', 'yard_live', NULL, 'group',
+               'group_00000000000000000000000000000001', '[\"viewer\"]',
+               'active', 2, 'fixture', NULL, NULL
+             );",
+        )
+        .expect("version twenty fixture");
 }
 
 #[test]

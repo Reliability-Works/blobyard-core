@@ -165,7 +165,15 @@ fn assert_revocation(
     )? {
         return Err(RepositoryError::Unavailable);
     }
-    if repository.list_yard_access_grants(yard_id, 16)? != [grants[1].clone()] {
+    if repository.list_yard_access_grants(yard_id, 16)? != [grants[1].clone()]
+        || !repository.revoke_yard_access_grant(
+            yard_id,
+            &grants[1].id,
+            17,
+            &revoked_event(yard_id, &grants[1].id, 17),
+        )?
+        || !repository.list_yard_access_grants(yard_id, 18)?.is_empty()
+    {
         return Err(RepositoryError::Unavailable);
     }
     Ok(())

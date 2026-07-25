@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "adapter_failure_map_tests/groups.rs"]
+mod poisoned_groups;
 #[path = "adapter_failure_map_tests/yards.rs"]
 mod poisoned_yards;
 
@@ -261,6 +263,7 @@ fn assert_every_public_operation(repository: &SqliteRepository) {
     assert_poisoned_metadata(repository);
     assert_poisoned_credentials(repository);
     assert_poisoned_local_users(repository);
+    poisoned_groups::assert_poisoned_groups(repository);
     assert_poisoned_ci(repository);
     assert_poisoned_transfers(repository);
     assert_poisoned_sharing(repository);

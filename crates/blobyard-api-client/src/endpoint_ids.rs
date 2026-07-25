@@ -10,7 +10,7 @@ impl Endpoint {
     }
 }
 
-const OPERATION_IDS: [&str; 87] = [
+const OPERATION_IDS: [&str; 94] = [
     "health",
     "exchangeBootstrapToken",
     "startDeviceLogin",
@@ -70,6 +70,13 @@ const OPERATION_IDS: [&str; 87] = [
     "listApiTokens",
     "createApiToken",
     "revokeApiToken",
+    "listGroups",
+    "createGroup",
+    "renameGroup",
+    "listGroupMembers",
+    "addGroupMember",
+    "removeGroupMember",
+    "deactivateGroup",
     "listLocalUsers",
     "createLocalUser",
     "resetLocalUserLoginKey",

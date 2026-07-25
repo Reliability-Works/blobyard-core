@@ -159,7 +159,28 @@ blobyard users deactivate user_123
 ```
 
 Deactivation tombstones the user and revokes every active sign-in key and Yard browser session in
-the same transaction.
+the same transaction. It also removes the user from every workspace group without revoking grants
+held by those groups.
+
+## Workspace groups
+
+Groups grant Yard access to a managed set of local users. All group commands require a human
+`users:manage` session. List commands accept `--cursor`; the returned cursor is opaque and belongs
+only to that exact group or workspace scope.
+
+```bash
+blobyard groups create "Reviewers"
+blobyard groups list
+blobyard groups rename group_0123456789abcdef0123456789abcdef "Approvers"
+blobyard groups members group_0123456789abcdef0123456789abcdef
+blobyard groups add-member group_0123456789abcdef0123456789abcdef user_123
+blobyard groups remove-member group_0123456789abcdef0123456789abcdef user_123
+blobyard groups deactivate group_0123456789abcdef0123456789abcdef
+```
+
+Deactivation is a tombstone: it removes every member and revokes every active Yard grant held by the
+group in one audited transaction. Group membership is checked during sign-in, exchange, and every
+private delivery, so removing a member or deactivating a group denies the next request.
 
 ## Billing and account lifecycle
 
@@ -307,8 +328,9 @@ active grants, `set-visibility` accepts `public`, `owner`, `selected`, `workspac
 application roles, an optional environment restriction, and an optional RFC 3339 expiry. The three
 mutations require a signed-in human session; CI tokens cannot change access policy. Public Yards
 serve anonymously. Other modes use a live Yard browser session and re-evaluate policy on every
-request. In Core, `owner` admits no browser principal, while `authenticated-link` currently requires
-an explicit active grant like `selected`; link redemption arrives later.
+request. In Core, `owner` admits no browser principal, while `selected` and `authenticated-link`
+accept either a direct user grant or an active grant held by one of the user's current groups; link
+redemption arrives later.
 
 ```bash
 blobyard access list marketing

@@ -2,6 +2,7 @@ use super::YardConformanceRepository;
 use super::session_fixtures::{
     issue_session, new_session, production_environment, session_revoked_event, set_visibility,
 };
+use super::session_groups::{assert_live_policy, create_group_access};
 use crate::{hash, local_user, local_user_event, login_key};
 use blobyard_contract::{
     NewYardContinuation, RepositoryError, YARD_EXCHANGE_CODE_LIFETIME_MS, YardSessionAuditContext,
@@ -13,9 +14,23 @@ pub(super) fn assert_session_controls(
     first: &YardStartRecord,
     version_id: &str,
 ) -> Result<(), RepositoryError> {
-    create_session_user(repository)?;
     assert_visibility_admission(repository, first)?;
+    create_group_access(repository, first)?;
+    set_visibility(
+        repository,
+        &first.yard.id,
+        "any-authenticated",
+        YardVisibility::Selected,
+        105,
+    )?;
     let session = exchange_session(repository, first)?;
+    set_visibility(
+        repository,
+        &first.yard.id,
+        "selected",
+        YardVisibility::AnyAuthenticated,
+        107,
+    )?;
     assert_host_binding_and_touch(repository, first, version_id, &session)?;
     assert_live_policy(repository, first, version_id, &session)?;
     assert_management_revocation(repository, first, &session)?;
@@ -23,7 +38,9 @@ pub(super) fn assert_session_controls(
     repository.purge_yard_session_history(4_000_000_000)
 }
 
-fn create_session_user(repository: &dyn YardConformanceRepository) -> Result<(), RepositoryError> {
+pub(super) fn create_session_user(
+    repository: &dyn YardConformanceRepository,
+) -> Result<(), RepositoryError> {
     let user = local_user("workspace_fixture", "user_fixture", None, 100);
     let key = login_key("userkey_yard", &user.id, '7', 100);
     repository.create_local_user(
@@ -166,58 +183,6 @@ fn assert_host_binding_and_touch(
         return Err(RepositoryError::Unavailable);
     }
     Ok(())
-}
-
-fn assert_live_policy(
-    repository: &dyn YardConformanceRepository,
-    first: &YardStartRecord,
-    version_id: &str,
-    session: &blobyard_contract::YardSessionRecord,
-) -> Result<(), RepositoryError> {
-    for (from, visibility, at, admitted) in [
-        ("any-authenticated", YardVisibility::Selected, 130, true),
-        ("selected", YardVisibility::AuthenticatedLink, 131, true),
-        ("authenticated-link", YardVisibility::Workspace, 132, true),
-        ("workspace", YardVisibility::Owner, 133, false),
-    ] {
-        set_visibility(repository, &first.yard.id, from, visibility, at)?;
-        let result = repository.yard_file_by_host(
-            &first.yard.host_label,
-            "asset.js",
-            Some(&session.token_hash),
-            at,
-        );
-        if admitted {
-            if result?.object.version.id != version_id {
-                return Err(RepositoryError::Unavailable);
-            }
-        } else if result != Err(RepositoryError::NotFound) {
-            return Err(RepositoryError::Unavailable);
-        }
-    }
-    set_visibility(
-        repository,
-        &first.yard.id,
-        "owner",
-        YardVisibility::Public,
-        134,
-    )?;
-    if repository
-        .yard_file_by_host(&first.yard.host_label, "asset.js", Some("malformed"), 134)?
-        .object
-        .version
-        .id
-        != version_id
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    set_visibility(
-        repository,
-        &first.yard.id,
-        "public",
-        YardVisibility::AnyAuthenticated,
-        135,
-    )
 }
 
 fn assert_management_revocation(

@@ -11,6 +11,7 @@ use blobyard_repository_sqlite::SqliteRepository;
 /// Result-corruption adapters for conformance assertions.
 pub mod corrupting;
 pub(crate) use corrupting::{Corrupting, Corruption};
+mod faulting_groups;
 mod faulting_inboxes;
 mod faulting_lifecycle;
 mod faulting_local_users;

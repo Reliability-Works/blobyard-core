@@ -19,6 +19,12 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
+#[path = "adapter_group_principal_tests.rs"]
+mod group_principal_tests;
+#[path = "adapter_group_row_tests.rs"]
+mod group_row_tests;
+#[path = "adapter_group_validation_tests.rs"]
+mod group_validation_tests;
 #[path = "adapter_token_fixtures.rs"]
 mod token_fixtures;
 
@@ -74,6 +80,7 @@ fn run_contract(repository: &SqliteRepository) -> Result<(), RepositoryError> {
         .ok_or(RepositoryError::Unavailable)?;
     blobyard_testkit::credential_conformance(repository, &workspace.id)?;
     blobyard_testkit::local_user_conformance(repository, &workspace.id)?;
+    blobyard_testkit::group_conformance(repository, &workspace.id)?;
     run_ci_contract(repository)?;
     blobyard_testkit::transfer_conformance(repository, "project_fixture")?;
     blobyard_testkit::sharing_conformance(repository)?;
@@ -133,7 +140,7 @@ fn denied_initialization(denied_index: usize) -> (Result<(), RepositoryError>, u
 fn assert_denial_sweep(
     operation: impl Fn(usize) -> (Result<(), RepositoryError>, usize),
 ) -> Option<usize> {
-    for denied_index in 0..2_000 {
+    for denied_index in 0..4_000 {
         let (result, observed) = operation(denied_index);
         if observed <= denied_index {
             result.expect("operation succeeds after every authorization point");
@@ -251,6 +258,20 @@ pub(super) fn empty_repository() -> (tempfile::TempDir, SqliteRepository) {
     (temporary, repository)
 }
 
+pub(super) fn group_repository() -> (tempfile::TempDir, SqliteRepository) {
+    let (temporary, repository) = empty_repository();
+    blobyard_testkit::repository_conformance(&repository).expect("metadata conformance");
+    let user = blobyard_testkit::local_user("workspace_fixture", "user_group", None, 30);
+    repository
+        .create_local_user(
+            &user,
+            &blobyard_testkit::login_key("userkey_group", &user.id, 'a', 30),
+            &blobyard_testkit::local_user_event("audit_user_group", &user, "user.created", 30),
+        )
+        .expect("group user");
+    (temporary, repository)
+}
+
 fn unavailable<T>(result: Result<T, RepositoryError>) {
     assert_eq!(result.err(), Some(RepositoryError::Unavailable));
 }
@@ -282,6 +303,15 @@ mod token_behavior;
 
 #[path = "adapter_local_user_tests.rs"]
 mod local_user_behavior;
+
+#[path = "adapter_group_tests.rs"]
+mod group_behavior;
+
+#[path = "adapter_group_edge_tests.rs"]
+mod group_edges;
+
+#[path = "adapter_group_limit_tests.rs"]
+mod group_limits;
 
 #[path = "adapter_workspace_tests.rs"]
 mod workspace_behavior;

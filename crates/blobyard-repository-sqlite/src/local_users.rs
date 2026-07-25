@@ -91,6 +91,11 @@ impl LocalUserRepository for SqliteRepository {
             .map_err(map_error)?;
             revoke_active_keys(transaction, &user.id, now)?;
             super::yard_session_store::revoke_for_user(transaction, &user.id, now)?;
+            super::workspace_group_members::remove_user_memberships(
+                transaction,
+                &user.workspace_id,
+                &user.id,
+            )?;
             lifecycle_audit::insert(transaction, event)
         })
     }

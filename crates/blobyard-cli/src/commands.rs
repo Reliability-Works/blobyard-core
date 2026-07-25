@@ -2,8 +2,8 @@ use crate::AppCommand;
 use crate::account_commands::AccountCommand;
 use crate::billing_commands::BillingCommand;
 use crate::headless_commands::{
-    AuditCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand, SharesCommand,
-    TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
+    AuditCommand, GroupsCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand,
+    SharesCommand, TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
 };
 use crate::yard_commands::{
     AccessCommand, DeployArgs, EnvCommand, YardCommand, YardSessionsCommand,
@@ -145,6 +145,12 @@ pub enum Command {
         /// The API-token operation.
         #[command(subcommand)]
         command: TokensCommand,
+    },
+    /// Inspect or manage workspace groups.
+    Groups {
+        /// The workspace-group operation.
+        #[command(subcommand)]
+        command: GroupsCommand,
     },
     /// Inspect or manage local users.
     Users {

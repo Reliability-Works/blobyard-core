@@ -2294,6 +2294,284 @@
         }
       }
     },
+    "/groups": {
+      "get": {
+        "operationId": "listGroups",
+        "description": "Lists active and deactivated groups in one workspace. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListGroupsSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "list"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_list_groups"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Slug"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createGroup",
+        "description": "Creates one empty workspace group. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGroupSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "create"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_create_group"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groups/rename": {
+      "post": {
+        "operationId": "renameGroup",
+        "description": "Renames one active workspace group. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenameGroupSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "rename"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_rename_group"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameGroupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groups/members": {
+      "get": {
+        "operationId": "listGroupMembers",
+        "description": "Lists current members of one active workspace group. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListGroupMembersSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "members"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_list_group_members"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "addGroupMember",
+        "description": "Adds one active same-workspace user to a group. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddGroupMemberSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "add-member"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_add_group_member"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGroupMemberRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groups/members/remove": {
+      "post": {
+        "operationId": "removeGroupMember",
+        "description": "Removes one current group membership. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveGroupMemberSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "remove-member"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_remove_group_member"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveGroupMemberRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groups/deactivate": {
+      "post": {
+        "operationId": "deactivateGroup",
+        "description": "Tombstones one group and revokes its active Yard grants. Human sessions only.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeactivateGroupSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["groups", "deactivate"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_deactivate_group"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeactivateGroupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "operationId": "listLocalUsers",
@@ -7277,6 +7555,357 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/RevokeApiTokenResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "GroupStatus": {
+        "type": "string",
+        "description": "Persisted workspace-group lifecycle state.",
+        "enum": ["active", "deactivated"]
+      },
+      "GroupSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "workspaceId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "NFC-normalized human-readable group name.",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "status": {
+            "$ref": "#/components/schemas/GroupStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "deactivatedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IsoTimestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memberCount": {
+            "type": "integer",
+            "description": "Current active membership count.",
+            "minimum": 0,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "status",
+          "createdAt",
+          "deactivatedAt",
+          "memberCount"
+        ]
+      },
+      "GroupPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummary"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cursor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"]
+      },
+      "GroupMemberPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cursor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"]
+      },
+      "ListGroupsQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "workspace": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": ["workspace"]
+      },
+      "ListGroupsResult": {
+        "$ref": "#/components/schemas/GroupPage"
+      },
+      "ListGroupsSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListGroupsResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "CreateGroupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "workspace": {
+            "$ref": "#/components/schemas/Slug"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable group name."
+          }
+        },
+        "required": ["workspace", "name"]
+      },
+      "CreateGroupResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/GroupSummary"
+          }
+        },
+        "required": ["group"]
+      },
+      "CreateGroupSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CreateGroupResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "RenameGroupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Replacement human-readable group name."
+          }
+        },
+        "required": ["groupId", "name"]
+      },
+      "RenameGroupResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/GroupSummary"
+          }
+        },
+        "required": ["group"]
+      },
+      "RenameGroupSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RenameGroupResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "ListGroupMembersQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": ["groupId"]
+      },
+      "ListGroupMembersResult": {
+        "$ref": "#/components/schemas/GroupMemberPage"
+      },
+      "ListGroupMembersSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListGroupMembersResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "AddGroupMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["groupId", "userId"]
+      },
+      "AddGroupMemberResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "AddGroupMemberSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AddGroupMemberResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "RemoveGroupMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["groupId", "userId"]
+      },
+      "RemoveGroupMemberResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "RemoveGroupMemberSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RemoveGroupMemberResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "DeactivateGroupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["groupId"]
+      },
+      "DeactivateGroupResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "DeactivateGroupSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeactivateGroupResult"
           },
           "ok": {
             "type": "boolean",

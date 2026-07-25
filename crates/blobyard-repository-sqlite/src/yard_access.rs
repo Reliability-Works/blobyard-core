@@ -1,5 +1,6 @@
 use super::{
-    lifecycle_audit, map_error, rows, transfer_validation, yard_queries, yard_rows, yard_validation,
+    lifecycle_audit, map_error, rows, transfer_validation, yard_access_principals, yard_queries,
+    yard_rows, yard_validation,
 };
 use blobyard_contract::{
     AuditValue, NewAuditEvent, NewYardAccessGrant, RepositoryError, RevocableStatus, WebYardRecord,
@@ -197,6 +198,7 @@ fn validated_grant_yard(
     {
         return Err(RepositoryError::InvalidInput);
     }
+    yard_access_principals::validate(transaction, &yard, grant)?;
     Ok(yard)
 }
 

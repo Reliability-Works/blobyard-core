@@ -14,6 +14,19 @@
       "risk": "destructive"
     },
     {
+      "id": "addGroupMember",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/groups/members",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "sensitive"
+    },
+    {
       "id": "clearRetention",
       "idempotency": {
         "required": false,
@@ -115,6 +128,19 @@
       "path": "/ci/trusts",
       "requiredCiActions": [],
       "requiredUserScopes": ["ci:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "createGroup",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/groups",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
       "risk": "sensitive"
     },
     {
@@ -246,6 +272,19 @@
       "requiredCiActions": [],
       "requiredUserScopes": ["project:write"],
       "risk": "write"
+    },
+    {
+      "id": "deactivateGroup",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/groups/deactivate",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "destructive"
     },
     {
       "id": "deactivateLocalUser",
@@ -534,6 +573,32 @@
       "risk": "sensitive"
     },
     {
+      "id": "listGroupMembers",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/groups/members",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "read"
+    },
+    {
+      "id": "listGroups",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/groups",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "read"
+    },
+    {
       "id": "listInboxes",
       "idempotency": {
         "required": false,
@@ -768,6 +833,19 @@
       "risk": "sensitive"
     },
     {
+      "id": "removeGroupMember",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/groups/members/remove",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "destructive"
+    },
+    {
       "id": "removeMember",
       "idempotency": {
         "required": false,
@@ -779,6 +857,19 @@
       "requiredCiActions": [],
       "requiredUserScopes": ["members:manage"],
       "risk": "destructive"
+    },
+    {
+      "id": "renameGroup",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/groups/rename",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["users:manage"],
+      "risk": "write"
     },
     {
       "id": "renameWorkspace",

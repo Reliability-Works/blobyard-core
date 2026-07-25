@@ -238,7 +238,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
                 target.object.version.id.push_str("_corrupt");
                 target
             }),
-            Corruption::YardSessionPublicTarget if now_ms == 134 => result.map(|mut target| {
+            Corruption::YardSessionPublicTarget if now_ms == 137 => result.map(|mut target| {
                 target.object.version.id.push_str("_corrupt");
                 target
             }),

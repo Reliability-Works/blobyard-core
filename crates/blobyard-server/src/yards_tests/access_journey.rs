@@ -1,4 +1,6 @@
-use super::{body, host, journey_tests::publish, mutate, public_request};
+use super::{
+    access_edge_tests::seed_reader, body, host, journey_tests::publish, mutate, public_request,
+};
 use crate::{
     contract_test_support::{assert_error, response_json, send},
     transfers::test_seams,
@@ -98,6 +100,7 @@ async fn visibility_journey_conceals_non_public_yards_until_restored() {
 #[tokio::test]
 async fn grant_lifecycle_lists_scopes_and_revokes_idempotently() {
     let fixture = test_seams::fixture(&["object:write", "yard:manage"]);
+    seed_reader(&fixture);
     let first = publish(&fixture, "deploy-access-001", b"first index").await;
     let yard_id = first["data"]["yardId"].as_str().expect("yard ID");
     let open = mutate(

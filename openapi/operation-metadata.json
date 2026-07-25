@@ -6,6 +6,11 @@
       "requiredCiActions": ["upload"],
       "risk": "destructive"
     },
+    "addGroupMember": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "clearRetention": {
       "requiredUserScopes": ["retention:manage"],
       "requiredCiActions": [],
@@ -43,6 +48,11 @@
     },
     "createCiTrust": {
       "requiredUserScopes": ["ci:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createGroup": {
+      "requiredUserScopes": ["users:manage"],
       "requiredCiActions": [],
       "risk": "sensitive"
     },
@@ -97,6 +107,11 @@
       "risk": "write"
     },
     "deactivateLocalUser": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "deactivateGroup": {
       "requiredUserScopes": ["users:manage"],
       "requiredCiActions": [],
       "risk": "destructive"
@@ -203,6 +218,16 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "listGroupMembers": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "listGroups": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
     "listInvites": {
       "requiredUserScopes": ["members:manage"],
       "requiredCiActions": [],
@@ -290,6 +315,11 @@
       "requiredCiActions": [],
       "risk": "write"
     },
+    "renameGroup": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
     "requestAccountExport": {
       "requiredUserScopes": ["account:export"],
       "requiredCiActions": [],
@@ -309,6 +339,11 @@
       "requiredUserScopes": ["object:write"],
       "requiredCiActions": ["upload"],
       "risk": "write"
+    },
+    "removeGroupMember": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
     },
     "resetLocalUserLoginKey": {
       "requiredUserScopes": ["users:manage"],

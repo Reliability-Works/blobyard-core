@@ -7,6 +7,7 @@ mod deploy_output;
 mod deploy_selection;
 mod dispatch;
 mod environments;
+mod groups;
 mod identity;
 mod local;
 mod local_users;

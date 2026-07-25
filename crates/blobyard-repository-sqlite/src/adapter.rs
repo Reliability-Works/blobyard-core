@@ -64,8 +64,24 @@ mod transfer_reservations;
 mod transfer_validation;
 #[path = "transfers.rs"]
 mod transfers;
+#[path = "workspace_group_audit.rs"]
+mod workspace_group_audit;
+#[path = "workspace_group_members.rs"]
+mod workspace_group_members;
+#[path = "workspace_group_mutations.rs"]
+mod workspace_group_mutations;
+#[path = "workspace_group_queries.rs"]
+mod workspace_group_queries;
+#[path = "workspace_group_rows.rs"]
+mod workspace_group_rows;
+#[path = "workspace_group_validation.rs"]
+mod workspace_group_validation;
+#[path = "workspace_groups.rs"]
+mod workspace_groups;
 #[path = "yard_access.rs"]
 mod yard_access;
+#[path = "yard_access_principals.rs"]
+mod yard_access_principals;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]
@@ -262,6 +278,10 @@ fn map_error(error: rusqlite::Error) -> RepositoryError {
         }
         _ => RepositoryError::Unavailable,
     }
+}
+
+fn map_query_result<T>(result: rusqlite::Result<T>) -> Result<T, RepositoryError> {
+    result.map_err(map_error)
 }
 
 #[cfg(test)]

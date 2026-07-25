@@ -12,6 +12,8 @@ pub mod api_ci_trusts;
 #[doc(hidden)]
 pub mod api_cli_sessions;
 #[doc(hidden)]
+pub mod api_groups;
+#[doc(hidden)]
 pub mod api_local_users;
 #[doc(hidden)]
 pub mod api_tokens;
@@ -153,6 +155,7 @@ repository_surface!(
     blobyard_contract::MetadataRepository,
     blobyard_contract::CredentialRepository,
     blobyard_contract::LocalUserRepository,
+    blobyard_contract::WorkspaceGroupRepository,
     blobyard_contract::YardSessionRepository,
     blobyard_contract::CiRepository,
     blobyard_contract::TransferRepository,

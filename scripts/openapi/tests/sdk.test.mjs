@@ -15,7 +15,7 @@ const ownership = JSON.parse(readFileSync("openapi/operation-ownership.json", "u
 
 test("every operation has one explicit core or hosted owner", () => {
   const classified = operationOwnership(document, ownership);
-  assert.equal(classified.size, 85);
+  assert.equal(classified.size, 92);
   assert.equal(classified.get("exchangeBootstrapToken"), "core");
   assert.equal(classified.get("requestUpload"), "core");
   assert.equal(classified.get("createBillingPortal"), "hosted-extension");

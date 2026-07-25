@@ -926,6 +926,91 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly GroupStatus: "active" | "deactivated";
+  readonly GroupSummary: Readonly<{
+    readonly id: Schemas["Identifier"];
+    readonly workspaceId: Schemas["Identifier"];
+    readonly name: string;
+    readonly status: Schemas["GroupStatus"];
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly deactivatedAt: Schemas["IsoTimestamp"] | null;
+    readonly memberCount: number;
+  }>;
+  readonly GroupPage: Readonly<{
+    readonly items: readonly Schemas["GroupSummary"][];
+    readonly nextCursor: Schemas["Cursor"] | null;
+  }>;
+  readonly GroupMemberPage: Readonly<{
+    readonly items: readonly Schemas["Identifier"][];
+    readonly nextCursor: Schemas["Cursor"] | null;
+  }>;
+  readonly ListGroupsQuery: Readonly<{
+    readonly workspace: Schemas["Slug"];
+    readonly cursor?: Schemas["Cursor"];
+  }>;
+  readonly ListGroupsResult: Schemas["GroupPage"];
+  readonly ListGroupsSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListGroupsResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly CreateGroupRequest: Readonly<{
+    readonly workspace: Schemas["Slug"];
+    readonly name: string;
+  }>;
+  readonly CreateGroupResult: Readonly<{ readonly group: Schemas["GroupSummary"] }>;
+  readonly CreateGroupSuccessEnvelope: Readonly<{
+    readonly data: Schemas["CreateGroupResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RenameGroupRequest: Readonly<{
+    readonly groupId: Schemas["Identifier"];
+    readonly name: string;
+  }>;
+  readonly RenameGroupResult: Readonly<{ readonly group: Schemas["GroupSummary"] }>;
+  readonly RenameGroupSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RenameGroupResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly ListGroupMembersQuery: Readonly<{
+    readonly groupId: Schemas["Identifier"];
+    readonly cursor?: Schemas["Cursor"];
+  }>;
+  readonly ListGroupMembersResult: Schemas["GroupMemberPage"];
+  readonly ListGroupMembersSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListGroupMembersResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly AddGroupMemberRequest: Readonly<{
+    readonly groupId: Schemas["Identifier"];
+    readonly userId: Schemas["Identifier"];
+  }>;
+  readonly AddGroupMemberResult: Schemas["EmptyResult"];
+  readonly AddGroupMemberSuccessEnvelope: Readonly<{
+    readonly data: Schemas["AddGroupMemberResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RemoveGroupMemberRequest: Readonly<{
+    readonly groupId: Schemas["Identifier"];
+    readonly userId: Schemas["Identifier"];
+  }>;
+  readonly RemoveGroupMemberResult: Schemas["EmptyResult"];
+  readonly RemoveGroupMemberSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RemoveGroupMemberResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly DeactivateGroupRequest: Readonly<{ readonly groupId: Schemas["Identifier"] }>;
+  readonly DeactivateGroupResult: Schemas["EmptyResult"];
+  readonly DeactivateGroupSuccessEnvelope: Readonly<{
+    readonly data: Schemas["DeactivateGroupResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly LocalUserStatus: "active" | "deactivated";
   readonly LocalUserSummary: Readonly<{
     readonly createdAt: Schemas["IsoTimestamp"];
@@ -1255,6 +1340,10 @@ export type AbortUploadInput = Readonly<{
   readonly body: Schemas["AbortUploadRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type AddGroupMemberInput = Readonly<{
+  readonly body: Schemas["AddGroupMemberRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type ClearRetentionInput = Readonly<{
   readonly query: Readonly<{
     readonly project: Schemas["Slug"];
@@ -1291,6 +1380,10 @@ export type CreateBillingSubscriptionUpdateInput = Readonly<{
 }>;
 export type CreateCiTrustInput = Readonly<{
   readonly body: Schemas["CreateCiTrustRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type CreateGroupInput = Readonly<{
+  readonly body: Schemas["CreateGroupRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type CreateInboxInput = Readonly<{
@@ -1331,6 +1424,10 @@ export type CreateStorageUpdateInput = Readonly<{
 }>;
 export type CreateWorkspaceInput = Readonly<{
   readonly body: Schemas["CreateWorkspaceRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type DeactivateGroupInput = Readonly<{
+  readonly body: Schemas["DeactivateGroupRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type DeactivateLocalUserInput = Readonly<{
@@ -1412,6 +1509,20 @@ export type ListCiTrustsInput = Readonly<{
   readonly signal?: AbortSignal;
 }>;
 export type ListCliSessionsInput = Readonly<{ readonly signal?: AbortSignal }>;
+export type ListGroupMembersInput = Readonly<{
+  readonly query: Readonly<{
+    readonly groupId: Schemas["Identifier"];
+    readonly cursor?: Schemas["Cursor"];
+  }>;
+  readonly signal?: AbortSignal;
+}>;
+export type ListGroupsInput = Readonly<{
+  readonly query: Readonly<{
+    readonly workspace: Schemas["Slug"];
+    readonly cursor?: Schemas["Cursor"];
+  }>;
+  readonly signal?: AbortSignal;
+}>;
 export type ListInboxesInput = Readonly<{
   readonly query: Readonly<{
     readonly cursor?: Schemas["Cursor"];
@@ -1504,8 +1615,16 @@ export type RefreshCliSessionInput = Readonly<{
   readonly body: Schemas["RefreshCliSessionRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type RemoveGroupMemberInput = Readonly<{
+  readonly body: Schemas["RemoveGroupMemberRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type RemoveMemberInput = Readonly<{
   readonly body: Schemas["RemoveMemberRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type RenameGroupInput = Readonly<{
+  readonly body: Schemas["RenameGroupRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type RenameWorkspaceInput = Readonly<{
@@ -1620,6 +1739,18 @@ export declare const operations: Readonly<{
     risk: "destructive";
     successStatus: 200;
   }>;
+  readonly addGroupMember: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/groups/members";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
   readonly clearRetention: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -1713,6 +1844,18 @@ export declare const operations: Readonly<{
     public: false;
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["ci:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
+  readonly createGroup: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/groups";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
     risk: "sensitive";
     successStatus: 200;
   }>;
@@ -1834,6 +1977,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["project:write"];
     risk: "write";
+    successStatus: 200;
+  }>;
+  readonly deactivateGroup: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/groups/deactivate";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "destructive";
     successStatus: 200;
   }>;
   readonly deactivateLocalUser: Readonly<{
@@ -2100,6 +2255,30 @@ export declare const operations: Readonly<{
     risk: "sensitive";
     successStatus: 200;
   }>;
+  readonly listGroupMembers: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/groups/members";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "read";
+    successStatus: 200;
+  }>;
+  readonly listGroups: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/groups";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "read";
+    successStatus: 200;
+  }>;
   readonly listInboxes: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2316,6 +2495,18 @@ export declare const operations: Readonly<{
     risk: "sensitive";
     successStatus: 200;
   }>;
+  readonly removeGroupMember: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/groups/members/remove";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "destructive";
+    successStatus: 200;
+  }>;
   readonly removeMember: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2326,6 +2517,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["members:manage"];
     risk: "destructive";
+    successStatus: 200;
+  }>;
+  readonly renameGroup: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/groups/rename";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["users:manage"];
+    risk: "write";
     successStatus: 200;
   }>;
   readonly renameWorkspace: Readonly<{
@@ -2632,6 +2835,7 @@ export declare const operations: Readonly<{
 export type OperationId = keyof typeof operations;
 export type RequiredOperationId =
   | "abortUpload"
+  | "addGroupMember"
   | "clearRetention"
   | "completeAccountDeletion"
   | "completeUpload"
@@ -2640,6 +2844,7 @@ export type RequiredOperationId =
   | "createBillingPortal"
   | "createBillingSubscriptionUpdate"
   | "createCiTrust"
+  | "createGroup"
   | "createInbox"
   | "createInvite"
   | "createLocalUser"
@@ -2650,6 +2855,7 @@ export type RequiredOperationId =
   | "createStorageCheckout"
   | "createStorageUpdate"
   | "createWorkspace"
+  | "deactivateGroup"
   | "deactivateLocalUser"
   | "deleteObject"
   | "deleteWebYard"
@@ -2666,6 +2872,8 @@ export type RequiredOperationId =
   | "grantYardAccess"
   | "listAuditEvents"
   | "listCiTrusts"
+  | "listGroupMembers"
+  | "listGroups"
   | "listInboxes"
   | "listInvites"
   | "listLocalUsers"
@@ -2683,7 +2891,9 @@ export type RequiredOperationId =
   | "prepareAccountDeletion"
   | "redeemOneTimeSecret"
   | "refreshCliSession"
+  | "removeGroupMember"
   | "removeMember"
+  | "renameGroup"
   | "renameWorkspace"
   | "requestAccountExport"
   | "requestDownload"
@@ -2719,6 +2929,7 @@ export type OptionalOperationId =
   | "whoAmI";
 export interface OperationInputs {
   readonly abortUpload: AbortUploadInput;
+  readonly addGroupMember: AddGroupMemberInput;
   readonly clearRetention: ClearRetentionInput;
   readonly completeAccountDeletion: CompleteAccountDeletionInput;
   readonly completeUpload: CompleteUploadInput;
@@ -2727,6 +2938,7 @@ export interface OperationInputs {
   readonly createBillingPortal: CreateBillingPortalInput;
   readonly createBillingSubscriptionUpdate: CreateBillingSubscriptionUpdateInput;
   readonly createCiTrust: CreateCiTrustInput;
+  readonly createGroup: CreateGroupInput;
   readonly createInbox: CreateInboxInput;
   readonly createInvite: CreateInviteInput;
   readonly createLocalUser: CreateLocalUserInput;
@@ -2737,6 +2949,7 @@ export interface OperationInputs {
   readonly createStorageCheckout: CreateStorageCheckoutInput;
   readonly createStorageUpdate: CreateStorageUpdateInput;
   readonly createWorkspace: CreateWorkspaceInput;
+  readonly deactivateGroup: DeactivateGroupInput;
   readonly deactivateLocalUser: DeactivateLocalUserInput;
   readonly deleteObject: DeleteObjectInput;
   readonly deleteWebYard: DeleteWebYardInput;
@@ -2759,6 +2972,8 @@ export interface OperationInputs {
   readonly listAuditEvents: ListAuditEventsInput;
   readonly listCiTrusts: ListCiTrustsInput;
   readonly listCliSessions: ListCliSessionsInput;
+  readonly listGroupMembers: ListGroupMembersInput;
+  readonly listGroups: ListGroupsInput;
   readonly listInboxes: ListInboxesInput;
   readonly listInvites: ListInvitesInput;
   readonly listLocalUsers: ListLocalUsersInput;
@@ -2777,7 +2992,9 @@ export interface OperationInputs {
   readonly prepareAccountDeletion: PrepareAccountDeletionInput;
   readonly redeemOneTimeSecret: RedeemOneTimeSecretInput;
   readonly refreshCliSession: RefreshCliSessionInput;
+  readonly removeGroupMember: RemoveGroupMemberInput;
   readonly removeMember: RemoveMemberInput;
+  readonly renameGroup: RenameGroupInput;
   readonly renameWorkspace: RenameWorkspaceInput;
   readonly requestAccountExport: RequestAccountExportInput;
   readonly requestDownload: RequestDownloadInput;
@@ -2806,6 +3023,7 @@ export interface OperationInputs {
 }
 export interface OperationOutputs {
   readonly abortUpload: Schemas["AbortUploadResult"];
+  readonly addGroupMember: Schemas["AddGroupMemberResult"];
   readonly clearRetention: Schemas["ClearRetentionResult"];
   readonly completeAccountDeletion: Schemas["CompleteAccountDeletionResult"];
   readonly completeUpload: Schemas["CompleteUploadResult"];
@@ -2814,6 +3032,7 @@ export interface OperationOutputs {
   readonly createBillingPortal: Schemas["CreateBillingPortalResult"];
   readonly createBillingSubscriptionUpdate: Schemas["CreateBillingSubscriptionUpdateResult"];
   readonly createCiTrust: Schemas["CreateCiTrustResult"];
+  readonly createGroup: Schemas["CreateGroupResult"];
   readonly createInbox: Schemas["CreateInboxResult"];
   readonly createInvite: Schemas["CreateInviteResult"];
   readonly createLocalUser: Schemas["CreateLocalUserResult"];
@@ -2824,6 +3043,7 @@ export interface OperationOutputs {
   readonly createStorageCheckout: Schemas["CreateStorageCheckoutResult"];
   readonly createStorageUpdate: Schemas["CreateStorageUpdateResult"];
   readonly createWorkspace: Schemas["CreateWorkspaceResult"];
+  readonly deactivateGroup: Schemas["DeactivateGroupResult"];
   readonly deactivateLocalUser: Schemas["DeactivateLocalUserResult"];
   readonly deleteObject: Schemas["DeleteObjectResult"];
   readonly deleteWebYard: Schemas["DeleteWebYardResult"];
@@ -2846,6 +3066,8 @@ export interface OperationOutputs {
   readonly listAuditEvents: Schemas["ListAuditEventsResult"];
   readonly listCiTrusts: Schemas["ListCiTrustsResult"];
   readonly listCliSessions: Schemas["ListCliSessionsResult"];
+  readonly listGroupMembers: Schemas["ListGroupMembersResult"];
+  readonly listGroups: Schemas["ListGroupsResult"];
   readonly listInboxes: Schemas["ListInboxesResult"];
   readonly listInvites: Schemas["ListInvitesResult"];
   readonly listLocalUsers: Schemas["ListLocalUsersResult"];
@@ -2864,7 +3086,9 @@ export interface OperationOutputs {
   readonly prepareAccountDeletion: Schemas["PrepareAccountDeletionResult"];
   readonly redeemOneTimeSecret: Schemas["RedeemOneTimeSecretResult"];
   readonly refreshCliSession: Schemas["RefreshCliSessionResult"];
+  readonly removeGroupMember: Schemas["RemoveGroupMemberResult"];
   readonly removeMember: Schemas["RemoveMemberResult"];
+  readonly renameGroup: Schemas["RenameGroupResult"];
   readonly renameWorkspace: Schemas["RenameWorkspaceResult"];
   readonly requestAccountExport: Schemas["RequestAccountExportResult"];
   readonly requestDownload: Schemas["RequestDownloadResult"];
@@ -2893,6 +3117,9 @@ export interface OperationOutputs {
 }
 export interface OperationBindings {
   readonly abortUpload: (options: AbortUploadInput) => Promise<OperationOutputs["abortUpload"]>;
+  readonly addGroupMember: (
+    options: AddGroupMemberInput,
+  ) => Promise<OperationOutputs["addGroupMember"]>;
   readonly clearRetention: (
     options: ClearRetentionInput,
   ) => Promise<OperationOutputs["clearRetention"]>;
@@ -2917,6 +3144,7 @@ export interface OperationBindings {
   readonly createCiTrust: (
     options: CreateCiTrustInput,
   ) => Promise<OperationOutputs["createCiTrust"]>;
+  readonly createGroup: (options: CreateGroupInput) => Promise<OperationOutputs["createGroup"]>;
   readonly createInbox: (options: CreateInboxInput) => Promise<OperationOutputs["createInbox"]>;
   readonly createInvite: (options: CreateInviteInput) => Promise<OperationOutputs["createInvite"]>;
   readonly createLocalUser: (
@@ -2941,6 +3169,9 @@ export interface OperationBindings {
   readonly createWorkspace: (
     options: CreateWorkspaceInput,
   ) => Promise<OperationOutputs["createWorkspace"]>;
+  readonly deactivateGroup: (
+    options: DeactivateGroupInput,
+  ) => Promise<OperationOutputs["deactivateGroup"]>;
   readonly deactivateLocalUser: (
     options: DeactivateLocalUserInput,
   ) => Promise<OperationOutputs["deactivateLocalUser"]>;
@@ -2997,6 +3228,10 @@ export interface OperationBindings {
   readonly listCliSessions: (
     options?: ListCliSessionsInput,
   ) => Promise<OperationOutputs["listCliSessions"]>;
+  readonly listGroupMembers: (
+    options: ListGroupMembersInput,
+  ) => Promise<OperationOutputs["listGroupMembers"]>;
+  readonly listGroups: (options: ListGroupsInput) => Promise<OperationOutputs["listGroups"]>;
   readonly listInboxes: (options: ListInboxesInput) => Promise<OperationOutputs["listInboxes"]>;
   readonly listInvites: (options: ListInvitesInput) => Promise<OperationOutputs["listInvites"]>;
   readonly listLocalUsers: (
@@ -3035,7 +3270,11 @@ export interface OperationBindings {
   readonly refreshCliSession: (
     options: RefreshCliSessionInput,
   ) => Promise<OperationOutputs["refreshCliSession"]>;
+  readonly removeGroupMember: (
+    options: RemoveGroupMemberInput,
+  ) => Promise<OperationOutputs["removeGroupMember"]>;
   readonly removeMember: (options: RemoveMemberInput) => Promise<OperationOutputs["removeMember"]>;
+  readonly renameGroup: (options: RenameGroupInput) => Promise<OperationOutputs["renameGroup"]>;
   readonly renameWorkspace: (
     options: RenameWorkspaceInput,
   ) => Promise<OperationOutputs["renameWorkspace"]>;

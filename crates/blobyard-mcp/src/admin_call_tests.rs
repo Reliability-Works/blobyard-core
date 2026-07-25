@@ -1,4 +1,8 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+#![allow(
+    clippy::too_many_lines,
+    reason = "the administration parser matrix keeps the complete read surface together"
+)]
 
 use super::*;
 use serde_json::json;
@@ -10,6 +14,7 @@ pub(super) fn parse(name: &str, value: &Value) -> AdminToolCall {
 #[test]
 fn recognizes_only_administration_tools() {
     for name in [
+        "list_groups",
         "list_audit",
         "list_members",
         "list_invites",
@@ -34,6 +39,13 @@ fn recognizes_only_administration_tools() {
 
 #[test]
 fn parses_administration_reads() {
+    assert_eq!(
+        parse("create_group", &json!({ "name": "Reviewers" })),
+        AdminToolCall::Group(GroupToolCall::Create {
+            scope: Scope::default(),
+            name: "Reviewers".to_owned(),
+        })
+    );
     assert_eq!(
         parse("list_audit", &json!({ "cursor": "next" })),
         AdminToolCall::ListAudit {

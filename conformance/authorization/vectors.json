@@ -18,6 +18,13 @@
     {
       "action": "users:manage",
       "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-groups-are-concealed",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
       "id": "cross-workspace-local-users-are-concealed",
       "principalScopes": ["users:manage"],
       "resource": { "project": "demo", "workspace": "other" }
@@ -62,6 +69,14 @@
       "action": "users:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "machine-cannot-manage-local-users",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-manage-workspace-groups",
       "principalKind": "machine",
       "principalScopes": ["users:manage"],
       "resource": { "project": "demo", "workspace": "default" }
@@ -112,6 +127,13 @@
       "resource": { "project": "demo", "workspace": "default" }
     },
     {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "object-reader-cannot-manage-workspace-groups",
+      "principalScopes": ["object:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
       "action": "yard:read",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "object-reader-cannot-read-access-policy",
@@ -143,6 +165,13 @@
       "action": "users:manage",
       "expected": { "allowed": true },
       "id": "users-manager-can-list-local-users",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": true },
+      "id": "users-manager-can-manage-workspace-groups",
       "principalScopes": ["users:manage"],
       "resource": { "project": "demo", "workspace": "default" }
     },

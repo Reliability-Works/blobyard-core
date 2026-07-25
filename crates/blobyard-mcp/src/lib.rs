@@ -13,7 +13,7 @@ mod server;
 pub(crate) mod tool_call;
 mod yard_call;
 
-pub use admin_call::AdminToolCall;
+pub use admin_call::{AdminToolCall, GroupToolCall};
 pub use dashboard_call::DashboardToolCall;
 pub use protocol::{BackendError, BackendFuture, ToolBackend};
 pub use server::{McpServer, serve, serve_stdio};

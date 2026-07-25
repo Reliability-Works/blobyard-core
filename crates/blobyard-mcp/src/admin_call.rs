@@ -2,9 +2,17 @@ use serde_json::{Map, Value};
 
 use crate::{Scope, optional_string};
 
+#[path = "group_call.rs"]
+mod group_call;
+
+pub use group_call::GroupToolCall;
+use group_call::{is_group_tool, parse_group_call};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 /// A validated administration operation requested through MCP.
 pub enum AdminToolCall {
+    /// Manage workspace groups and memberships.
+    Group(crate::GroupToolCall),
     /// List workspace audit events.
     ListAudit {
         /// Workspace override.
@@ -140,25 +148,26 @@ pub enum AdminToolCall {
     reason = "sibling modules consume this parser while the module stays crate-internal"
 )]
 pub(crate) fn is_admin_tool(name: &str) -> bool {
-    matches!(
-        name,
-        "list_audit"
-            | "list_members"
-            | "list_invites"
-            | "create_invite"
-            | "revoke_invite"
-            | "update_member_role"
-            | "remove_member"
-            | "list_local_users"
-            | "deactivate_local_user"
-            | "list_api_tokens"
-            | "revoke_api_token"
-            | "list_ci_trusts"
-            | "create_ci_trust"
-            | "revoke_ci_trust"
-            | "list_cli_sessions"
-            | "revoke_cli_session"
-    )
+    is_group_tool(name)
+        || matches!(
+            name,
+            "list_audit"
+                | "list_members"
+                | "list_invites"
+                | "create_invite"
+                | "revoke_invite"
+                | "update_member_role"
+                | "remove_member"
+                | "list_local_users"
+                | "deactivate_local_user"
+                | "list_api_tokens"
+                | "revoke_api_token"
+                | "list_ci_trusts"
+                | "create_ci_trust"
+                | "revoke_ci_trust"
+                | "list_cli_sessions"
+                | "revoke_cli_session"
+        )
 }
 
 #[allow(
@@ -170,6 +179,9 @@ pub(crate) fn parse_admin_call(
     arguments: &Map<String, Value>,
     scope: Scope,
 ) -> Result<AdminToolCall, String> {
+    if is_group_tool(name) {
+        return parse_group_call(name, arguments, scope).map(AdminToolCall::Group);
+    }
     reject_unknown(name, arguments)?;
     match name {
         "list_audit" => Ok(AdminToolCall::ListAudit {

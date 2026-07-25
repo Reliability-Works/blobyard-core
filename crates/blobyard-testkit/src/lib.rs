@@ -6,6 +6,7 @@ use blobyard_core::{BlobyardUri, BlobyardUriError};
 mod ci;
 mod credentials;
 mod fault_forwarders;
+mod groups;
 mod lifecycle;
 mod local_users;
 mod repository;
@@ -14,6 +15,7 @@ mod storage;
 pub use ci::{CI_REPOSITORY, ci_trust, github_oidc_identity};
 pub use credentials::{cli_session_record, cli_session_revoked_event, credential_conformance};
 pub use fault_forwarders::FailureCounter;
+pub use groups::{GroupConformanceRepository, group_conformance, group_event};
 pub use lifecycle::lifecycle_conformance;
 pub use local_users::{local_user, local_user_conformance, local_user_event, login_key};
 pub use repository::{

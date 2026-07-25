@@ -38,11 +38,21 @@ pub(super) fn evaluate(
                    AND EXISTS (
                      SELECT 1 FROM yard_access_grants g
                      WHERE g.yard_id = y.id
-                       AND g.principal_kind = 'user'
-                       AND g.principal_id = u.id
                        AND g.status = 'active'
                        AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?3)
                        AND (g.environment_id IS NULL OR g.environment_id = e.id)
+                       AND (
+                         (g.principal_kind = 'user' AND g.principal_id = u.id)
+                         OR (
+                           g.principal_kind = 'group'
+                           AND EXISTS (
+                             SELECT 1 FROM active_workspace_group_members gm
+                             WHERE gm.group_id = g.principal_id
+                               AND gm.workspace_id = y.workspace_id
+                               AND gm.user_id = u.id
+                           )
+                         )
+                       )
                    )
                  )
                )
@@ -94,10 +104,20 @@ pub(super) fn session_id(
                      SELECT 1 FROM yard_access_grants g
                      WHERE g.yard_id = s.yard_id
                        AND g.status = 'active'
-                       AND g.principal_id = s.user_id
-                       AND g.principal_kind = 'user'
                        AND (g.environment_id IS NULL OR g.environment_id = s.environment_id)
                        AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?5)
+                       AND (
+                         (g.principal_kind = 'user' AND g.principal_id = s.user_id)
+                         OR (
+                           g.principal_kind = 'group'
+                           AND EXISTS (
+                             SELECT 1 FROM active_workspace_group_members gm
+                             WHERE gm.group_id = g.principal_id
+                               AND gm.workspace_id = y.workspace_id
+                               AND gm.user_id = s.user_id
+                           )
+                         )
+                       )
                    )
                  )
                )",
