@@ -482,6 +482,7 @@ version = "0.1.12"
 dependencies = [
  "blobyard-contract",
  "blobyard-core",
+ "serde_json",
 ]
 
 [[package]]

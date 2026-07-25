@@ -115,6 +115,14 @@ Group IDs use `group_` followed by a lowercase UUID without separators. A group 
 only when the group is active and belongs to the Yard workspace. Legacy group-principal grants that
 do not resolve to a current group remain stored but fail closed.
 
+The generated `conformance/behavior/yard-sessions.json` and `conformance/authorization/vectors.json`
+files carry the portable group/admission matrix for Core and Cloud. The Rust testkit asserts the
+exact case inventory and execution owner. Core cases cover tenant isolation, lifecycle and
+environment drift, deterministic pagination, cardinality limits, exact mutation audits, rollback,
+and all seven machine-denied group routes. Better Auth workspace membership cases are marked
+`conformanceOwner: cloud`; Core proves the corresponding local-user deactivation boundary without
+claiming Cloud membership semantics.
+
 ## The application manifest
 
 The authoring form is TOML. The canonical form is its direct JSON projection (same keys, same

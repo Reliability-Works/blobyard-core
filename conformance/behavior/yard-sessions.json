@@ -1,6 +1,11 @@
 {
   "cases": [
     {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "active-grant-with-revocation-timestamp-is-inert",
+      "input": { "grantStatus": "active", "principalKind": "group", "revokedAtPresent": true }
+    },
+    {
       "expected": {
         "admitted": true,
         "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
@@ -13,6 +18,47 @@
         "principalKind": "group",
         "surface": "selected-yard"
       }
+    },
+    {
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-group-grant-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-grants-per-group-principal", "limit": 500 }
+    },
+    {
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-group-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-groups-per-workspace", "limit": 500 }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "active-group-with-deactivation-timestamp-is-inert",
+      "input": { "deactivatedAtPresent": true, "groupStatus": "active", "principalKind": "group" }
+    },
+    {
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-member-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-members-per-group", "limit": 500 }
+    },
+    {
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-membership-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-memberships-per-user", "limit": 100 }
     },
     {
       "expected": { "admitted": true, "propagationMilliseconds": 0 },
@@ -29,9 +75,81 @@
       "input": { "surface": "continuation" }
     },
     {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-group-membership-cardinality-is-inert",
+      "input": { "memberCountMatchesMembershipRows": false, "principalKind": "group" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "cross-workspace-group-id-never-admits",
+      "input": {
+        "grantWorkspace": "default",
+        "groupWorkspace": "other",
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
+      "expected": {
+        "admitted": true,
+        "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
+      },
+      "id": "direct-user-grant-admits",
+      "input": { "grantStatus": "active", "membershipStatus": "active", "principalKind": "user" }
+    },
+    {
+      "expected": { "admitted": true, "appRoles": [] },
+      "id": "empty-app-roles-still-admit",
+      "input": {
+        "appRoles": [],
+        "grantStatus": "active",
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "fresh-login-redirect" },
+      "id": "environment-replacement-between-issue-and-exchange-denies",
+      "input": {
+        "change": "environment-replaced",
+        "driftPoint": "after-code-issue",
+        "principalKind": "group"
+      }
+    },
+    {
       "expected": { "lifetimeMilliseconds": 60000 },
       "id": "exchange-code-lifetime-is-sixty-seconds",
       "input": { "surface": "exchange-code" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "expired-group-grant-denies",
+      "input": { "grantExpiry": "elapsed", "grantStatus": "active", "principalKind": "group" }
+    },
+    {
+      "expected": { "auditEventCount": 0, "stateChanged": false },
+      "id": "failed-group-mutations-emit-no-audit",
+      "input": { "mutationResult": ["invalid", "conflict", "concealed-not-found"] }
+    },
+    {
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.created",
+        "metadataKeys": ["workspaceId", "name"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-create-emits-exact-audit",
+      "input": { "mutation": "group-create" }
+    },
+    {
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.deactivated",
+        "metadataKeys": ["workspaceId", "revokedGrantCount"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-deactivate-emits-exact-audit",
+      "input": { "mutation": "group-deactivate" }
     },
     {
       "expected": { "admitted": false, "propagationMilliseconds": 0 },
@@ -43,6 +161,79 @@
       }
     },
     {
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.member_added",
+        "metadataKeys": ["workspaceId", "userId"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-member-add-emits-exact-audit",
+      "input": { "mutation": "group-member-add" }
+    },
+    {
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.member_removed",
+        "metadataKeys": ["workspaceId", "userId"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-member-remove-emits-exact-audit",
+      "input": { "mutation": "group-member-remove" }
+    },
+    {
+      "expected": {
+        "duplicates": 0,
+        "omissionsWithinSnapshot": 0,
+        "ordering": ["createdAt-desc", "id-desc"]
+      },
+      "id": "group-pagination-is-deterministic-and-cursor-safe",
+      "input": { "concurrentInsertAfterCursor": true, "pageSize": 50, "resource": "groups" }
+    },
+    {
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.renamed",
+        "metadataKeys": ["workspaceId", "from", "to"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-rename-emits-exact-audit",
+      "input": { "mutation": "group-rename" }
+    },
+    {
+      "expected": { "allowed": false, "code": "FORBIDDEN", "deniedOperationCount": 7 },
+      "id": "machine-principal-is-denied-each-group-operation",
+      "input": {
+        "operations": [
+          "list-groups",
+          "create-group",
+          "rename-group",
+          "list-group-members",
+          "add-group-member",
+          "remove-group-member",
+          "deactivate-group"
+        ],
+        "principalKind": "machine"
+      }
+    },
+    {
+      "expected": { "admitted": true },
+      "id": "matching-environment-group-grant-admits",
+      "input": {
+        "grantEnvironment": "production",
+        "principalKind": "group",
+        "selectedEnvironment": "production"
+      }
+    },
+    {
+      "expected": {
+        "duplicates": 0,
+        "omissionsWithinSnapshot": 0,
+        "ordering": ["addedAt-desc", "userId-desc"]
+      },
+      "id": "member-pagination-is-deterministic-and-cursor-safe",
+      "input": { "concurrentInsertAfterCursor": true, "pageSize": 50, "resource": "group-members" }
+    },
+    {
       "expected": { "admitted": false, "propagationMilliseconds": 0 },
       "id": "membership-removal-denies-on-next-private-request",
       "input": {
@@ -52,9 +243,27 @@
       }
     },
     {
+      "expected": { "admitted": true, "duplicateAdmission": false },
+      "id": "multiple-matching-group-grants-admit-once",
+      "input": {
+        "matchingActiveGrantCount": 2,
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
       "expected": { "responseClass": "concealed-not-found" },
       "id": "non-public-non-navigation-matches-unknown-host",
       "input": { "surface": "yard-delivery" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "nonmatching-environment-group-grant-denies",
+      "input": {
+        "grantEnvironment": "preview",
+        "principalKind": "group",
+        "selectedEnvironment": "production"
+      }
     },
     {
       "expected": { "responseClass": "fresh-login-redirect" },
@@ -65,6 +274,32 @@
       "expected": { "propagationMilliseconds": 0 },
       "id": "revocation-bound-is-zero-ms",
       "input": { "surface": "session-revocation" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "revoked-group-grant-denies",
+      "input": { "grantExpiry": "future", "grantStatus": "revoked", "principalKind": "group" }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "same-name-foreign-group-never-admits",
+      "input": {
+        "membershipGroupName": "developers",
+        "principalKind": "group",
+        "sameGroupId": false,
+        "selectedGroupName": "developers"
+      }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "same-user-in-two-workspaces-does-not-bridge-authority",
+      "input": {
+        "membershipWorkspace": "other",
+        "principalKind": "group",
+        "sameUserIdentity": true,
+        "selectedWorkspace": "default"
+      }
     },
     {
       "expected": {
@@ -88,6 +323,34 @@
         "membershipStatus": "absent",
         "principalKind": "group",
         "surface": "selected-yard"
+      }
+    },
+    {
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "user-deactivation-denies-on-next-private-request",
+      "input": {
+        "change": "user-deactivated",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "expected": { "admitted": false, "responseClass": "fresh-login-redirect" },
+      "id": "visibility-drift-between-issue-and-exchange-denies",
+      "input": {
+        "change": "yard-made-public",
+        "driftPoint": "after-code-issue",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "workspace-membership-removal-denies-on-next-private-request",
+      "input": {
+        "change": "current-workspace-membership-removed",
+        "principalKind": "group",
+        "surface": "private-delivery"
       }
     }
   ],

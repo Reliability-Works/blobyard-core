@@ -58,11 +58,56 @@
       "resource": { "project": "demo", "workspace": "other" }
     },
     {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-add-workspace-group-member",
+      "operationId": "addGroupMember",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-create-workspace-group",
+      "operationId": "createGroup",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-deactivate-workspace-group",
+      "operationId": "deactivateGroup",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
       "action": "yard:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "machine-cannot-grant-access",
       "principalKind": "machine",
       "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-list-workspace-group-members",
+      "operationId": "listGroupMembers",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-list-workspace-groups",
+      "operationId": "listGroups",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
       "resource": { "project": "demo", "workspace": "default" }
     },
     {
@@ -76,7 +121,17 @@
     {
       "action": "users:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
-      "id": "machine-cannot-manage-workspace-groups",
+      "id": "machine-cannot-remove-workspace-group-member",
+      "operationId": "removeGroupMember",
+      "principalKind": "machine",
+      "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "users:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-rename-workspace-group",
+      "operationId": "renameGroup",
       "principalKind": "machine",
       "principalScopes": ["users:manage"],
       "resource": { "project": "demo", "workspace": "default" }

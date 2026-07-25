@@ -28,7 +28,7 @@ fn group_management_rejects_machine_principals_before_scope_evaluation() {
     );
 }
 
-fn route_shapes() -> [(&'static str, &'static str, &'static [u8]); 7] {
+pub(super) fn route_shapes() -> [(&'static str, &'static str, &'static [u8]); 7] {
     [
         ("GET", "/v1/groups?workspace=fixture", b""),
         (

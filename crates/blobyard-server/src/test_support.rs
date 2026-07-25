@@ -3,8 +3,9 @@
 use crate::{Repository, api::AppState, error::ApiError};
 use axum::{http::StatusCode, response::IntoResponse};
 use blobyard_contract::{
-    MultipartId, ObjectChecksum, ObjectStorage, ObjectVersionRecord, StorageError, StorageKey,
-    StorageMetadata, StoredObjectRecord, UploadState,
+    AuditValue, CiAction, GithubOidcIdentity, MultipartId, NewAuditEvent, NewMachineSession,
+    ObjectChecksum, ObjectStorage, ObjectVersionRecord, StorageError, StorageKey, StorageMetadata,
+    StoredObjectRecord, UploadState,
 };
 use blobyard_core::SecretString;
 use blobyard_repository_sqlite::SqliteRepository;
@@ -64,6 +65,103 @@ pub(crate) fn error_status<T>(result: Result<T, ApiError>) -> StatusCode {
         .expect("operation failure")
         .into_response()
         .status()
+}
+
+pub(crate) fn install_machine_session(
+    fixture: &crate::transfers::test_seams::TransferFixture,
+    raw_token: &str,
+    fixture_id: &str,
+    now_ms: u64,
+) {
+    let repository = "reliability-works/blobyard-core";
+    let trust = blobyard_testkit::ci_trust(
+        &format!("trust_{fixture_id}"),
+        &fixture.principal.workspace_id,
+        Some(&fixture.project.id),
+        &fixture.state.public_origin,
+        now_ms,
+    );
+    fixture
+        .state
+        .repository
+        .create_ci_trust(
+            &trust,
+            &machine_event(
+                "ci.trust_created",
+                "ci_trust",
+                &trust.id,
+                &trust.workspace_id,
+                repository,
+                now_ms,
+            ),
+        )
+        .expect("create machine trust");
+    let session = NewMachineSession {
+        id: format!("machine_{fixture_id}"),
+        token_prefix: format!("byd_ci_{fixture_id}"),
+        secret_hash: crate::auth::hash(raw_token),
+        identity: GithubOidcIdentity {
+            audience: fixture.state.public_origin.clone(),
+            repository: repository.to_owned(),
+            git_ref: "refs/heads/main".to_owned(),
+            workflow_path: ".github/workflows/release.yml".to_owned(),
+            workflow_ref: "refs/heads/main".to_owned(),
+            environment: None,
+            run_id: fixture_id.to_owned(),
+            run_attempt: Some("1".to_owned()),
+            sha: Some("a".repeat(40)),
+            expires_at_ms: now_ms + 600_000,
+        },
+        workspace: Some(fixture.state.default_workspace.slug.to_string()),
+        project: fixture.project.slug.to_string(),
+        actions: vec![CiAction::Upload],
+        oidc_token_hash: crate::auth::hash(&format!("{fixture_id}-assertion")),
+        now_ms,
+    };
+    let _ = fixture
+        .state
+        .repository
+        .mint_machine_session(
+            &session,
+            &machine_event(
+                "ci.token_minted",
+                "project",
+                &fixture.project.id,
+                &fixture.principal.workspace_id,
+                repository,
+                now_ms,
+            ),
+        )
+        .expect("mint machine session");
+}
+
+fn machine_event(
+    action: &str,
+    target_type: &str,
+    target_id: &str,
+    workspace_id: &str,
+    repository: &str,
+    created_at_ms: u64,
+) -> NewAuditEvent {
+    NewAuditEvent {
+        id: format!("audit_{action}_{target_id}"),
+        workspace_id: workspace_id.to_owned(),
+        actor: "github:reliability-works/blobyard-core".to_owned(),
+        action: action.to_owned(),
+        request_id: format!("request_{target_id}"),
+        target_type: target_type.to_owned(),
+        metadata: vec![
+            (
+                "repository".to_owned(),
+                AuditValue::String(repository.to_owned()),
+            ),
+            (
+                "targetId".to_owned(),
+                AuditValue::String(target_id.to_owned()),
+            ),
+        ],
+        created_at_ms,
+    }
 }
 
 #[path = "test_support/multipart_storage.rs"]

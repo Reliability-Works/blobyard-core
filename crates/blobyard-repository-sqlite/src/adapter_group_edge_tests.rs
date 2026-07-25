@@ -6,11 +6,10 @@
 
 use super::group_repository as repository;
 use blobyard_contract::{
-    AuditValue, LifecycleRepository, RepositoryError, WorkspaceGroupCursor,
-    WorkspaceGroupMemberCursor, WorkspaceGroupMemberRecord, WorkspaceGroupRecord,
-    WorkspaceGroupRepository, WorkspaceGroupStatus,
+    AuditValue, RepositoryError, WorkspaceGroupCursor, WorkspaceGroupMemberCursor,
+    WorkspaceGroupMemberRecord, WorkspaceGroupRecord, WorkspaceGroupRepository,
+    WorkspaceGroupStatus,
 };
-use std::sync::atomic::Ordering;
 
 fn group(number: u64, created_at_ms: u64) -> WorkspaceGroupRecord {
     WorkspaceGroupRecord {
@@ -118,42 +117,6 @@ fn invalid_group_audits_roll_back_create_and_membership_mutations() {
             .items,
         vec![member]
     );
-}
-
-#[test]
-fn injected_mid_transaction_faults_roll_back_group_and_audit_together() {
-    let first_success = (0..16).find(|denied_index| {
-        let (_temporary, repository) = repository();
-        let group = group(50, 40);
-        let event = blobyard_testkit::group_event(
-            "audit_group_injected_rollback",
-            "group.created",
-            &group,
-            40,
-            [("name", AuditValue::String(group.name.clone()))],
-        );
-        let observed = {
-            let connection = repository.test_connection().expect("connection");
-            super::install_denial(&connection, *denied_index)
-        };
-        let result = repository.create_workspace_group(&group, &event);
-        if observed.load(Ordering::Relaxed) <= *denied_index {
-            assert_eq!(result, Ok(()));
-            true
-        } else {
-            assert_eq!(result, Err(RepositoryError::Unavailable));
-            let groups = repository
-                .list_workspace_groups("workspace_fixture", None, 50)
-                .expect("groups");
-            let audits = repository
-                .list_audit("workspace_fixture", None, 50)
-                .expect("audits");
-            assert!(groups.items.iter().all(|item| item.id != group.id));
-            assert!(audits.items.iter().all(|item| item.id != event.id));
-            false
-        }
-    });
-    assert!(first_success.is_some(), "fault sweep must terminate");
 }
 
 #[test]

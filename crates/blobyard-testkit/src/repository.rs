@@ -14,6 +14,8 @@ mod multipart;
 mod previews;
 #[path = "repository_sharing.rs"]
 mod sharing;
+#[path = "repository_yards_case_ids.rs"]
+mod yard_case_ids;
 #[path = "repository_yards.rs"]
 mod yards;
 use fixtures::{NamespaceFixtures, ValidatedNamespaceFixtures, hash, hello_checksum, upload};
@@ -24,6 +26,11 @@ pub use yards::{
     YardConformanceFixture, YardConformanceRepository, granted_event, new_grant, revoked_event,
     visibility_event, yard_conformance, yard_event,
 };
+
+#[allow(clippy::redundant_pub_crate)]
+pub(super) const fn yard_session_case_ids() -> &'static [&'static str] {
+    yard_case_ids::YARD_SESSION_CASE_IDS
+}
 
 /// Runs the deterministic metadata repository contract against one empty adapter.
 ///

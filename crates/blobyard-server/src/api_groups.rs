@@ -162,3 +162,7 @@ mod tests;
 #[cfg(test)]
 #[path = "api_groups_edge_tests.rs"]
 mod edge_tests;
+
+#[cfg(test)]
+#[path = "api_groups_machine_tests.rs"]
+mod machine_tests;

@@ -8,6 +8,41 @@ use blobyard_contract::{
     YardStartRecord, YardVisibility,
 };
 
+pub(super) fn select_with_independent_empty_role_grant(
+    repository: &dyn YardConformanceRepository,
+    first: &YardStartRecord,
+) -> Result<(), RepositoryError> {
+    let empty = group_grant(
+        "grant_yard_group_empty",
+        &first.yard.id,
+        None,
+        Vec::new(),
+        103,
+        None,
+    );
+    insert_grant(repository, &empty)?;
+    set_visibility(
+        repository,
+        &first.yard.id,
+        "any-authenticated",
+        YardVisibility::Selected,
+        104,
+    )?;
+    repository.evaluate_yard_admission(&first.yard.host_label, "user_fixture", 104)?;
+    let second = group_grant(
+        "grant_yard_group_second",
+        &first.yard.id,
+        None,
+        vec!["viewer".to_owned()],
+        104,
+        None,
+    );
+    insert_grant(repository, &second)?;
+    repository
+        .evaluate_yard_admission(&first.yard.host_label, "user_fixture", 104)
+        .map(|_admission| ())
+}
+
 pub(super) fn assert_grant_transitions(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,

@@ -310,6 +310,9 @@ mod group_behavior;
 #[path = "adapter_group_edge_tests.rs"]
 mod group_edges;
 
+#[path = "adapter_group_fault_tests.rs"]
+mod group_faults;
+
 #[path = "adapter_group_limit_tests.rs"]
 mod group_limits;
 

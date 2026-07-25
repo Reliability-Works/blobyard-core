@@ -16,6 +16,16 @@ impl<T> GroupConformanceRepository for T where
 {
 }
 
+#[allow(clippy::redundant_pub_crate)]
+pub(super) const GROUP_CASE_IDS: &[&str] = &[
+    "failed-group-mutations-emit-no-audit",
+    "group-create-emits-exact-audit",
+    "group-deactivate-emits-exact-audit",
+    "group-member-add-emits-exact-audit",
+    "group-member-remove-emits-exact-audit",
+    "group-rename-emits-exact-audit",
+];
+
 /// Runs deterministic workspace-group lifecycle and membership checks.
 ///
 /// # Errors

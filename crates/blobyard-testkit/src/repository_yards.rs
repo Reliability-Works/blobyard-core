@@ -23,6 +23,7 @@ mod session_grants;
 mod session_groups;
 #[path = "repository_yards_sessions.rs"]
 mod sessions;
+
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
 pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 

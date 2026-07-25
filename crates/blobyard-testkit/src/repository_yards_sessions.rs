@@ -16,13 +16,6 @@ pub(super) fn assert_session_controls(
 ) -> Result<(), RepositoryError> {
     assert_visibility_admission(repository, first)?;
     create_group_access(repository, first)?;
-    set_visibility(
-        repository,
-        &first.yard.id,
-        "any-authenticated",
-        YardVisibility::Selected,
-        105,
-    )?;
     let session = exchange_session(repository, first)?;
     set_visibility(
         repository,
@@ -302,6 +295,12 @@ fn assert_logout_and_deactivation(
         .iter()
         .find(|listing| listing.session.id == deactivated.id)
         .is_none_or(|listing| listing.session.revoked_at_ms != Some(161))
+        || repository.yard_file_by_host(
+            &first.yard.host_label,
+            "asset.js",
+            Some(&deactivated.token_hash),
+            161,
+        ) != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);
     }

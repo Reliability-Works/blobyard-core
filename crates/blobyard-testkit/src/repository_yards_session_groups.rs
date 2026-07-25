@@ -23,17 +23,7 @@ pub(super) fn create_group_access(
         ),
     )?;
     add_member(repository, &group, 103, "audit_yard_group_member")?;
-    for (id, roles, at_ms) in [
-        ("grant_yard_group_empty", Vec::new(), 103),
-        ("grant_yard_group_second", vec!["viewer".to_owned()], 104),
-    ] {
-        let grant = group_grant(id, &first.yard.id, None, roles, at_ms, None);
-        repository.insert_yard_access_grant(
-            &grant,
-            &super::fixtures::granted_event(&first.yard.id, &grant, at_ms),
-        )?;
-    }
-    Ok(())
+    super::session_grants::select_with_independent_empty_role_grant(repository, first)
 }
 
 fn create_foreign_group(

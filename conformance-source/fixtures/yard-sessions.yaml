@@ -88,3 +88,157 @@ cases:
       change: one-group-membership-removed
       otherGrantStatus: active
       surface: private-delivery
+  - id: direct-user-grant-admits
+    input: { principalKind: user, grantStatus: active, membershipStatus: active }
+    expected: { admitted: true, reevaluatedAt: [code-issue, code-exchange, private-delivery] }
+  - id: multiple-matching-group-grants-admit-once
+    input: { principalKind: group, matchingActiveGrantCount: 2, membershipStatus: active }
+    expected: { admitted: true, duplicateAdmission: false }
+  - id: empty-app-roles-still-admit
+    input: { principalKind: group, grantStatus: active, membershipStatus: active, appRoles: [] }
+    expected: { admitted: true, appRoles: [] }
+  - id: same-name-foreign-group-never-admits
+    input:
+      {
+        principalKind: group,
+        selectedGroupName: developers,
+        membershipGroupName: developers,
+        sameGroupId: false,
+      }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: cross-workspace-group-id-never-admits
+    input:
+      {
+        principalKind: group,
+        grantWorkspace: default,
+        groupWorkspace: other,
+        membershipStatus: active,
+      }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: same-user-in-two-workspaces-does-not-bridge-authority
+    conformanceOwner: cloud
+    input:
+      {
+        principalKind: group,
+        selectedWorkspace: default,
+        membershipWorkspace: other,
+        sameUserIdentity: true,
+      }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: matching-environment-group-grant-admits
+    input: { principalKind: group, grantEnvironment: production, selectedEnvironment: production }
+    expected: { admitted: true }
+  - id: nonmatching-environment-group-grant-denies
+    input: { principalKind: group, grantEnvironment: preview, selectedEnvironment: production }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: expired-group-grant-denies
+    input: { principalKind: group, grantStatus: active, grantExpiry: elapsed }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: revoked-group-grant-denies
+    input: { principalKind: group, grantStatus: revoked, grantExpiry: future }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: user-deactivation-denies-on-next-private-request
+    input: { principalKind: group, change: user-deactivated, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0 }
+  - id: workspace-membership-removal-denies-on-next-private-request
+    conformanceOwner: cloud
+    input:
+      {
+        principalKind: group,
+        change: current-workspace-membership-removed,
+        surface: private-delivery,
+      }
+    expected: { admitted: false, propagationMilliseconds: 0 }
+  - id: visibility-drift-between-issue-and-exchange-denies
+    input: { principalKind: group, change: yard-made-public, driftPoint: after-code-issue }
+    expected: { admitted: false, responseClass: fresh-login-redirect }
+  - id: environment-replacement-between-issue-and-exchange-denies
+    input: { principalKind: group, change: environment-replaced, driftPoint: after-code-issue }
+    expected: { admitted: false, responseClass: fresh-login-redirect }
+  - id: machine-principal-is-denied-each-group-operation
+    input:
+      principalKind: machine
+      operations:
+        - list-groups
+        - create-group
+        - rename-group
+        - list-group-members
+        - add-group-member
+        - remove-group-member
+        - deactivate-group
+    expected: { allowed: false, code: FORBIDDEN, deniedOperationCount: 7 }
+  - id: group-pagination-is-deterministic-and-cursor-safe
+    input: { resource: groups, pageSize: 50, concurrentInsertAfterCursor: true }
+    expected: { ordering: [createdAt-desc, id-desc], duplicates: 0, omissionsWithinSnapshot: 0 }
+  - id: member-pagination-is-deterministic-and-cursor-safe
+    input: { resource: group-members, pageSize: 50, concurrentInsertAfterCursor: true }
+    expected: { ordering: [addedAt-desc, userId-desc], duplicates: 0, omissionsWithinSnapshot: 0 }
+  - id: active-group-limit-accepts-last-and-rejects-next
+    input: { boundary: active-groups-per-workspace, limit: 500 }
+    expected: { lastWrite: accepted, overflowCode: CONFLICT, auditEventsForOverflow: 0 }
+  - id: active-member-limit-accepts-last-and-rejects-next
+    input: { boundary: active-members-per-group, limit: 500 }
+    expected: { lastWrite: accepted, overflowCode: CONFLICT, auditEventsForOverflow: 0 }
+  - id: active-membership-limit-accepts-last-and-rejects-next
+    input: { boundary: active-memberships-per-user, limit: 100 }
+    expected: { lastWrite: accepted, overflowCode: CONFLICT, auditEventsForOverflow: 0 }
+  - id: active-group-grant-limit-accepts-last-and-rejects-next
+    input: { boundary: active-grants-per-group-principal, limit: 500 }
+    expected: { lastWrite: accepted, overflowCode: CONFLICT, auditEventsForOverflow: 0 }
+  - id: group-create-emits-exact-audit
+    input: { mutation: group-create }
+    expected:
+      {
+        eventType: group.created,
+        targetType: workspace_group,
+        metadataKeys: [workspaceId, name],
+        eventCount: 1,
+      }
+  - id: group-rename-emits-exact-audit
+    input: { mutation: group-rename }
+    expected:
+      {
+        eventType: group.renamed,
+        targetType: workspace_group,
+        metadataKeys: [workspaceId, from, to],
+        eventCount: 1,
+      }
+  - id: group-member-add-emits-exact-audit
+    input: { mutation: group-member-add }
+    expected:
+      {
+        eventType: group.member_added,
+        targetType: workspace_group,
+        metadataKeys: [workspaceId, userId],
+        eventCount: 1,
+      }
+  - id: group-member-remove-emits-exact-audit
+    input: { mutation: group-member-remove }
+    expected:
+      {
+        eventType: group.member_removed,
+        targetType: workspace_group,
+        metadataKeys: [workspaceId, userId],
+        eventCount: 1,
+      }
+  - id: group-deactivate-emits-exact-audit
+    input: { mutation: group-deactivate }
+    expected:
+      {
+        eventType: group.deactivated,
+        targetType: workspace_group,
+        metadataKeys: [workspaceId, revokedGrantCount],
+        eventCount: 1,
+      }
+  - id: failed-group-mutations-emit-no-audit
+    input: { mutationResult: [invalid, conflict, concealed-not-found] }
+    expected: { stateChanged: false, auditEventCount: 0 }
+  - id: active-grant-with-revocation-timestamp-is-inert
+    input: { principalKind: group, grantStatus: active, revokedAtPresent: true }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: active-group-with-deactivation-timestamp-is-inert
+    input: { principalKind: group, groupStatus: active, deactivatedAtPresent: true }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: corrupt-group-membership-cardinality-is-inert
+    input: { principalKind: group, memberCountMatchesMembershipRows: false }
+    expected: { admitted: false, responseClass: concealed-not-found }

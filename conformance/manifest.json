@@ -3,8 +3,8 @@
   "members": [
     {
       "path": "authorization/vectors.json",
-      "sha256": "e4bdcb45bf4c8df47f2164501bb85e18e46aad0b01858193883c4178a71fcc62",
-      "size": 9899
+      "sha256": "16d92b0b41b448739928c4b7aca4ca91ea127bd89035cba8bf5fbee64e2ed381",
+      "size": 11987
     },
     {
       "path": "behavior/cache.json",
@@ -38,8 +38,8 @@
     },
     {
       "path": "behavior/yard-sessions.json",
-      "sha256": "20ca9a1ce22c46cbc6c4a7f83bdb3c5b3c45004ac77fc7e50a192569963e24e2",
-      "size": 2953
+      "sha256": "0fc425afdb80444f7ff9ca3d7255aca967ecad552452369bcbf059324d63d7bf",
+      "size": 11755
     },
     {
       "path": "blobyard-core.openapi.json",
