@@ -1,9 +1,7 @@
 use super::YardConformanceRepository;
-use super::session_fixtures::{
-    issue_session, new_session, production_environment, session_revoked_event, set_visibility,
-};
+use super::session_fixtures::{audit_count, new_session, production_environment, set_visibility};
 use super::session_groups::{assert_live_policy, create_group_access};
-use crate::{hash, local_user, local_user_event, login_key};
+use crate::{FixtureExecutionTracker, hash, local_user, local_user_event, login_key};
 use blobyard_contract::{
     NewYardContinuation, RepositoryError, YARD_EXCHANGE_CODE_LIFETIME_MS, YardSessionAuditContext,
     YardSessionStatus, YardStartRecord, YardVisibility,
@@ -13,10 +11,12 @@ pub(super) fn assert_session_controls(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
     version_id: &str,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
-    assert_visibility_admission(repository, first)?;
-    create_group_access(repository, first)?;
-    let session = exchange_session(repository, first)?;
+    assert_visibility_admission(repository, first, tracker)?;
+    super::session_direct::assert_direct_grant_session(repository, first, version_id, tracker)?;
+    create_group_access(repository, first, tracker)?;
+    let session = exchange_session(repository, first, tracker)?;
     set_visibility(
         repository,
         &first.yard.id,
@@ -24,10 +24,10 @@ pub(super) fn assert_session_controls(
         YardVisibility::AnyAuthenticated,
         107,
     )?;
-    assert_host_binding_and_touch(repository, first, version_id, &session)?;
-    assert_live_policy(repository, first, version_id, &session)?;
-    assert_management_revocation(repository, first, &session)?;
-    assert_logout_and_deactivation(repository, first)?;
+    assert_host_binding_and_touch(repository, first, version_id, &session, tracker)?;
+    assert_live_policy(repository, first, version_id, &session, tracker)?;
+    super::session_revocation::assert_management_revocation(repository, first, &session, tracker)?;
+    super::session_revocation::assert_logout_and_deactivation(repository, first, tracker)?;
     repository.purge_yard_session_history(4_000_000_000)
 }
 
@@ -46,6 +46,7 @@ pub(super) fn create_session_user(
 fn assert_visibility_admission(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
     set_visibility(
         repository,
@@ -82,15 +83,23 @@ fn assert_visibility_admission(
     {
         return Err(RepositoryError::Unavailable);
     }
+    tracker.record_case(
+        "non-public-non-navigation-matches-unknown-host",
+        &serde_json::json!({"surface": "yard-delivery"}),
+        &serde_json::json!({
+            "responseClass": "concealed-not-found"
+        }),
+    );
     Ok(())
 }
 
 fn exchange_session(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<blobyard_contract::YardSessionRecord, RepositoryError> {
-    let continuation = issue_selected_continuation(repository, first)?;
-    assert_exchange_visibility_drift(repository, first, &continuation)?;
+    let continuation = issue_selected_continuation(repository, first, tracker)?;
+    assert_exchange_visibility_drift(repository, first, &continuation, tracker)?;
     let new_session_record = new_session("yardsession_fixture", 'c', 108);
     let exchange = repository.exchange_yard_session_code(
         &continuation.code_hash,
@@ -120,12 +129,26 @@ fn exchange_session(
     {
         return Err(RepositoryError::Unavailable);
     }
+    tracker.record_case(
+        "replay-is-indistinguishable-from-expiry",
+        &serde_json::json!({"surface": "code-exchange"}),
+        &serde_json::json!({"repositoryError": "NOT_FOUND"}),
+    );
+    tracker.record_case(
+        "session-lifetime-is-twelve-hours",
+        &serde_json::json!({"surface": "session"}),
+        &serde_json::json!({
+            "lifetimeMilliseconds":
+                exchange.session.expires_at_ms - exchange.session.created_at_ms
+        }),
+    );
     Ok(exchange.session)
 }
 
 fn issue_selected_continuation(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<NewYardContinuation, RepositoryError> {
     let admission =
         repository.evaluate_yard_admission(&first.yard.host_label, "user_fixture", 104)?;
@@ -145,6 +168,11 @@ fn issue_selected_continuation(
     if repository.issue_yard_exchange_code(&continuation) != Err(RepositoryError::Conflict) {
         return Err(RepositoryError::Unavailable);
     }
+    tracker.record_case(
+        "exchange-code-lifetime-is-sixty-seconds",
+        &serde_json::json!({"surface": "exchange-code"}),
+        &serde_json::json!({"lifetimeMilliseconds": YARD_EXCHANGE_CODE_LIFETIME_MS}),
+    );
     Ok(continuation)
 }
 
@@ -152,6 +180,7 @@ fn assert_exchange_visibility_drift(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
     continuation: &NewYardContinuation,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
     set_visibility(
         repository,
@@ -173,6 +202,15 @@ fn assert_exchange_visibility_drift(
     {
         return Err(RepositoryError::Unavailable);
     }
+    tracker.record_case(
+        "visibility-drift-between-issue-and-exchange-denies",
+        &serde_json::json!({
+            "principalKind": "group",
+            "change": "selected-to-owner",
+            "driftPoint": "after-code-issue"
+        }),
+        &serde_json::json!({"admitted": false, "repositoryError": "NOT_FOUND"}),
+    );
     set_visibility(
         repository,
         &first.yard.id,
@@ -188,6 +226,7 @@ fn assert_host_binding_and_touch(
     first: &YardStartRecord,
     version_id: &str,
     session: &blobyard_contract::YardSessionRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
     let target = repository.yard_file_by_host(
         &first.yard.host_label,
@@ -212,97 +251,29 @@ fn assert_host_binding_and_touch(
         119,
     )?;
     let listed = repository.list_yard_sessions(&first.yard.id)?;
-    if listed.len() != 1
-        || listed[0].session.last_used_at_ms != Some(120)
-        || listed[0].session.status_at(120) != YardSessionStatus::Active
-        || listed[0].user_display_name != "Fixture user"
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
-}
-
-fn assert_management_revocation(
-    repository: &dyn YardConformanceRepository,
-    first: &YardStartRecord,
-    session: &blobyard_contract::YardSessionRecord,
-) -> Result<(), RepositoryError> {
-    let event = session_revoked_event(&first.yard.id, &session.id, 140);
-    if !repository.revoke_yard_session(&first.yard.id, &session.id, 140, &event)?
-        || repository.revoke_yard_session(&first.yard.id, &session.id, 141, &event)?
-        || repository.yard_file_by_host(
-            &first.yard.host_label,
-            "asset.js",
-            Some(&session.token_hash),
-            141,
-        ) != Err(RepositoryError::NotFound)
-        || repository.list_yard_sessions(&first.yard.id)?[0]
-            .session
-            .status_at(141)
-            != YardSessionStatus::Revoked
-        || audit_count(repository, "yard.session_revoked", &event.id)? != 1
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
-}
-
-fn audit_count(
-    repository: &dyn YardConformanceRepository,
-    action: &str,
-    event_id: &str,
-) -> Result<usize, RepositoryError> {
-    repository
-        .list_audit("workspace_fixture", None, 100)
-        .map(|page| {
-            page.items
-                .iter()
-                .filter(|event| event.action == action && event.id == event_id)
-                .count()
-        })
-}
-
-fn assert_logout_and_deactivation(
-    repository: &dyn YardConformanceRepository,
-    first: &YardStartRecord,
-) -> Result<(), RepositoryError> {
-    let fallback = issue_session(repository, first, "fallback", '7', 145)?;
-    let logout = issue_session(repository, first, "logout", 'e', 150)?;
-    if !repository.revoke_yard_session_by_token(
-        &fallback.token_hash,
-        &first.yard.host_label,
-        146,
-    )? || !repository.revoke_yard_session_by_token(
-        &logout.token_hash,
-        &first.yard.host_label,
-        151,
-    )? || repository.revoke_yard_session_by_token(
-        &logout.token_hash,
-        &first.yard.host_label,
-        152,
-    )? {
-        return Err(RepositoryError::Unavailable);
-    }
-    let deactivated = issue_session(repository, first, "deactivated", 'f', 160)?;
-    let user = local_user("workspace_fixture", "user_fixture", None, 100);
-    repository.deactivate_local_user(
-        "user_fixture",
-        161,
-        &local_user_event("audit_user_session_gone", &user, "user.deactivated", 161),
-    )?;
-    let records = repository.list_yard_sessions(&first.yard.id)?;
-    if records
+    let current = listed
         .iter()
-        .find(|listing| listing.session.id == deactivated.id)
-        .is_none_or(|listing| listing.session.revoked_at_ms != Some(161))
-        || repository.yard_file_by_host(
-            &first.yard.host_label,
-            "asset.js",
-            Some(&deactivated.token_hash),
-            161,
-        ) != Err(RepositoryError::NotFound)
+        .find(|listing| listing.session.id == session.id)
+        .ok_or(RepositoryError::Unavailable)?;
+    if current.session.last_used_at_ms != Some(120)
+        || current.session.status_at(120) != YardSessionStatus::Active
+        || current.user_display_name != "Fixture user"
     {
         return Err(RepositoryError::Unavailable);
     }
+    tracker.record_case(
+        "active-group-grant-admits-current-member",
+        &serde_json::json!({
+            "grantStatus": "active",
+            "groupStatus": "active",
+            "membershipStatus": "active",
+            "principalKind": "group",
+            "surface": "selected-yard"
+        }),
+        &serde_json::json!({
+            "admitted": true,
+            "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
+        }),
+    );
     Ok(())
 }

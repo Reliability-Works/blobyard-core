@@ -1,9 +1,15 @@
-use crate::{ensure_equal, local_user_event};
+use crate::{FixtureExecutionTracker, ensure_equal, local_user_event};
 use blobyard_contract::{
     AuditValue, LifecycleRepository, LocalUserRepository, NewAuditEvent, RepositoryError,
     WorkspaceGroupMemberRecord, WorkspaceGroupRecord, WorkspaceGroupRepository,
     WorkspaceGroupStatus,
 };
+
+#[path = "group_audits.rs"]
+mod audits;
+#[path = "group_failures.rs"]
+mod failures;
+use audits::{assert_only_new_audit, audit_state};
 
 /// Combined repository surface required by portable group conformance.
 pub trait GroupConformanceRepository:
@@ -15,16 +21,6 @@ impl<T> GroupConformanceRepository for T where
     T: WorkspaceGroupRepository + LocalUserRepository + LifecycleRepository
 {
 }
-
-#[allow(clippy::redundant_pub_crate)]
-pub(super) const GROUP_CASE_IDS: &[&str] = &[
-    "failed-group-mutations-emit-no-audit",
-    "group-create-emits-exact-audit",
-    "group-deactivate-emits-exact-audit",
-    "group-member-add-emits-exact-audit",
-    "group-member-remove-emits-exact-audit",
-    "group-rename-emits-exact-audit",
-];
 
 /// Runs deterministic workspace-group lifecycle and membership checks.
 ///
@@ -44,44 +40,80 @@ pub fn group_conformance(
         created_at_ms: 50,
         deactivated_at_ms: None,
     };
-    let renamed = create_and_rename(repository, &group)?;
-    membership_conformance(repository, &group, &renamed)
+    let mut tracker = FixtureExecutionTracker::new("testkit", "groups");
+    let renamed = create_and_rename(repository, &group, &mut tracker)?;
+    membership_conformance(repository, &group, &renamed, &mut tracker)?;
+    deactivate_conformance(repository, &renamed, &mut tracker)?;
+    tracker.finish()
 }
 
 fn create_and_rename(
     repository: &dyn GroupConformanceRepository,
     group: &WorkspaceGroupRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<WorkspaceGroupRecord, RepositoryError> {
-    repository.create_workspace_group(
+    let created_event = group_event(
+        "audit_group_created",
+        "group.created",
         group,
-        &group_event(
-            "audit_group_created",
-            "group.created",
-            group,
-            50,
-            [("name", AuditValue::String(group.name.clone()))],
-        ),
-    )?;
+        50,
+        [("name", AuditValue::String(group.name.clone()))],
+    );
+    let audit_before = audit_state(repository, &group.workspace_id)?;
+    repository.create_workspace_group(group, &created_event)?;
     let page = repository.list_workspace_groups(&group.workspace_id, None, 50)?;
     ensure_equal(&page.items, &vec![group.clone()])?;
-    repository.rename_workspace_group(
+    assert_only_new_audit(repository, &audit_before, &created_event)?;
+    tracker.record_case(
+        "group-create-emits-exact-audit",
+        &serde_json::json!({"mutation": "group-create"}),
+        &serde_json::json!({
+            "eventType": "group.created",
+            "targetType": "workspace_group",
+            "metadataKeys": ["groupId", "workspaceId", "name"],
+            "eventCount": 1
+        }),
+    );
+    let renamed_event = group_event(
+        "audit_group_renamed",
+        "group.renamed",
+        group,
+        51,
+        [("to", AuditValue::String("Approvers".to_owned()))],
+    );
+    let audit_before = audit_state(repository, &group.workspace_id)?;
+    let renamed = repository.rename_workspace_group(
         &group.workspace_id,
         &group.id,
         "Approvers",
-        &group_event(
-            "audit_group_renamed",
-            "group.renamed",
-            group,
-            51,
-            [("to", AuditValue::String("Approvers".to_owned()))],
-        ),
-    )
+        &renamed_event,
+    )?;
+    let mut persisted_rename = renamed_event;
+    persisted_rename
+        .metadata
+        .push(("from".to_owned(), AuditValue::String(group.name.clone())));
+    persisted_rename
+        .metadata
+        .sort_by(|left, right| left.0.cmp(&right.0));
+    assert_only_new_audit(repository, &audit_before, &persisted_rename)?;
+    tracker.record_case(
+        "group-rename-emits-exact-audit",
+        &serde_json::json!({"mutation": "group-rename"}),
+        &serde_json::json!({
+            "eventType": "group.renamed",
+            "targetType": "workspace_group",
+            "metadataKeys": ["groupId", "workspaceId", "from", "to"],
+            "eventCount": 1
+        }),
+    );
+    Ok(renamed)
 }
 
 fn membership_conformance(
     repository: &dyn GroupConformanceRepository,
     group: &WorkspaceGroupRecord,
     renamed: &WorkspaceGroupRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
     let member = WorkspaceGroupMemberRecord {
         group_id: group.id.clone(),
@@ -89,36 +121,34 @@ fn membership_conformance(
         user_id: "user_first".to_owned(),
         added_at_ms: 52,
     };
-    repository.add_workspace_group_member(
-        &member,
-        &group_event(
-            "audit_group_member",
-            "group.member_added",
-            renamed,
-            52,
-            [("userId", AuditValue::String(member.user_id.clone()))],
-        ),
-    )?;
-    if repository.add_workspace_group_member(
-        &member,
-        &group_event(
-            "audit_group_duplicate",
-            "group.member_added",
-            renamed,
-            52,
-            [("userId", AuditValue::String(member.user_id.clone()))],
-        ),
-    ) != Err(RepositoryError::Conflict)
-    {
-        return Err(RepositoryError::Unavailable);
-    }
+    let added_event = group_event(
+        "audit_group_member",
+        "group.member_added",
+        renamed,
+        52,
+        [("userId", AuditValue::String(member.user_id.clone()))],
+    );
+    let audit_before = audit_state(repository, &group.workspace_id)?;
+    repository.add_workspace_group_member(&member, &added_event)?;
+    assert_only_new_audit(repository, &audit_before, &added_event)?;
+    tracker.record_case(
+        "group-member-add-emits-exact-audit",
+        &serde_json::json!({"mutation": "group-member-add"}),
+        &serde_json::json!({
+            "eventType": "group.member_added",
+            "targetType": "workspace_group",
+            "metadataKeys": ["groupId", "workspaceId", "userId"],
+            "eventCount": 1
+        }),
+    );
     ensure_equal(
         &repository
             .list_workspace_group_members(&group.workspace_id, &group.id, None, 50)?
             .items,
         &vec![member.clone()],
     )?;
-    remove_and_readd(repository, renamed, member)?;
+    failures::failed_mutation_conformance(repository, renamed, &member, tracker)?;
+    remove_and_readd(repository, renamed, member, tracker)?;
     verify_user_deactivation(repository, group)
 }
 
@@ -126,32 +156,83 @@ fn remove_and_readd(
     repository: &dyn GroupConformanceRepository,
     renamed: &WorkspaceGroupRecord,
     member: WorkspaceGroupMemberRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
+    let removed_event = group_event(
+        "audit_group_removed",
+        "group.member_removed",
+        renamed,
+        53,
+        [("userId", AuditValue::String(member.user_id.clone()))],
+    );
+    let audit_before = audit_state(repository, &member.workspace_id)?;
     repository.remove_workspace_group_member(
         &member.workspace_id,
         &member.group_id,
         &member.user_id,
-        &group_event(
-            "audit_group_removed",
-            "group.member_removed",
-            renamed,
-            53,
-            [("userId", AuditValue::String(member.user_id.clone()))],
-        ),
+        &removed_event,
     )?;
+    assert_only_new_audit(repository, &audit_before, &removed_event)?;
+    tracker.record_case(
+        "group-member-remove-emits-exact-audit",
+        &serde_json::json!({"mutation": "group-member-remove"}),
+        &serde_json::json!({
+            "eventType": "group.member_removed",
+            "targetType": "workspace_group",
+            "metadataKeys": ["groupId", "workspaceId", "userId"],
+            "eventCount": 1
+        }),
+    );
+    let readded_event = group_event(
+        "audit_group_readded",
+        "group.member_added",
+        renamed,
+        54,
+        [("userId", AuditValue::String("user_first".to_owned()))],
+    );
+    let audit_before = audit_state(repository, &member.workspace_id)?;
     repository.add_workspace_group_member(
         &WorkspaceGroupMemberRecord {
             added_at_ms: 54,
             ..member
         },
-        &group_event(
-            "audit_group_readded",
-            "group.member_added",
-            renamed,
-            54,
-            [("userId", AuditValue::String("user_first".to_owned()))],
-        ),
+        &readded_event,
     )?;
+    assert_only_new_audit(repository, &audit_before, &readded_event)
+}
+
+fn deactivate_conformance(
+    repository: &dyn GroupConformanceRepository,
+    group: &WorkspaceGroupRecord,
+    tracker: &mut FixtureExecutionTracker,
+) -> Result<(), RepositoryError> {
+    let event = group_event(
+        "audit_group_deactivated",
+        "group.deactivated",
+        group,
+        56,
+        [],
+    );
+    let audit_before = audit_state(repository, &group.workspace_id)?;
+    repository.deactivate_workspace_group(&group.workspace_id, &group.id, 56, &event)?;
+    let mut persisted = event;
+    persisted
+        .metadata
+        .push(("revokedGrantCount".to_owned(), AuditValue::Number(0)));
+    persisted
+        .metadata
+        .sort_by(|left, right| left.0.cmp(&right.0));
+    assert_only_new_audit(repository, &audit_before, &persisted)?;
+    tracker.record_case(
+        "group-deactivate-emits-exact-audit",
+        &serde_json::json!({"mutation": "group-deactivate"}),
+        &serde_json::json!({
+            "eventType": "group.deactivated",
+            "targetType": "workspace_group",
+            "metadataKeys": ["groupId", "workspaceId", "revokedGrantCount"],
+            "eventCount": 1
+        }),
+    );
     Ok(())
 }
 
@@ -165,16 +246,15 @@ fn verify_user_deactivation(
         .find(|listing| listing.user.id == "user_first")
         .ok_or(RepositoryError::Unavailable)?
         .user;
-    repository.deactivate_local_user(
-        &user.id,
+    let event = local_user_event(
+        "audit_group_user_deactivated",
+        &user,
+        "user.deactivated",
         55,
-        &local_user_event(
-            "audit_group_user_deactivated",
-            &user,
-            "user.deactivated",
-            55,
-        ),
-    )?;
+    );
+    let audit_before = audit_state(repository, &group.workspace_id)?;
+    repository.deactivate_local_user(&user.id, 55, &event)?;
+    assert_only_new_audit(repository, &audit_before, &event)?;
     let final_group = repository
         .list_workspace_groups(&group.workspace_id, None, 50)?
         .items
@@ -209,6 +289,7 @@ pub fn group_event<const N: usize>(
             .into_iter()
             .map(|(name, value)| (name.to_owned(), value)),
     );
+    values.sort_by(|left, right| left.0.cmp(&right.0));
     NewAuditEvent {
         id: id.to_owned(),
         workspace_id: group.workspace_id.clone(),

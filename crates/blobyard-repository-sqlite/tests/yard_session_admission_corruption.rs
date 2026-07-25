@@ -6,111 +6,66 @@ use blobyard_contract::{
     YARD_EXCHANGE_CODE_LIFETIME_MS, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
     YardSessionRepository,
 };
-use blobyard_repository_sqlite::SqliteRepository;
+use blobyard_testkit::FixtureExecutionTracker;
 use rusqlite::Connection;
 
-const FIXTURE_SQL: &str = include_str!("support/yard_group_race.sql");
-
-#[derive(Clone, Copy, Debug)]
-enum Corruption {
-    ActiveGrantWithRevocation,
-    ActiveGroupWithDeactivation,
-    InvalidMembershipTimestamp,
-    IncorrectMemberCount,
-    NonmatchingEnvironment,
-}
-
-const CORRUPTIONS: [Corruption; 5] = [
-    Corruption::ActiveGrantWithRevocation,
-    Corruption::ActiveGroupWithDeactivation,
-    Corruption::InvalidMembershipTimestamp,
-    Corruption::IncorrectMemberCount,
-    Corruption::NonmatchingEnvironment,
-];
-
-struct Fixture {
-    _temporary: tempfile::TempDir,
-    path: std::path::PathBuf,
-    repository: SqliteRepository,
-}
-
-impl Fixture {
-    fn new() -> Self {
-        let temporary = tempfile::tempdir().expect("temporary");
-        let path = temporary.path().join("metadata.sqlite3");
-        let repository = SqliteRepository::open(&path).expect("repository");
-        Connection::open(&path)
-            .expect("fixture connection")
-            .execute_batch(FIXTURE_SQL)
-            .expect("fixture");
-        Self {
-            _temporary: temporary,
-            path,
-            repository,
-        }
-    }
-
-    fn set_corruption(&self, corruption: Corruption, corrupt: bool) {
-        let sql = match (corruption, corrupt) {
-            (Corruption::ActiveGrantWithRevocation, true) => {
-                "PRAGMA ignore_check_constraints = ON;
-                 UPDATE yard_access_grants SET revoked_at_ms = 3 WHERE id = 'grant_fixture';"
-            }
-            (Corruption::ActiveGrantWithRevocation, false) => {
-                "UPDATE yard_access_grants SET revoked_at_ms = NULL WHERE id = 'grant_fixture';"
-            }
-            (Corruption::ActiveGroupWithDeactivation, true) => {
-                "PRAGMA ignore_check_constraints = ON;
-                 UPDATE workspace_groups SET deactivated_at_ms = 3
-                 WHERE id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::ActiveGroupWithDeactivation, false) => {
-                "UPDATE workspace_groups SET deactivated_at_ms = NULL
-                 WHERE id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::InvalidMembershipTimestamp, true) => {
-                "PRAGMA ignore_check_constraints = ON;
-                 UPDATE workspace_group_members SET added_at_ms = -1
-                 WHERE group_id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::InvalidMembershipTimestamp, false) => {
-                "UPDATE workspace_group_members SET added_at_ms = 2
-                 WHERE group_id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::IncorrectMemberCount, true) => {
-                "UPDATE workspace_groups SET member_count = 2
-                 WHERE id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::IncorrectMemberCount, false) => {
-                "UPDATE workspace_groups SET member_count = 1
-                 WHERE id = 'group_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';"
-            }
-            (Corruption::NonmatchingEnvironment, true) => {
-                "INSERT INTO yard_environments
-                   (id, yard_id, name, kind, status, created_at_ms, updated_at_ms)
-                 VALUES
-                   ('environment_staging', 'yard_fixture', 'staging', 'staging', 'active', 2, 2);
-                 UPDATE yard_access_grants SET environment_id = 'environment_staging'
-                 WHERE id = 'grant_fixture';"
-            }
-            (Corruption::NonmatchingEnvironment, false) => {
-                "UPDATE yard_access_grants SET environment_id = NULL WHERE id = 'grant_fixture';
-                 DELETE FROM yard_environments WHERE id = 'environment_staging';"
-            }
-        };
-        Connection::open(&self.path)
-            .expect("corruption connection")
-            .execute_batch(sql)
-            .expect("corruption state");
-    }
-}
+#[path = "support/yard_session_corruption.rs"]
+mod corruption_support;
+use corruption_support::{CORRUPTIONS, Corruption, Fixture};
 
 #[test]
 fn corrupt_group_lifecycle_is_concealed_at_every_admission_boundary() {
+    let mut tracker = FixtureExecutionTracker::new("sqlite", "admission-corruption");
     for corruption in CORRUPTIONS {
         assert_issue_conceals(corruption);
         assert_exchange_conceals_and_rolls_back(corruption);
         assert_delivery_conceals(corruption);
+        assert_fixture_case(corruption, &mut tracker);
+    }
+    tracker.finish().expect("complete fixtures");
+}
+
+#[test]
+fn valid_direct_grant_survives_over_limit_group_corruption() {
+    for corruption in [
+        Corruption::OverLimitActiveGroupGrants,
+        Corruption::OverLimitMembershipRows,
+    ] {
+        let fixture = Fixture::new();
+        Connection::open(&fixture.path)
+            .expect("direct grant connection")
+            .execute_batch(
+                "INSERT INTO yard_access_grants VALUES
+                   ('grant_direct_fixture', 'yard_fixture', NULL, 'user', 'user_fixture', '[]',
+                    'active', 2, 'fixture', NULL, NULL);",
+            )
+            .expect("direct grant");
+        fixture.set_corruption(corruption, true);
+        let continuation = continuation();
+        fixture
+            .repository
+            .issue_yard_exchange_code(&continuation)
+            .expect("direct issue");
+        let session = session();
+        fixture
+            .repository
+            .exchange_yard_session_code(
+                &continuation.code_hash,
+                &continuation.host_label,
+                &session,
+                &audit(),
+                11,
+            )
+            .expect("direct exchange");
+        fixture
+            .repository
+            .yard_file_by_host(
+                &continuation.host_label,
+                "asset.js",
+                Some(&session.token_hash),
+                12,
+            )
+            .expect("direct delivery");
     }
 }
 
@@ -214,6 +169,113 @@ fn assert_delivery_conceals(corruption: Corruption) {
             12,
         )
         .expect("restored delivery");
+}
+
+fn assert_fixture_case(corruption: Corruption, tracker: &mut FixtureExecutionTracker) {
+    if let Some((id, input, expected)) = fixture_case(corruption) {
+        tracker.record_case(id, &input, &expected);
+    }
+}
+
+type FixtureCase = (&'static str, serde_json::Value, serde_json::Value);
+
+fn fixture_case(corruption: Corruption) -> Option<FixtureCase> {
+    match corruption {
+        Corruption::ActiveGrantWithRevocation
+        | Corruption::ActiveGroupWithDeactivation
+        | Corruption::CrossWorkspaceGroup => lifecycle_fixture_case(corruption),
+        Corruption::IncorrectMemberCount
+        | Corruption::NonmatchingEnvironment
+        | Corruption::SameNameForeignGroup
+        | Corruption::UnresolvedGroup => admission_fixture_case(corruption),
+        Corruption::InvalidMembershipTimestamp
+        | Corruption::OverLimitActiveGroupGrants
+        | Corruption::OverLimitMembershipRows => None,
+    }
+}
+
+fn lifecycle_fixture_case(corruption: Corruption) -> Option<FixtureCase> {
+    let fixture = match corruption {
+        Corruption::ActiveGrantWithRevocation => denied_fixture(
+            "active-grant-with-revocation-timestamp-is-inert",
+            serde_json::json!({
+                "principalKind": "group",
+                "grantStatus": "active",
+                "revokedAtPresent": true
+            }),
+        ),
+        Corruption::ActiveGroupWithDeactivation => denied_fixture(
+            "active-group-with-deactivation-timestamp-is-inert",
+            serde_json::json!({
+                "principalKind": "group",
+                "groupStatus": "active",
+                "deactivatedAtPresent": true
+            }),
+        ),
+        Corruption::CrossWorkspaceGroup => denied_fixture(
+            "cross-workspace-group-id-never-admits",
+            serde_json::json!({
+                "principalKind": "group",
+                "grantWorkspace": "default",
+                "groupWorkspace": "other",
+                "membershipStatus": "active"
+            }),
+        ),
+        _ => return None,
+    };
+    Some(fixture)
+}
+
+fn admission_fixture_case(corruption: Corruption) -> Option<FixtureCase> {
+    let fixture = match corruption {
+        Corruption::IncorrectMemberCount => denied_fixture(
+            "corrupt-group-membership-cardinality-is-inert",
+            serde_json::json!({
+                "principalKind": "group",
+                "memberCountMatchesMembershipRows": false
+            }),
+        ),
+        Corruption::NonmatchingEnvironment => denied_fixture(
+            "nonmatching-environment-group-grant-denies",
+            serde_json::json!({
+                "principalKind": "group",
+                "grantEnvironment": "staging",
+                "selectedEnvironment": "production"
+            }),
+        ),
+        Corruption::SameNameForeignGroup => denied_fixture(
+            "same-name-foreign-group-never-admits",
+            serde_json::json!({
+                "principalKind": "group",
+                "selectedGroupName": "Readers",
+                "membershipGroupName": "Readers",
+                "sameGroupId": false
+            }),
+        ),
+        Corruption::UnresolvedGroup => denied_fixture(
+            "unresolved-legacy-group-grant-remains-inert",
+            serde_json::json!({
+                "grantStatus": "active",
+                "groupStatus": "unresolved",
+                "membershipStatus": "absent",
+                "principalKind": "group",
+                "surface": "selected-yard"
+            }),
+        ),
+        _ => return None,
+    };
+    Some(fixture)
+}
+
+fn denied_fixture(id: &'static str, input: serde_json::Value) -> FixtureCase {
+    (
+        id,
+        input,
+        serde_json::json!({
+            "admitted": false,
+            "responseClass": "concealed-not-found"
+        }),
+    )
 }
 
 fn continuation() -> NewYardContinuation {

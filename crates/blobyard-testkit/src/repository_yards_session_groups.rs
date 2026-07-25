@@ -1,5 +1,6 @@
 use super::YardConformanceRepository;
 use super::session_fixtures::set_visibility;
+use crate::FixtureExecutionTracker;
 use blobyard_contract::{
     AuditValue, NewYardAccessGrant, RepositoryError, WorkspaceGroupMemberRecord,
     WorkspaceGroupRecord, WorkspaceGroupStatus, WorkspaceRecord, YardAccessPrincipalKind,
@@ -9,6 +10,7 @@ use blobyard_contract::{
 pub(super) fn create_group_access(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
     create_foreign_group(repository, first)?;
     let group = group_record();
@@ -23,7 +25,7 @@ pub(super) fn create_group_access(
         ),
     )?;
     add_member(repository, &group, 103, "audit_yard_group_member")?;
-    super::session_grants::select_with_independent_empty_role_grant(repository, first)
+    super::session_grants::select_with_independent_empty_role_grant(repository, first, tracker)
 }
 
 fn create_foreign_group(
@@ -110,9 +112,12 @@ pub(super) fn assert_live_policy(
     first: &YardStartRecord,
     version_id: &str,
     session: &YardSessionRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
-    super::session_grants::assert_grant_transitions(repository, first, version_id, session)?;
-    assert_authenticated_link_and_deactivation(repository, first, version_id, session)?;
+    super::session_grants::assert_grant_transitions(
+        repository, first, version_id, session, tracker,
+    )?;
+    assert_authenticated_link_and_deactivation(repository, first, version_id, session, tracker)?;
     assert_workspace_owner_and_public(repository, first, version_id, session)
 }
 
@@ -121,10 +126,12 @@ fn assert_authenticated_link_and_deactivation(
     first: &YardStartRecord,
     version_id: &str,
     session: &YardSessionRecord,
+    tracker: &mut FixtureExecutionTracker,
 ) -> Result<(), RepositoryError> {
+    let yard_id = first.yard.id.as_str();
     set_visibility(
         repository,
-        &first.yard.id,
+        yard_id,
         "selected",
         YardVisibility::AuthenticatedLink,
         132,
@@ -143,7 +150,17 @@ fn assert_authenticated_link_and_deactivation(
             [],
         ),
     )?;
-    require_denial(repository, first, session, 133)
+    require_denial(repository, first, session, 133)?;
+    tracker.record_case(
+        "group-deactivation-denies-on-next-private-request",
+        &serde_json::json!({
+            "change": "group-deactivated",
+            "principalKind": "group",
+            "surface": "private-delivery"
+        }),
+        &serde_json::json!({"admitted": false, "propagationMilliseconds": 0}),
+    );
+    Ok(())
 }
 
 fn assert_workspace_owner_and_public(

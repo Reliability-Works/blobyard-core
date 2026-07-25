@@ -9,6 +9,10 @@ fn group_conformance_rejects_each_inconsistent_record() {
         Corruption::GroupFinalCount,
         Corruption::GroupMissingUser,
         Corruption::GroupMissingFinal,
+        Corruption::GroupAuditRecord,
+        Corruption::GroupSuccessExtraAudit,
+        Corruption::GroupFailedMutationAudit,
+        Corruption::GroupFailedMutationSnapshot,
     ] {
         let (_temporary, repository) = repository();
         blobyard_testkit::repository_conformance(&repository).expect("metadata conformance");

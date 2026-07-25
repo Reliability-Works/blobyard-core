@@ -234,6 +234,10 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
             now_ms,
         );
         match self.corruption {
+            Corruption::YardDirectDeliveryTarget if now_ms == 111 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
             Corruption::YardSessionLiveTarget if now_ms == 121 => result.map(|mut target| {
                 target.object.version.id.push_str("_corrupt");
                 target

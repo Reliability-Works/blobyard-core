@@ -2,11 +2,15 @@
 
 use super::empty_repository;
 use blobyard_contract::{
-    AuditValue, NewYardAccessGrant, RepositoryError, WebYardRepository, WorkspaceGroupMemberRecord,
-    WorkspaceGroupRecord, WorkspaceGroupRepository, WorkspaceGroupStatus, YardAccessPrincipalKind,
+    AuditValue, LifecycleRepository, NewYardAccessGrant, RepositoryError, WebYardRepository,
+    WorkspaceGroupMemberRecord, WorkspaceGroupRecord, WorkspaceGroupRepository,
+    WorkspaceGroupStatus, YardAccessPrincipalKind,
 };
 
-fn group(number: u64) -> WorkspaceGroupRecord {
+#[path = "adapter_group_limit_boundary_tests.rs"]
+mod boundary_tests;
+
+pub(super) fn group(number: u64) -> WorkspaceGroupRecord {
     WorkspaceGroupRecord {
         id: format!("group_{number:032x}"),
         workspace_id: "workspace_fixture".to_owned(),
@@ -18,7 +22,7 @@ fn group(number: u64) -> WorkspaceGroupRecord {
     }
 }
 
-fn repository() -> (tempfile::TempDir, super::SqliteRepository) {
+pub(super) fn repository() -> (tempfile::TempDir, super::SqliteRepository) {
     let (temporary, repository) = empty_repository();
     blobyard_testkit::repository_conformance(&repository).expect("metadata conformance");
     let connection = repository.test_connection().expect("connection");
@@ -32,7 +36,7 @@ fn repository() -> (tempfile::TempDir, super::SqliteRepository) {
     (temporary, repository)
 }
 
-fn create_event(group: &WorkspaceGroupRecord) -> blobyard_contract::NewAuditEvent {
+pub(super) fn create_event(group: &WorkspaceGroupRecord) -> blobyard_contract::NewAuditEvent {
     blobyard_testkit::group_event(
         &format!("audit_create_{}", group.id),
         "group.created",
@@ -42,7 +46,7 @@ fn create_event(group: &WorkspaceGroupRecord) -> blobyard_contract::NewAuditEven
     )
 }
 
-fn member_event(
+pub(super) fn member_event(
     group: &WorkspaceGroupRecord,
     user_id: &str,
     at_ms: u64,
@@ -54,94 +58,6 @@ fn member_event(
         at_ms,
         [("userId", AuditValue::String(user_id.to_owned()))],
     )
-}
-
-#[test]
-fn workspace_group_limit_counts_only_active_groups() {
-    let (_temporary, repository) = repository();
-    let connection = repository.test_connection().expect("connection");
-    connection
-        .execute_batch(
-            "WITH RECURSIVE numbers(value) AS (
-               SELECT 1 UNION ALL SELECT value + 1 FROM numbers WHERE value < 500
-             )
-             INSERT INTO workspace_groups
-               (id, workspace_id, name, status, member_count, created_at_ms, deactivated_at_ms)
-             SELECT printf('group_%032x', value), 'workspace_fixture',
-                    printf('Group %d', value), 'active', 0, value + 100, NULL
-             FROM numbers;",
-        )
-        .expect("five hundred groups");
-    drop(connection);
-    let overflow = group(501);
-    assert_eq!(
-        repository.create_workspace_group(&overflow, &create_event(&overflow)),
-        Err(RepositoryError::Conflict)
-    );
-    let connection = repository.test_connection().expect("connection");
-    connection
-        .execute(
-            "UPDATE workspace_groups SET status = 'deactivated', deactivated_at_ms = 600 WHERE id = 'group_00000000000000000000000000000001'",
-            [],
-        )
-        .expect("deactivate one");
-    drop(connection);
-    repository
-        .create_workspace_group(&overflow, &create_event(&overflow))
-        .expect("replacement active group");
-}
-
-#[test]
-fn member_limits_reject_the_five_hundred_first_member_and_one_hundred_first_group() {
-    let (_temporary, repository) = repository();
-    let full_group = group(600);
-    let user_full_group = group(701);
-    let connection = repository.test_connection().expect("connection");
-    connection
-        .execute_batch(
-            "INSERT INTO workspace_groups VALUES (
-               'group_00000000000000000000000000000258', 'workspace_fixture',
-               'Full group', 'active', 500, 700, NULL
-             );
-             WITH RECURSIVE numbers(value) AS (
-               SELECT 1 UNION ALL SELECT value + 1 FROM numbers WHERE value < 100
-             )
-             INSERT INTO workspace_groups
-               (id, workspace_id, name, status, member_count, created_at_ms, deactivated_at_ms)
-             SELECT printf('group_%032x', value + 800), 'workspace_fixture',
-                    printf('Membership %d', value), 'active', 1, value + 800, NULL
-             FROM numbers;
-             INSERT INTO workspace_groups VALUES (
-               'group_000000000000000000000000000002bd', 'workspace_fixture',
-               'User overflow', 'active', 0, 901, NULL
-             );
-             WITH RECURSIVE numbers(value) AS (
-               SELECT 1 UNION ALL SELECT value + 1 FROM numbers WHERE value < 100
-             )
-             INSERT INTO workspace_group_members
-               (group_id, workspace_id, user_id, added_at_ms)
-             SELECT printf('group_%032x', value + 800), 'workspace_fixture',
-                    'user_limit', value + 800
-             FROM numbers;",
-        )
-        .expect("membership limits");
-    drop(connection);
-    let full_member = member(&full_group, "user_limit", 701);
-    assert_eq!(
-        repository.add_workspace_group_member(
-            &full_member,
-            &member_event(&full_group, "user_limit", 701)
-        ),
-        Err(RepositoryError::Conflict)
-    );
-    let overflow_member = member(&user_full_group, "user_limit", 902);
-    assert_eq!(
-        repository.add_workspace_group_member(
-            &overflow_member,
-            &member_event(&user_full_group, "user_limit", 902)
-        ),
-        Err(RepositoryError::Conflict)
-    );
 }
 
 #[test]
@@ -191,7 +107,18 @@ fn membership_and_grants_reject_cross_workspace_principals() {
 }
 
 #[test]
-fn expired_active_group_grants_still_consume_the_five_hundred_grant_limit() {
+fn group_limit_suite_executes_every_generated_case() {
+    let mut tracker = blobyard_testkit::FixtureExecutionTracker::new("sqlite", "group-limits");
+    group_grant_limit_accepts_five_hundredth_and_rejects_next(&mut tracker);
+    boundary_tests::workspace_group_limit_counts_only_active_groups(&mut tracker);
+    boundary_tests::member_limit_accepts_five_hundredth_and_rejects_next(&mut tracker);
+    boundary_tests::membership_limit_accepts_one_hundredth_and_rejects_next(&mut tracker);
+    tracker.finish().expect("complete group limit fixtures");
+}
+
+fn group_grant_limit_accepts_five_hundredth_and_rejects_next(
+    tracker: &mut blobyard_testkit::FixtureExecutionTracker,
+) {
     let (_temporary, repository) = repository();
     let target = group(1_100);
     repository
@@ -202,7 +129,7 @@ fn expired_active_group_grants_still_consume_the_five_hundred_grant_limit() {
     connection
         .execute_batch(&format!(
             "WITH RECURSIVE numbers(value) AS (
-               SELECT 1 UNION ALL SELECT value + 1 FROM numbers WHERE value < 500
+               SELECT 1 UNION ALL SELECT value + 1 FROM numbers WHERE value < 499
              )
              INSERT INTO yard_access_grants
                (id, yard_id, environment_id, principal_kind, principal_id, app_roles,
@@ -212,46 +139,82 @@ fn expired_active_group_grants_still_consume_the_five_hundred_grant_limit() {
              FROM numbers;",
             yard.id, target.id
         ))
-        .expect("five hundred active grants");
+        .expect("four hundred ninety-nine active grants");
     drop(connection);
-    let overflow = grant(&yard.id, &target.id, 1_102);
+    let last = grant(&yard.id, &target.id, 1_102);
+    repository
+        .insert_yard_access_grant(
+            &last,
+            &blobyard_testkit::granted_event(&yard.id, &last, 1_102),
+        )
+        .expect("five hundredth active grant");
+    let overflow = grant(&yard.id, &target.id, 1_103);
+    let audit_before = audit_count(&repository);
     assert_eq!(
         repository.insert_yard_access_grant(
             &overflow,
-            &blobyard_testkit::granted_event(&yard.id, &overflow, 1_102)
+            &blobyard_testkit::granted_event(&yard.id, &overflow, 1_103)
         ),
         Err(RepositoryError::Conflict)
     );
-    let connection = repository.test_connection().expect("connection");
-    connection
-        .execute(
-            "INSERT INTO yard_access_grants
-               (id, yard_id, environment_id, principal_kind, principal_id, app_roles,
-                status, created_at_ms, created_by_principal, expires_at_ms, revoked_at_ms)
-             VALUES ('grant_group_limit_501', ?1, NULL, 'group', ?2, '[\"viewer\"]',
-                     'active', 1, 'fixture', 1, NULL)",
-            rusqlite::params![yard.id, target.id],
-        )
-        .expect("grant above deactivation bound");
-    drop(connection);
-    assert_eq!(
-        repository.deactivate_workspace_group(
-            "workspace_fixture",
-            &target.id,
-            1_103,
-            &blobyard_testkit::group_event(
-                "audit_deactivate_above_grant_limit",
-                "group.deactivated",
-                &target,
-                1_103,
-                [],
-            ),
-        ),
-        Err(RepositoryError::Conflict)
+    require_audit_unchanged(
+        &repository,
+        audit_before,
+        &blobyard_testkit::granted_event(&yard.id, &overflow, 1_103).id,
+    )
+    .expect("overflow audit unchanged");
+    assert_eq!(active_grant_count(&repository, &target.id), 500);
+    tracker.record_case(
+        "active-group-grant-limit-accepts-last-and-rejects-next",
+        &serde_json::json!({
+            "boundary": "active-grants-per-group-principal",
+            "limit": 500
+        }),
+        &serde_json::json!({
+            "lastWrite": "accepted",
+            "overflowCode": "CONFLICT",
+            "auditEventsForOverflow": 0
+        }),
     );
 }
 
-fn member(
+pub(super) fn audit_count(repository: &super::SqliteRepository) -> usize {
+    repository
+        .list_audit("workspace_fixture", None, 100)
+        .expect("audits")
+        .items
+        .len()
+}
+
+pub(super) fn require_audit_unchanged(
+    repository: &super::SqliteRepository,
+    before: usize,
+    event_id: &str,
+) -> Result<(), RepositoryError> {
+    let events = repository
+        .list_audit("workspace_fixture", None, 100)
+        .expect("audits")
+        .items;
+    if events.len() == before && events.iter().all(|event| event.id != event_id) {
+        Ok(())
+    } else {
+        Err(RepositoryError::Unavailable)
+    }
+}
+
+fn active_grant_count(repository: &super::SqliteRepository, group_id: &str) -> i64 {
+    repository
+        .test_connection()
+        .expect("connection")
+        .query_row(
+            "SELECT COUNT(*) FROM yard_access_grants WHERE principal_kind = 'group' AND principal_id = ?1 AND status = 'active'",
+            [group_id],
+            |row| row.get(0),
+        )
+        .expect("grant count")
+}
+
+pub(super) fn member(
     group: &WorkspaceGroupRecord,
     user_id: &str,
     added_at_ms: u64,

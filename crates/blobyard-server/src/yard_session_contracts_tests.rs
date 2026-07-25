@@ -22,6 +22,15 @@ fn continuation_round_trips_exact_host_and_normalized_path() {
     let claims = verify(&key, &continuation, 101).expect("verified");
     assert_eq!(claims.host_label(), "docs-a1b2c3d4e-workspace");
     assert_eq!(claims.return_path(), "/guide?q=1");
+    let mut tracker = blobyard_testkit::FixtureExecutionTracker::new("server", "session-contracts");
+    tracker.record_case(
+        "continuation-lifetime-is-ten-minutes",
+        &serde_json::json!({"surface": "continuation"}),
+        &serde_json::json!({"lifetimeMilliseconds": claims.e - 100}),
+    );
+    tracker
+        .finish()
+        .expect("complete session contract fixtures");
 }
 
 #[test]

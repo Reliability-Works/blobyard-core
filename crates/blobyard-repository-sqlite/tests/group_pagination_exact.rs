@@ -4,9 +4,19 @@
 use blobyard_contract::{MetadataRepository, WorkspaceGroupRepository};
 use blobyard_repository_sqlite::SqliteRepository;
 use rusqlite::Connection;
+use std::collections::BTreeSet;
 
 #[test]
-fn fifty_item_group_page_keeps_its_cursor_stable_across_an_insert() {
+fn exact_group_pagination_suite_executes_every_generated_case() {
+    let mut tracker = blobyard_testkit::FixtureExecutionTracker::new("sqlite", "group-pagination");
+    fifty_item_group_page_keeps_its_cursor_stable_across_an_insert(&mut tracker);
+    fifty_item_member_page_keeps_its_cursor_stable_across_an_insert(&mut tracker);
+    tracker.finish().expect("complete pagination fixtures");
+}
+
+fn fifty_item_group_page_keeps_its_cursor_stable_across_an_insert(
+    tracker: &mut blobyard_testkit::FixtureExecutionTracker,
+) {
     let fixture = Fixture::new("groups-exact.sqlite3");
     seed_groups(&fixture.path);
     let first = fixture
@@ -23,6 +33,13 @@ fn fifty_item_group_page_keeps_its_cursor_stable_across_an_insert() {
     assert_eq!(second.items.len(), 1);
     assert_eq!(second.items[0].created_at_ms, 1_001);
     assert!(second.next_cursor.is_none());
+    let snapshot_ids = first
+        .items
+        .iter()
+        .chain(&second.items)
+        .map(|group| group.id.as_str())
+        .collect::<BTreeSet<_>>();
+    assert_eq!(snapshot_ids.len(), 51);
     let refreshed = fixture
         .repository
         .list_workspace_groups("workspace_fixture", None, 50)
@@ -31,10 +48,24 @@ fn fifty_item_group_page_keeps_its_cursor_stable_across_an_insert() {
         refreshed.items[0].id,
         "group_ffffffffffffffffffffffffffffffff"
     );
+    tracker.record_case(
+        "group-pagination-is-deterministic-and-cursor-safe",
+        &serde_json::json!({
+            "resource": "groups",
+            "pageSize": 50,
+            "concurrentInsertAfterCursor": true
+        }),
+        &serde_json::json!({
+            "ordering": ["createdAt-desc", "id-desc"],
+            "duplicates": 0,
+            "omissionsWithinSnapshot": 0
+        }),
+    );
 }
 
-#[test]
-fn fifty_item_member_page_keeps_its_cursor_stable_across_an_insert() {
+fn fifty_item_member_page_keeps_its_cursor_stable_across_an_insert(
+    tracker: &mut blobyard_testkit::FixtureExecutionTracker,
+) {
     let fixture = Fixture::new("members-exact.sqlite3");
     seed_members(&fixture.path);
     let first = fixture
@@ -56,11 +87,31 @@ fn fifty_item_member_page_keeps_its_cursor_stable_across_an_insert() {
     assert_eq!(second.items.len(), 1);
     assert_eq!(second.items[0].added_at_ms, 1_001);
     assert!(second.next_cursor.is_none());
+    let snapshot_ids = first
+        .items
+        .iter()
+        .chain(&second.items)
+        .map(|member| member.user_id.as_str())
+        .collect::<BTreeSet<_>>();
+    assert_eq!(snapshot_ids.len(), 51);
     let refreshed = fixture
         .repository
         .list_workspace_group_members("workspace_fixture", target_group(), None, 50)
         .expect("refreshed page");
     assert_eq!(refreshed.items[0].user_id, "user_page_new");
+    tracker.record_case(
+        "member-pagination-is-deterministic-and-cursor-safe",
+        &serde_json::json!({
+            "resource": "group-members",
+            "pageSize": 50,
+            "concurrentInsertAfterCursor": true
+        }),
+        &serde_json::json!({
+            "ordering": ["addedAt-desc", "userId-desc"],
+            "duplicates": 0,
+            "omissionsWithinSnapshot": 0
+        }),
+    );
 }
 
 struct Fixture {

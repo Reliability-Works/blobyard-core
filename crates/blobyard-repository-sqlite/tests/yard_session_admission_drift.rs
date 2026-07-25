@@ -44,7 +44,9 @@ fn live_admission_mismatch_and_late_failures_are_closed_atomically() {
     let repository = SqliteRepository::open(&path).expect("repository");
     seed_admission(&path);
     assert_issue_failures(&repository);
-    assert_live_admission_drift(&repository, &path);
+    let mut tracker = blobyard_testkit::FixtureExecutionTracker::new("sqlite", "admission-drift");
+    assert_live_admission_drift(&repository, &path, &mut tracker);
+    tracker.finish().expect("complete admission drift fixtures");
     assert_late_failures(&repository, &path);
 }
 
@@ -55,7 +57,6 @@ fn assert_issue_failures(repository: &SqliteRepository) {
         repository.issue_yard_exchange_code(&unknown_host),
         Err(RepositoryError::NotFound)
     );
-
     let mut wrong_yard = continuation("continuation_wrong", 'a', 10);
     "yard_other".clone_into(&mut wrong_yard.yard_id);
     assert_eq!(
@@ -70,7 +71,11 @@ fn assert_issue_failures(repository: &SqliteRepository) {
     );
 }
 
-fn assert_live_admission_drift(repository: &SqliteRepository, path: &std::path::Path) {
+fn assert_live_admission_drift(
+    repository: &SqliteRepository,
+    path: &std::path::Path,
+    tracker: &mut blobyard_testkit::FixtureExecutionTracker,
+) {
     let durable = continuation("continuation_drift", 'e', 20);
     repository
         .issue_yard_exchange_code(&durable)
@@ -85,6 +90,15 @@ fn assert_live_admission_drift(repository: &SqliteRepository, path: &std::path::
             21,
         ),
         Err(RepositoryError::NotFound)
+    );
+    tracker.record_case(
+        "environment-replacement-between-issue-and-exchange-denies",
+        &serde_json::json!({
+            "principalKind": "group",
+            "change": "environment-replaced",
+            "driftPoint": "after-code-issue"
+        }),
+        &serde_json::json!({"admitted": false, "repositoryError": "NOT_FOUND"}),
     );
     disable_replacement_environment(path);
     assert_eq!(

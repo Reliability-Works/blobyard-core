@@ -64,6 +64,10 @@ pub(crate) enum Corruption {
     GroupFinalCount,
     GroupMissingUser,
     GroupMissingFinal,
+    GroupAuditRecord,
+    GroupSuccessExtraAudit,
+    GroupFailedMutationAudit,
+    GroupFailedMutationSnapshot,
     LocalUserInitialList,
     LocalUserFreshAuthentication,
     LocalUserBoundaryAuthentication,
@@ -151,9 +155,13 @@ pub(crate) enum Corruption {
     YardSessionEnvironmentSeed,
     YardSessionAdmission,
     YardSessionExchange,
+    YardSessionMissingList,
     YardSessionList,
+    YardDirectDeliveryTarget,
+    YardDirectSessionRevoke,
     YardSessionLiveTarget,
     YardSessionPublicTarget,
+    YardSessionRevocationList,
     YardSessionFirstRevoke,
     YardSessionLogoutRevoke,
     YardSessionDeactivation,
@@ -163,6 +171,7 @@ pub(crate) struct Corrupting<'a, T> {
     inner: &'a T,
     corruption: Corruption,
     inbox_list_calls: AtomicUsize,
+    audit_list_calls: AtomicUsize,
     environment_list_calls: AtomicUsize,
 }
 
@@ -278,6 +287,7 @@ impl<'a, T> Corrupting<'a, T> {
             inner,
             corruption,
             inbox_list_calls: AtomicUsize::new(0),
+            audit_list_calls: AtomicUsize::new(0),
             environment_list_calls: AtomicUsize::new(0),
         }
     }

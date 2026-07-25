@@ -32,6 +32,17 @@ async fn group_routes_cover_the_complete_management_lifecycle() {
     let (user_id, group_id) = create_and_rename_group(&fixture).await;
     exercise_membership(&fixture, &group_id, &user_id).await;
     deactivate_and_assert_audit(&fixture, &group_id).await;
+    blobyard_testkit::assert_group_authorization_fixture_case(
+        "users-manager-can-manage-workspace-groups",
+        &serde_json::json!({
+            "action": "users:manage",
+            "expected": {"allowed": true},
+            "id": "users-manager-can-manage-workspace-groups",
+            "principalScopes": ["users:manage"],
+            "resource": {"project": "demo", "workspace": "default"}
+        }),
+    )
+    .expect("users manager authorization vector");
 }
 
 async fn create_and_rename_group(fixture: &TransferFixture) -> (String, String) {

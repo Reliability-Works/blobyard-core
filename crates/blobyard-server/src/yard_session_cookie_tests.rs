@@ -46,4 +46,20 @@ fn set_and_clear_cookie_keep_the_fixed_security_attributes() {
         clear_header().to_str().expect("ascii"),
         "__Host-blobyard-yard-session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0"
     );
+    let mut tracker = blobyard_testkit::FixtureExecutionTracker::new("server", "session-cookie");
+    tracker.record_case(
+        "session-cookie-name-is-host-scoped",
+        &serde_json::json!({"surface": "session-cookie"}),
+        &serde_json::json!({
+            "name": "__Host-blobyard-yard-session",
+            "attributes": [
+                "Secure",
+                "HttpOnly",
+                "SameSite=Lax",
+                "Path=/",
+                "Max-Age=43200"
+            ]
+        }),
+    );
+    tracker.finish().expect("complete session cookie fixtures");
 }

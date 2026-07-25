@@ -13,6 +13,28 @@ pub(super) fn production_environment(
     environments.pop().ok_or(RepositoryError::Unavailable)
 }
 
+pub(super) fn assert_production_environment(
+    repository: &dyn YardConformanceRepository,
+    yard_id: &str,
+) -> Result<(), RepositoryError> {
+    let environments = repository.list_yard_environments(yard_id)?;
+    let production_only = matches!(
+        environments.as_slice(),
+        [environment]
+            if environment.yard_id == yard_id
+                && !environment.id.is_empty()
+                && environment.name.as_str() == "production"
+                && environment.kind == blobyard_contract::YardEnvironmentKind::Production
+                && environment.status == blobyard_contract::YardEnvironmentStatus::Active
+                && environment.updated_at_ms == environment.created_at_ms
+    );
+    if production_only {
+        Ok(())
+    } else {
+        Err(RepositoryError::Unavailable)
+    }
+}
+
 pub(super) fn issue_session(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
@@ -50,12 +72,17 @@ pub(super) fn issue_session(
 }
 
 pub(super) fn new_session(id: &str, hash_character: char, at: u64) -> NewYardSession {
-    NewYardSession {
+    let session = NewYardSession {
         id: id.to_owned(),
         token_hash: hash(hash_character),
         created_at_ms: at,
         expires_at_ms: at + YARD_SESSION_LIFETIME_MS,
-    }
+    };
+    debug_assert_eq!(
+        session.expires_at_ms - session.created_at_ms,
+        YARD_SESSION_LIFETIME_MS
+    );
+    session
 }
 
 pub(super) fn set_visibility(
@@ -87,6 +114,21 @@ pub(super) fn session_revoked_event(yard_id: &str, session_id: &str, at: u64) ->
         ("yardId".to_owned(), AuditValue::String(yard_id.to_owned())),
     ];
     event
+}
+
+pub(super) fn audit_count(
+    repository: &dyn YardConformanceRepository,
+    action: &str,
+    event_id: &str,
+) -> Result<usize, RepositoryError> {
+    repository
+        .list_audit("workspace_fixture", None, 100)
+        .map(|page| {
+            page.items
+                .iter()
+                .filter(|event| event.action == action && event.id == event_id)
+                .count()
+        })
 }
 
 const fn previous_character(value: char) -> char {

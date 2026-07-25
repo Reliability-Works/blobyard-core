@@ -28,35 +28,59 @@ fn group_management_rejects_machine_principals_before_scope_evaluation() {
     );
 }
 
-pub(super) fn route_shapes() -> [(&'static str, &'static str, &'static [u8]); 7] {
+pub(super) fn route_shapes() -> [(
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static [u8],
+); 7] {
     [
-        ("GET", "/v1/groups?workspace=fixture", b""),
         (
+            "machine-cannot-list-workspace-groups",
+            "listGroups",
+            "GET",
+            "/v1/groups?workspace=fixture",
+            b"",
+        ),
+        (
+            "machine-cannot-create-workspace-group",
+            "createGroup",
             "POST",
             "/v1/groups",
             br#"{"workspace":"fixture","name":"Reviewers"}"#,
         ),
         (
+            "machine-cannot-rename-workspace-group",
+            "renameGroup",
             "POST",
             "/v1/groups/rename",
             br#"{"groupId":"group_00000000000000000000000000000001","name":"Approvers"}"#,
         ),
         (
+            "machine-cannot-list-workspace-group-members",
+            "listGroupMembers",
             "GET",
             "/v1/groups/members?groupId=group_00000000000000000000000000000001",
             b"",
         ),
         (
+            "machine-cannot-add-workspace-group-member",
+            "addGroupMember",
             "POST",
             "/v1/groups/members",
             br#"{"groupId":"group_00000000000000000000000000000001","userId":"user_fixture"}"#,
         ),
         (
+            "machine-cannot-remove-workspace-group-member",
+            "removeGroupMember",
             "POST",
             "/v1/groups/members/remove",
             br#"{"groupId":"group_00000000000000000000000000000001","userId":"user_fixture"}"#,
         ),
         (
+            "machine-cannot-deactivate-workspace-group",
+            "deactivateGroup",
             "POST",
             "/v1/groups/deactivate",
             br#"{"groupId":"group_00000000000000000000000000000001"}"#,
@@ -66,8 +90,8 @@ pub(super) fn route_shapes() -> [(&'static str, &'static str, &'static [u8]); 7]
 
 #[tokio::test]
 async fn every_group_route_rejects_missing_scope_and_malformed_inputs() {
-    let forbidden = test_seams::fixture(&["workspace:read"]);
-    for (method, path, body) in route_shapes() {
+    let forbidden = test_seams::fixture(&["object:read"]);
+    for (_fixture_id, _operation_id, method, path, body) in route_shapes() {
         assert_error(
             send(&forbidden, method, path, body, false).await,
             StatusCode::FORBIDDEN,
@@ -75,6 +99,17 @@ async fn every_group_route_rejects_missing_scope_and_malformed_inputs() {
         )
         .await;
     }
+    blobyard_testkit::assert_group_authorization_fixture_case(
+        "object-reader-cannot-manage-workspace-groups",
+        &serde_json::json!({
+            "action": "users:manage",
+            "expected": {"allowed": false, "code": "FORBIDDEN"},
+            "id": "object-reader-cannot-manage-workspace-groups",
+            "principalScopes": ["object:read"],
+            "resource": {"project": "demo", "workspace": "default"}
+        }),
+    )
+    .expect("object reader authorization vector");
     let fixture = fixture();
     for (method, path) in [
         ("GET", "/v1/groups?workspace=%"),
@@ -107,7 +142,9 @@ async fn every_group_route_rejects_missing_scope_and_malformed_inputs() {
 
 #[tokio::test]
 async fn group_routes_map_each_repository_failure() {
-    for (index, (method, path, body)) in route_shapes().into_iter().enumerate() {
+    for (index, (_fixture_id, _operation_id, method, path, body)) in
+        route_shapes().into_iter().enumerate()
+    {
         let fixture = fixture();
         let mut state = fixture.state.clone();
         let failure_index = if index < 2 { 2 } else { 1 };
@@ -162,6 +199,17 @@ async fn group_routes_conceal_missing_workspaces_and_reject_invalid_names() {
         )
         .await;
     }
+    blobyard_testkit::assert_group_authorization_fixture_case(
+        "cross-workspace-groups-are-concealed",
+        &serde_json::json!({
+            "action": "users:manage",
+            "expected": {"allowed": false, "code": "NOT_FOUND"},
+            "id": "cross-workspace-groups-are-concealed",
+            "principalScopes": ["users:manage"],
+            "resource": {"project": "demo", "workspace": "other"}
+        }),
+    )
+    .expect("cross-workspace authorization vector");
 }
 
 #[test]

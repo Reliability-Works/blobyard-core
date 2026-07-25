@@ -1,8 +1,7 @@
 use blobyard_contract::{
     LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, NewYardFile,
     RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
-    WorkspaceGroupRepository, YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus,
-    YardSessionRepository,
+    WorkspaceGroupRepository, YardDeployStatus, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -15,15 +14,20 @@ mod delivery;
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+#[path = "repository_yards_session_direct.rs"]
+mod session_direct;
 #[path = "repository_yards_session_fixtures.rs"]
 mod session_fixtures;
 #[path = "repository_yards_session_grants.rs"]
 mod session_grants;
 #[path = "repository_yards_session_groups.rs"]
 mod session_groups;
+#[path = "repository_yards_session_revocation.rs"]
+mod session_revocation;
 #[path = "repository_yards_sessions.rs"]
 mod sessions;
 
+use crate::FixtureExecutionTracker;
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
 pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 
@@ -111,7 +115,7 @@ pub fn yard_conformance(
         .version
         .id;
     let first = assert_initial_deployment(repository, fixture, &version_id)?;
-    assert_production_environment(repository, &first.yard.id)?;
+    session_fixtures::assert_production_environment(repository, &first.yard.id)?;
     if !repository
         .list_yard_environments("yard_unknown")?
         .is_empty()
@@ -120,10 +124,12 @@ pub fn yard_conformance(
     }
     sessions::create_session_user(repository)?;
     access::assert_access_controls(repository, &first, &version_id)?;
-    sessions::assert_session_controls(repository, &first, &version_id)?;
+    let mut tracker = FixtureExecutionTracker::new("testkit", "yard-sessions");
+    sessions::assert_session_controls(repository, &first, &version_id, &mut tracker)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
-    assert_yard_deletion(repository, &first)
+    assert_yard_deletion(repository, &first)?;
+    tracker.finish()
 }
 
 fn assert_initial_deployment(
@@ -148,28 +154,6 @@ fn assert_initial_deployment(
         version_id,
     )?;
     Ok(first)
-}
-
-fn assert_production_environment(
-    repository: &dyn YardConformanceRepository,
-    yard_id: &str,
-) -> Result<(), RepositoryError> {
-    let environments = repository.list_yard_environments(yard_id)?;
-    let production_only = matches!(
-        environments.as_slice(),
-        [environment]
-            if environment.yard_id == yard_id
-                && !environment.id.is_empty()
-                && environment.name.as_str() == "production"
-                && environment.kind == YardEnvironmentKind::Production
-                && environment.status == YardEnvironmentStatus::Active
-                && environment.updated_at_ms == environment.created_at_ms
-    );
-    if production_only {
-        Ok(())
-    } else {
-        Err(RepositoryError::Unavailable)
-    }
 }
 
 fn assert_replacement_and_rollback(

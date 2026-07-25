@@ -2,56 +2,120 @@ use super::{map_error, rows, yard_session_rows};
 use blobyard_contract::{RepositoryError, YardAdmission};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 
-macro_rules! selected_grant_principal_sql {
-    () => {
-        "AND (
-           (
-             g.principal_kind = 'user'
-             AND g.principal_id = u.id
-             AND u.workspace_id = y.workspace_id
-           )
-           OR (
-             g.principal_kind = 'group'
-             AND u.workspace_id = y.workspace_id
-             AND EXISTS (
-               SELECT 1
-               FROM workspace_groups wg
-               JOIN workspace_group_members gm
-                 ON gm.group_id = wg.id
-                AND gm.workspace_id = wg.workspace_id
-               WHERE wg.id = g.principal_id
-                 AND wg.workspace_id = y.workspace_id
-                 AND wg.status = 'active'
-                 AND wg.deactivated_at_ms IS NULL
-                 AND wg.created_at_ms >= 0
-                 AND wg.member_count BETWEEN 0 AND 500
-                 AND gm.workspace_id = y.workspace_id
-                 AND gm.user_id = u.id
-                 AND gm.added_at_ms >= 0
-                 AND wg.member_count = (
-                   SELECT COUNT(*)
-                   FROM workspace_group_members counted
-                   WHERE counted.group_id = wg.id
-                     AND counted.workspace_id = wg.workspace_id
-                 )
-                 AND NOT EXISTS (
-                   SELECT 1
-                   FROM workspace_group_members checked
-                   LEFT JOIN local_users checked_user
-                     ON checked_user.id = checked.user_id
-                    AND checked_user.workspace_id = checked.workspace_id
-                   WHERE checked.group_id = wg.id
-                     AND checked.workspace_id = wg.workspace_id
-                     AND (
-                       checked.added_at_ms < 0
-                       OR checked_user.id IS NULL
-                       OR checked_user.status != 'active'
-                       OR checked_user.deactivated_at_ms IS NOT NULL
-                     )
-                 )
-             )
-           )
-         )"
+macro_rules! selected_grant_admission_sql {
+    ($now:literal) => {
+        concat!(
+            "(
+              EXISTS (
+                SELECT 1
+                FROM yard_access_grants direct_grant
+                WHERE direct_grant.yard_id = y.id
+                  AND direct_grant.principal_kind = 'user'
+                  AND direct_grant.principal_id = u.id
+                  AND u.workspace_id = y.workspace_id
+                  AND direct_grant.status = 'active'
+                  AND direct_grant.revoked_at_ms IS NULL
+                  AND (direct_grant.expires_at_ms IS NULL OR direct_grant.expires_at_ms > ",
+            $now,
+            ")
+                  AND (
+                    direct_grant.environment_id IS NULL
+                    OR direct_grant.environment_id = e.id
+                  )
+                LIMIT 1
+              )
+              OR (
+                u.workspace_id = y.workspace_id
+                AND (
+                  SELECT COUNT(*)
+                  FROM (
+                    SELECT 1
+                    FROM workspace_group_members bounded_user_memberships
+                    WHERE bounded_user_memberships.user_id = u.id
+                      AND bounded_user_memberships.workspace_id = y.workspace_id
+                    LIMIT 101
+                  )
+                ) <= 100
+                AND EXISTS (
+                  SELECT 1
+                  FROM (
+                    SELECT group_id, workspace_id, user_id, added_at_ms
+                    FROM workspace_group_members selected_memberships
+                    WHERE selected_memberships.user_id = u.id
+                      AND selected_memberships.workspace_id = y.workspace_id
+                    LIMIT 101
+                  ) gm
+                  JOIN workspace_groups wg
+                    ON wg.id = gm.group_id
+                   AND wg.workspace_id = gm.workspace_id
+                  WHERE wg.status = 'active'
+                    AND wg.deactivated_at_ms IS NULL
+                    AND wg.created_at_ms >= 0
+                    AND wg.member_count BETWEEN 0 AND 500
+                    AND gm.added_at_ms >= 0
+                    AND wg.member_count = (
+                      SELECT COUNT(*)
+                      FROM (
+                        SELECT 1
+                        FROM workspace_group_members counted
+                        WHERE counted.group_id = wg.id
+                          AND counted.workspace_id = wg.workspace_id
+                        LIMIT 501
+                      )
+                    )
+                    AND NOT EXISTS (
+                      SELECT 1
+                      FROM (
+                        SELECT user_id, workspace_id, added_at_ms
+                        FROM workspace_group_members bounded_members
+                        WHERE bounded_members.group_id = wg.id
+                          AND bounded_members.workspace_id = wg.workspace_id
+                        LIMIT 501
+                      ) checked
+                      LEFT JOIN local_users checked_user
+                        ON checked_user.id = checked.user_id
+                       AND checked_user.workspace_id = checked.workspace_id
+                      WHERE checked.added_at_ms < 0
+                         OR checked_user.id IS NULL
+                         OR checked_user.status != 'active'
+                         OR checked_user.deactivated_at_ms IS NOT NULL
+                    )
+                    AND EXISTS (
+                      SELECT 1
+                      FROM yard_access_grants group_grant
+                      WHERE group_grant.yard_id = y.id
+                        AND group_grant.principal_kind = 'group'
+                        AND group_grant.principal_id = wg.id
+                        AND group_grant.status = 'active'
+                        AND group_grant.revoked_at_ms IS NULL
+                        AND (
+                          group_grant.expires_at_ms IS NULL
+                          OR group_grant.expires_at_ms > ",
+            $now,
+            "
+                        )
+                        AND (
+                          group_grant.environment_id IS NULL
+                          OR group_grant.environment_id = e.id
+                        )
+                        AND (
+                          SELECT COUNT(*)
+                          FROM (
+                            SELECT 1
+                            FROM yard_access_grants bounded_group_grants
+                            WHERE bounded_group_grants.principal_kind = 'group'
+                              AND bounded_group_grants.principal_id = wg.id
+                              AND bounded_group_grants.status = 'active'
+                            LIMIT 501
+                          )
+                        ) <= 500
+                      LIMIT 1
+                    )
+                  LIMIT 1
+                )
+              )
+            )"
+        )
     };
 }
 
@@ -92,17 +156,9 @@ pub(super) fn evaluate(
                  OR (p.visibility = 'workspace' AND u.workspace_id = y.workspace_id)
                  OR (
                    p.visibility IN ('selected', 'authenticated-link')
-                   AND EXISTS (
-                     SELECT 1 FROM yard_access_grants g
-                     WHERE g.yard_id = y.id
-                       AND g.status = 'active'
-                       AND g.revoked_at_ms IS NULL
-                       AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?3)
-                       AND (g.environment_id IS NULL OR g.environment_id = e.id)
-                       ",
-                selected_grant_principal_sql!(),
+                   AND ",
+                selected_grant_admission_sql!("?3"),
                 "
-                     )
                  )
                )
              LIMIT 1"
@@ -154,17 +210,9 @@ pub(super) fn session_id(
                  OR (?4 = 'workspace' AND u.workspace_id = y.workspace_id)
                  OR (
                    ?4 IN ('selected', 'authenticated-link')
-                   AND EXISTS (
-                     SELECT 1 FROM yard_access_grants g
-                     WHERE g.yard_id = s.yard_id
-                       AND g.status = 'active'
-                       AND g.revoked_at_ms IS NULL
-                       AND (g.environment_id IS NULL OR g.environment_id = s.environment_id)
-                       AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?5)
-                       ",
-                selected_grant_principal_sql!(),
+                   AND ",
+                selected_grant_admission_sql!("?5"),
                 "
-                     )
                  )
                )"
             ),

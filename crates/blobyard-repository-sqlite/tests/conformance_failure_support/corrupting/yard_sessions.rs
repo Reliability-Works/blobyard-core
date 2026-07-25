@@ -52,10 +52,21 @@ impl<T: YardSessionRepository> YardSessionRepository for Corrupting<'_, T> {
         yard_id: &str,
     ) -> Result<Vec<YardSessionListing>, RepositoryError> {
         self.inner.list_yard_sessions(yard_id).map(|mut listings| {
-            if matches!(self.corruption, Corruption::YardSessionList)
-                && let Some(listing) = listings.first_mut()
+            if matches!(self.corruption, Corruption::YardSessionMissingList) {
+                listings.retain(|listing| listing.session.id != "yardsession_fixture");
+            } else if matches!(self.corruption, Corruption::YardSessionList)
+                && let Some(listing) = listings
+                    .iter_mut()
+                    .find(|listing| listing.session.id == "yardsession_fixture")
             {
                 listing.user_display_name.push_str("_corrupt");
+            } else if matches!(self.corruption, Corruption::YardSessionRevocationList)
+                && let Some(listing) = listings.iter_mut().find(|listing| {
+                    listing.session.id == "yardsession_fixture"
+                        && listing.session.revoked_at_ms.is_some()
+                })
+            {
+                listing.session.revoked_at_ms = None;
             } else if matches!(self.corruption, Corruption::YardSessionDeactivation)
                 && let Some(listing) = listings
                     .iter_mut()
@@ -93,12 +104,10 @@ impl<T: YardSessionRepository> YardSessionRepository for Corrupting<'_, T> {
     ) -> Result<bool, RepositoryError> {
         self.inner
             .revoke_yard_session_by_token(token_hash, host_label, now_ms)
-            .map(|revoked| {
-                if matches!(self.corruption, Corruption::YardSessionLogoutRevoke) && now_ms == 151 {
-                    !revoked
-                } else {
-                    revoked
-                }
+            .map(|revoked| match self.corruption {
+                Corruption::YardDirectSessionRevoke if now_ms == 112 => !revoked,
+                Corruption::YardSessionLogoutRevoke if now_ms == 151 => !revoked,
+                _ => revoked,
             })
     }
 

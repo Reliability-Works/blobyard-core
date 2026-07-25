@@ -66,7 +66,11 @@ fn require_group_grant_capacity(
 ) -> Result<(), RepositoryError> {
     let count: i64 = transaction
         .query_row(
-            "SELECT COUNT(*) FROM yard_access_grants WHERE principal_kind = 'group' AND principal_id = ?1 AND status = 'active'",
+            "SELECT COUNT(*) FROM (
+               SELECT 1 FROM yard_access_grants
+               WHERE principal_kind = 'group' AND principal_id = ?1 AND status = 'active'
+               LIMIT 501
+             )",
             [group_id],
             |row| row.get(0),
         )
