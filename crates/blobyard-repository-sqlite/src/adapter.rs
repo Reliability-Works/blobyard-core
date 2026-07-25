@@ -82,6 +82,8 @@ mod workspace_groups;
 mod yard_access;
 #[path = "yard_access_principals.rs"]
 mod yard_access_principals;
+#[path = "yard_access_record_validation.rs"]
+mod yard_access_record_validation;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]

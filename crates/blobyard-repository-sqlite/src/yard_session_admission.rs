@@ -2,6 +2,28 @@ use super::{map_error, rows, yard_session_rows};
 use blobyard_contract::{RepositoryError, YardAdmission};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 
+macro_rules! selected_grant_principal_sql {
+    () => {
+        "AND (
+           (
+             g.principal_kind = 'user'
+             AND g.principal_id = u.id
+             AND u.workspace_id = y.workspace_id
+           )
+           OR (
+             g.principal_kind = 'group'
+             AND u.workspace_id = y.workspace_id
+             AND EXISTS (
+               SELECT 1 FROM active_workspace_group_members gm
+               WHERE gm.group_id = g.principal_id
+                 AND gm.workspace_id = y.workspace_id
+                 AND gm.user_id = u.id
+             )
+           )
+         )"
+    };
+}
+
 pub(super) fn evaluate(
     connection: &Connection,
     host_label: &str,
@@ -12,7 +34,8 @@ pub(super) fn evaluate(
     rows::validate_text(user_id)?;
     connection
         .query_row(
-            "SELECT y.id, e.id, y.workspace_id
+            concat!(
+                "SELECT y.id, e.id, y.workspace_id
              FROM web_yards y
              JOIN yard_environments e
                ON e.yard_id = y.id AND e.kind = 'production' AND e.status = 'active'
@@ -41,22 +64,14 @@ pub(super) fn evaluate(
                        AND g.status = 'active'
                        AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?3)
                        AND (g.environment_id IS NULL OR g.environment_id = e.id)
-                       AND (
-                         (g.principal_kind = 'user' AND g.principal_id = u.id)
-                         OR (
-                           g.principal_kind = 'group'
-                           AND EXISTS (
-                             SELECT 1 FROM active_workspace_group_members gm
-                             WHERE gm.group_id = g.principal_id
-                               AND gm.workspace_id = y.workspace_id
-                               AND gm.user_id = u.id
-                           )
-                         )
-                       )
-                   )
+                       ",
+                selected_grant_principal_sql!(),
+                "
+                     )
                  )
                )
-             LIMIT 1",
+             LIMIT 1"
+            ),
             params![host_label, user_id, now_ms],
             admission,
         )
@@ -81,7 +96,8 @@ pub(super) fn session_id(
 ) -> Result<Option<String>, RepositoryError> {
     connection
         .query_row(
-            "SELECT s.id
+            concat!(
+                "SELECT s.id
              FROM yard_sessions s
              JOIN local_users u ON u.id = s.user_id AND u.status = 'active'
              JOIN web_yards y ON y.id = s.yard_id AND y.status = 'active'
@@ -106,21 +122,13 @@ pub(super) fn session_id(
                        AND g.status = 'active'
                        AND (g.environment_id IS NULL OR g.environment_id = s.environment_id)
                        AND (g.expires_at_ms IS NULL OR g.expires_at_ms > ?5)
-                       AND (
-                         (g.principal_kind = 'user' AND g.principal_id = s.user_id)
-                         OR (
-                           g.principal_kind = 'group'
-                           AND EXISTS (
-                             SELECT 1 FROM active_workspace_group_members gm
-                             WHERE gm.group_id = g.principal_id
-                               AND gm.workspace_id = y.workspace_id
-                               AND gm.user_id = s.user_id
-                           )
-                         )
-                       )
-                   )
+                       ",
+                selected_grant_principal_sql!(),
+                "
+                     )
                  )
-               )",
+               )"
+            ),
             params![token_hash, host_label, yard_id, visibility, now_ms],
             |row| row.get(0),
         )

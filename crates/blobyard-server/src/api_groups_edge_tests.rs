@@ -17,6 +17,17 @@ use super::tests::fixture;
 
 const GROUP_ID: &str = "group_00000000000000000000000000000001";
 
+#[test]
+fn group_management_rejects_machine_principals_before_scope_evaluation() {
+    let fixture = test_seams::fixture(&["users:manage"]);
+    let mut machine = Principal(fixture.principal);
+    machine.0.id = "machine_fixture".to_owned();
+    assert_eq!(
+        crate::test_support::error_status(crate::api_local_users::require_users_manage(&machine)),
+        StatusCode::FORBIDDEN
+    );
+}
+
 fn route_shapes() -> [(&'static str, &'static str, &'static [u8]); 7] {
     [
         ("GET", "/v1/groups?workspace=fixture", b""),

@@ -13,8 +13,8 @@ pub(super) fn by_id(
     connection
         .query_row(
             &format!(
-                "SELECT {} FROM workspace_groups WHERE id = ?1 AND workspace_id = ?2",
-                workspace_group_rows::GROUP_COLUMNS
+                "SELECT {} FROM workspace_groups g JOIN workspaces w ON w.id = g.workspace_id WHERE g.id = ?1 AND g.workspace_id = ?2",
+                workspace_group_rows::QUALIFIED_GROUP_COLUMNS
             ),
             params![group_id, workspace_id],
             workspace_group_rows::group,
@@ -58,8 +58,8 @@ pub(super) fn list_groups(
     }
     let mut statement = connection
         .prepare(&format!(
-            "SELECT {} FROM workspace_groups WHERE workspace_id = ?1 AND (?2 IS NULL OR created_at_ms < ?2 OR (created_at_ms = ?2 AND id < ?3)) ORDER BY created_at_ms DESC, id DESC LIMIT ?4",
-            workspace_group_rows::GROUP_COLUMNS
+            "SELECT {} FROM workspace_groups g JOIN workspaces w ON w.id = g.workspace_id WHERE g.workspace_id = ?1 AND (?2 IS NULL OR g.created_at_ms < ?2 OR (g.created_at_ms = ?2 AND g.id < ?3)) ORDER BY g.created_at_ms DESC, g.id DESC LIMIT ?4",
+            workspace_group_rows::QUALIFIED_GROUP_COLUMNS
         ))
         .map_err(map_error)?;
     let rows = statement.query_map(
@@ -93,8 +93,8 @@ pub(super) fn list_members(
     }
     let mut statement = connection
         .prepare(&format!(
-            "SELECT {} FROM workspace_group_members WHERE group_id = ?1 AND workspace_id = ?2 AND (?3 IS NULL OR added_at_ms < ?3 OR (added_at_ms = ?3 AND user_id < ?4)) ORDER BY added_at_ms DESC, user_id DESC LIMIT ?5",
-            workspace_group_rows::MEMBER_COLUMNS
+            "SELECT {} FROM workspace_group_members m JOIN local_users u ON u.id = m.user_id AND u.workspace_id = m.workspace_id AND u.status = 'active' WHERE m.group_id = ?1 AND m.workspace_id = ?2 AND (?3 IS NULL OR m.added_at_ms < ?3 OR (m.added_at_ms = ?3 AND m.user_id < ?4)) ORDER BY m.added_at_ms DESC, m.user_id DESC LIMIT ?5",
+            workspace_group_rows::QUALIFIED_MEMBER_COLUMNS
         ))
         .map_err(map_error)?;
     let rows = statement.query_map(

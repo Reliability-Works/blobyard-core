@@ -340,6 +340,7 @@ name = "blobyard-cli"
 version = "0.1.12"
 dependencies = [
  "blobyard-api-client",
+ "blobyard-contract",
  "blobyard-core",
  "blobyard-mcp",
  "clap",

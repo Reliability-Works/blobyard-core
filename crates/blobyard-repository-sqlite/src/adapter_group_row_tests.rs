@@ -44,6 +44,13 @@ fn group_row_rejects_every_malformed_column() {
         "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'active', 0, -1, NULL",
         "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'active', 0, 1, 'two'",
         "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'active', 0, 1, -1",
+        "'group_invalid', 'workspace_fixture', 'Reviewers', 'active', 0, 1, NULL",
+        "'group_00000000000000000000000000000001', '', 'Reviewers', 'active', 0, 1, NULL",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', 'x', 'active', 0, 1, NULL",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'active', 0, 1, 2",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'deactivated', 0, 1, NULL",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'deactivated', 1, 1, 2",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', 'Reviewers', 'deactivated', 0, 2, 1",
     ] {
         assert!(group_row(malformed).is_err(), "{malformed}");
     }
@@ -60,6 +67,9 @@ fn member_row_rejects_every_malformed_column() {
         "'group_00000000000000000000000000000001', 'workspace_fixture', x'01', 1",
         "'group_00000000000000000000000000000001', 'workspace_fixture', 'user_fixture', 'one'",
         "'group_00000000000000000000000000000001', 'workspace_fixture', 'user_fixture', -1",
+        "'group_invalid', 'workspace_fixture', 'user_fixture', 1",
+        "'group_00000000000000000000000000000001', '', 'user_fixture', 1",
+        "'group_00000000000000000000000000000001', 'workspace_fixture', '', 1",
     ] {
         assert!(member_row(malformed).is_err(), "{malformed}");
     }

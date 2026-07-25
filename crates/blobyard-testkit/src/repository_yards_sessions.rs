@@ -96,6 +96,44 @@ fn exchange_session(
     repository: &dyn YardConformanceRepository,
     first: &YardStartRecord,
 ) -> Result<blobyard_contract::YardSessionRecord, RepositoryError> {
+    let continuation = issue_selected_continuation(repository, first)?;
+    assert_exchange_visibility_drift(repository, first, &continuation)?;
+    let new_session_record = new_session("yardsession_fixture", 'c', 108);
+    let exchange = repository.exchange_yard_session_code(
+        &continuation.code_hash,
+        &first.yard.host_label,
+        &new_session_record,
+        &YardSessionAuditContext {
+            id: "audit_session_issued".to_owned(),
+            request_id: "request_session_issued".to_owned(),
+        },
+        108,
+    )?;
+    if exchange.return_path != continuation.return_path
+        || exchange.session.id != new_session_record.id
+        || exchange.session.token_hash != new_session_record.token_hash
+        || exchange.session.user_id != continuation.user_id
+        || repository.exchange_yard_session_code(
+            &continuation.code_hash,
+            &first.yard.host_label,
+            &new_session("yardsession_replay", 'd', 109),
+            &YardSessionAuditContext {
+                id: "audit_session_replay".to_owned(),
+                request_id: "request_session_replay".to_owned(),
+            },
+            109,
+        ) != Err(RepositoryError::NotFound)
+        || audit_count(repository, "yard.session_issued", "audit_session_issued")? != 1
+    {
+        return Err(RepositoryError::Unavailable);
+    }
+    Ok(exchange.session)
+}
+
+fn issue_selected_continuation(
+    repository: &dyn YardConformanceRepository,
+    first: &YardStartRecord,
+) -> Result<NewYardContinuation, RepositoryError> {
     let admission =
         repository.evaluate_yard_admission(&first.yard.host_label, "user_fixture", 104)?;
     let continuation = NewYardContinuation {
@@ -114,36 +152,42 @@ fn exchange_session(
     if repository.issue_yard_exchange_code(&continuation) != Err(RepositoryError::Conflict) {
         return Err(RepositoryError::Unavailable);
     }
-    let new_session_record = new_session("yardsession_fixture", 'c', 106);
-    let exchange = repository.exchange_yard_session_code(
-        &continuation.code_hash,
-        &first.yard.host_label,
-        &new_session_record,
-        &YardSessionAuditContext {
-            id: "audit_session_issued".to_owned(),
-            request_id: "request_session_issued".to_owned(),
-        },
+    Ok(continuation)
+}
+
+fn assert_exchange_visibility_drift(
+    repository: &dyn YardConformanceRepository,
+    first: &YardStartRecord,
+    continuation: &NewYardContinuation,
+) -> Result<(), RepositoryError> {
+    set_visibility(
+        repository,
+        &first.yard.id,
+        "selected",
+        YardVisibility::Owner,
         106,
     )?;
-    if exchange.return_path != continuation.return_path
-        || exchange.session.id != new_session_record.id
-        || exchange.session.token_hash != new_session_record.token_hash
-        || exchange.session.user_id != continuation.user_id
-        || repository.exchange_yard_session_code(
-            &continuation.code_hash,
-            &first.yard.host_label,
-            &new_session("yardsession_replay", 'd', 107),
-            &YardSessionAuditContext {
-                id: "audit_session_replay".to_owned(),
-                request_id: "request_session_replay".to_owned(),
-            },
-            107,
-        ) != Err(RepositoryError::NotFound)
-        || audit_count(repository, "yard.session_issued", "audit_session_issued")? != 1
+    if repository.exchange_yard_session_code(
+        &continuation.code_hash,
+        &first.yard.host_label,
+        &new_session("yardsession_visibility_drift", 'd', 106),
+        &YardSessionAuditContext {
+            id: "audit_session_visibility_drift".to_owned(),
+            request_id: "request_session_visibility_drift".to_owned(),
+        },
+        106,
+    ) != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);
     }
-    Ok(exchange.session)
+    set_visibility(
+        repository,
+        &first.yard.id,
+        "owner",
+        YardVisibility::Selected,
+        107,
+    )?;
+    Ok(())
 }
 
 fn assert_host_binding_and_touch(

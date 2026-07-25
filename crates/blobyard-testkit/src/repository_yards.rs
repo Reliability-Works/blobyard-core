@@ -1,7 +1,8 @@
 use blobyard_contract::{
-    LifecycleRepository, LocalUserRepository, NewAuditEvent, NewYardFile, RepositoryError,
-    TransferRepository, WebYardRepository, WebYardStatus, WorkspaceGroupRepository,
-    YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus, YardSessionRepository,
+    LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, NewYardFile,
+    RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
+    WorkspaceGroupRepository, YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus,
+    YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -16,17 +17,19 @@ mod fixture_tests;
 mod fixtures;
 #[path = "repository_yards_session_fixtures.rs"]
 mod session_fixtures;
+#[path = "repository_yards_session_grants.rs"]
+mod session_grants;
 #[path = "repository_yards_session_groups.rs"]
 mod session_groups;
 #[path = "repository_yards_sessions.rs"]
 mod sessions;
-use delivery::{assert_deleted_yard_cannot_finalise, assert_delivery, prune_history};
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
 pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 
 /// Combined repository surface needed by Web Yard conformance.
 pub trait YardConformanceRepository:
     WebYardRepository
+    + MetadataRepository
     + TransferRepository
     + LocalUserRepository
     + WorkspaceGroupRepository
@@ -37,6 +40,7 @@ pub trait YardConformanceRepository:
 
 impl<
     T: WebYardRepository
+        + MetadataRepository
         + TransferRepository
         + LocalUserRepository
         + WorkspaceGroupRepository
@@ -136,8 +140,8 @@ fn assert_initial_deployment(
         return Err(RepositoryError::Unavailable);
     }
     let first_live = finalise(repository, &first.deploy.id, version_id, 5, 10)?;
-    assert_delivery(repository, &first_live.yard.host_label, version_id)?;
-    assert_delivery(
+    delivery::assert_delivery(repository, &first_live.yard.host_label, version_id)?;
+    delivery::assert_delivery(
         repository,
         &first_live.deploy.deployment_host_label,
         version_id,
@@ -229,8 +233,8 @@ fn assert_failure_and_history(
     {
         return Err(RepositoryError::Unavailable);
     }
-    prune_history(repository, &fixture.history_name, version_id)?;
-    assert_deleted_yard_cannot_finalise(repository, &fixture.inactive_name, version_id)
+    delivery::prune_history(repository, &fixture.history_name, version_id)?;
+    delivery::assert_deleted_yard_cannot_finalise(repository, &fixture.inactive_name, version_id)
 }
 
 fn assert_yard_deletion(

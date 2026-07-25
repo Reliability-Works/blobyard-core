@@ -233,7 +233,7 @@ fn require_active_environment(
     }
 }
 
-fn encode_roles(roles: &[String]) -> Result<String, RepositoryError> {
+pub(super) fn encode_roles(roles: &[String]) -> Result<String, RepositoryError> {
     let mut seen = HashSet::with_capacity(roles.len());
     let valid = roles.len() <= MAXIMUM_ROLES
         && roles.iter().all(|role| {
@@ -270,7 +270,7 @@ pub(super) fn grant(row: &Row<'_>) -> rusqlite::Result<YardAccessGrantRecord> {
     let principal_kind: String = row.get(3)?;
     let app_roles: String = row.get(5)?;
     let status: String = row.get(6)?;
-    Ok(YardAccessGrantRecord {
+    let record = YardAccessGrantRecord {
         id: row.get(0)?,
         yard_id: row.get(1)?,
         environment_id: row.get(2)?,
@@ -283,7 +283,9 @@ pub(super) fn grant(row: &Row<'_>) -> rusqlite::Result<YardAccessGrantRecord> {
         created_by_principal: row.get(8)?,
         expires_at_ms: yard_rows::optional_u64(row.get(9)?)?,
         revoked_at_ms: yard_rows::optional_u64(row.get(10)?)?,
-    })
+    };
+    super::yard_access_record_validation::validate(&record)?;
+    Ok(record)
 }
 
 #[cfg(test)]
