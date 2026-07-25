@@ -9,6 +9,7 @@ import {
 } from "../../../sdk/typescript/src/index.mjs";
 import { loadComposedContract } from "../contract-files.mjs";
 import { operationOwnership } from "../operation-ownership.mjs";
+import { CLOUD_YARD_OPERATIONS, LOCAL_USER_OPERATIONS } from "./deployment-fixtures.mjs";
 
 const document = await loadComposedContract(process.cwd());
 const ownership = JSON.parse(readFileSync("openapi/operation-ownership.json", "utf8"));
@@ -122,7 +123,7 @@ test("self-hosted clients reject hosted extensions before fetch", async () => {
   );
 });
 
-test("cloud clients reject self-hosted bootstrap before fetch", async () => {
+test("cloud clients reject self-hosted identity operations before fetch", async () => {
   let calls = 0;
   const client = new BlobYardClient({
     fetch: async () => {
@@ -130,14 +131,20 @@ test("cloud clients reject self-hosted bootstrap before fetch", async () => {
       throw new Error("fetch must not run");
     },
   });
-  await assert.rejects(
-    () => client.operations.exchangeBootstrapToken({ body: {} }),
-    (error) =>
-      error instanceof BlobYardApiError &&
-      error.code === "OPERATION_UNSUPPORTED" &&
-      error.requestId === null &&
-      error.status === null,
-  );
+  for (const operation of ["exchangeBootstrapToken", ...LOCAL_USER_OPERATIONS]) {
+    await assert.rejects(
+      () => client.operations[operation](),
+      (error) =>
+        error instanceof BlobYardApiError &&
+        error.code === "OPERATION_UNSUPPORTED" &&
+        error.requestId === null &&
+        error.status === null,
+    );
+    assert.deepEqual(operations[operation].deployments, ["self-hosted"]);
+  }
+  for (const operation of CLOUD_YARD_OPERATIONS) {
+    assert.deepEqual(operations[operation].deployments, ["cloud", "self-hosted"]);
+  }
   assert.equal(calls, 0);
 });
 

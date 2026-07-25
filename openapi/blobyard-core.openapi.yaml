@@ -1504,6 +1504,8 @@ paths:
   /users:
     get:
       operationId: listLocalUsers
+      x-blobyard-deployments:
+        - self-hosted
       description:
         Lists local users in one workspace with active sign-in key prefixes. Human sessions only.
       responses:
@@ -1530,6 +1532,8 @@ paths:
             $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
     post:
       operationId: createLocalUser
+      x-blobyard-deployments:
+        - self-hosted
       description: Creates one local user and returns the raw sign-in key once. Human sessions only.
       responses:
         "200":
@@ -1556,6 +1560,8 @@ paths:
   /users/reset-key:
     post:
       operationId: resetLocalUserLoginKey
+      x-blobyard-deployments:
+        - self-hosted
       description:
         Revokes every active sign-in key for one user and returns the replacement key once. Human
         sessions only.
@@ -1584,6 +1590,8 @@ paths:
   /users/deactivate:
     post:
       operationId: deactivateLocalUser
+      x-blobyard-deployments:
+        - self-hosted
       description:
         Deactivates one local user and revokes every active sign-in key. Human sessions only.
       responses:

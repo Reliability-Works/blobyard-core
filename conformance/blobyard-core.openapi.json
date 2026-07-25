@@ -1493,6 +1493,7 @@
           "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
         },
         "x-blobyard-cli": { "command": ["users", "list"] },
+        "x-blobyard-deployments": ["self-hosted"],
         "x-blobyard-mcp": { "tool": "blobyard_list_local_users" },
         "x-blobyard-sdk": true
       },
@@ -1523,6 +1524,7 @@
           "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
         },
         "x-blobyard-cli": { "command": ["users", "create"] },
+        "x-blobyard-deployments": ["self-hosted"],
         "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
         "x-blobyard-sdk": true
       }
@@ -1555,6 +1557,7 @@
           "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
         },
         "x-blobyard-cli": { "command": ["users", "deactivate"] },
+        "x-blobyard-deployments": ["self-hosted"],
         "x-blobyard-mcp": { "tool": "blobyard_deactivate_local_user" },
         "x-blobyard-sdk": true
       }
@@ -1587,6 +1590,7 @@
           "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
         },
         "x-blobyard-cli": { "command": ["users", "reset-key"] },
+        "x-blobyard-deployments": ["self-hosted"],
         "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
         "x-blobyard-sdk": true
       }

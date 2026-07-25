@@ -3,6 +3,23 @@ use crate::OperationAvailability;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+const CLOUD_YARD_ENDPOINTS: [Endpoint; 7] = [
+    Endpoint::ListYardEnvironments,
+    Endpoint::GetYardAccess,
+    Endpoint::SetYardVisibility,
+    Endpoint::GrantYardAccess,
+    Endpoint::RevokeYardAccess,
+    Endpoint::ListYardSessions,
+    Endpoint::RevokeYardSession,
+];
+
+const LOCAL_USER_ENDPOINTS: [Endpoint; 4] = [
+    Endpoint::CreateLocalUser,
+    Endpoint::ListLocalUsers,
+    Endpoint::ResetLocalUserLoginKey,
+    Endpoint::DeactivateLocalUser,
+];
+
 #[test]
 fn runtime_public_inventory_excludes_only_internal_routes() {
     let public = std::hint::black_box(public_endpoints());
@@ -28,6 +45,15 @@ fn runtime_ownership_matches_the_canonical_operation_manifest()
         Endpoint::ExchangeBootstrapToken.availability(),
         OperationAvailability::SelfHostedOnly
     );
+    for endpoint in LOCAL_USER_ENDPOINTS {
+        assert_eq!(
+            endpoint.availability(),
+            OperationAvailability::SelfHostedOnly
+        );
+    }
+    for endpoint in CLOUD_YARD_ENDPOINTS {
+        assert_eq!(endpoint.availability(), OperationAvailability::Core);
+    }
     assert_eq!(
         Endpoint::ResolvePreview.availability(),
         OperationAvailability::Internal

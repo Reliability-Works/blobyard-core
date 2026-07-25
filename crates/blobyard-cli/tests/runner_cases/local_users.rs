@@ -16,7 +16,7 @@ fn fixture_login_key() -> String {
 
 #[tokio::test]
 async fn users_list_uses_the_scoped_versioned_endpoint() {
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &["blobyard", "users", "list", "--workspace", "team"],
         vec![ok(serde_json::json!({ "users": [] }), "req_users_list")],
         Some("token"),
@@ -42,7 +42,7 @@ async fn users_create_sends_the_exact_body_and_reveals_the_key_once() {
         .strip_suffix('b')
         .expect("fixture key suffix")
         .to_owned();
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &[
             "blobyard",
             "--workspace",
@@ -87,7 +87,7 @@ async fn users_create_sends_the_exact_body_and_reveals_the_key_once() {
 
 #[tokio::test]
 async fn users_create_without_email_omits_the_optional_field() {
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &[
             "blobyard",
             "--workspace",
@@ -122,7 +122,7 @@ async fn users_create_without_email_omits_the_optional_field() {
 
 #[tokio::test]
 async fn users_reset_key_reveals_the_replacement_once() {
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &["blobyard", "users", "reset-key", "user_1"],
         vec![ok(
             serde_json::json!({
@@ -152,7 +152,7 @@ async fn users_reset_key_reveals_the_replacement_once() {
 
 #[tokio::test]
 async fn users_deactivate_confirms_with_a_stable_human_result() {
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &["blobyard", "users", "deactivate", "user_1"],
         vec![ok(serde_json::json!({}), "req_users_deactivate")],
         Some("token"),
@@ -190,7 +190,7 @@ async fn users_commands_fail_closed_before_any_request() {
             "missing-at",
         ],
     ] {
-        let fixture = Fixture::new(&args, vec![], Some("token"), None);
+        let fixture = Fixture::self_hosted(&args, vec![], Some("token"), None);
         let error = fixture
             .runner
             .execute(&fixture.command)
@@ -203,7 +203,7 @@ async fn users_commands_fail_closed_before_any_request() {
 
 #[tokio::test]
 async fn users_key_reveal_requires_the_raw_key_in_the_response() {
-    let fixture = Fixture::new(
+    let fixture = Fixture::self_hosted(
         &["blobyard", "users", "reset-key", "user_1"],
         vec![ok(serde_json::json!({}), "req_users_reset")],
         Some("token"),
@@ -223,7 +223,7 @@ async fn users_commands_preserve_remote_failures() {
         &["blobyard", "--workspace", "team", "users", "list"][..],
         &["blobyard", "users", "reset-key", "user_1"][..],
     ] {
-        let fixture = Fixture::new(
+        let fixture = Fixture::self_hosted(
             args,
             vec![api_failure(ErrorCode::Forbidden, "req_users_forbidden")],
             Some("token"),

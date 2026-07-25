@@ -171,7 +171,7 @@ export const operations = Object.freeze({
     successStatus: 200,
   }),
   createLocalUser: Object.freeze({
-    deployments: Object.freeze(["cloud", "self-hosted"]),
+    deployments: Object.freeze(["self-hosted"]),
     idempotency: false,
     idempotencyRequired: false,
     method: "POST",
@@ -288,7 +288,7 @@ export const operations = Object.freeze({
     successStatus: 200,
   }),
   deactivateLocalUser: Object.freeze({
-    deployments: Object.freeze(["cloud", "self-hosted"]),
+    deployments: Object.freeze(["self-hosted"]),
     idempotency: false,
     idempotencyRequired: false,
     method: "POST",
@@ -626,7 +626,7 @@ export const operations = Object.freeze({
     successStatus: 200,
   }),
   listLocalUsers: Object.freeze({
-    deployments: Object.freeze(["cloud", "self-hosted"]),
+    deployments: Object.freeze(["self-hosted"]),
     idempotency: false,
     idempotencyRequired: false,
     method: "GET",
@@ -938,7 +938,7 @@ export const operations = Object.freeze({
     successStatus: 200,
   }),
   resetLocalUserLoginKey: Object.freeze({
-    deployments: Object.freeze(["cloud", "self-hosted"]),
+    deployments: Object.freeze(["self-hosted"]),
     idempotency: false,
     idempotencyRequired: false,
     method: "POST",

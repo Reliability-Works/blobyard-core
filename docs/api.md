@@ -209,12 +209,14 @@ and session identifiers.
 | POST   | `/v1/users/reset-key`  | Replace every active sign-in key at once (human sessions only)    |
 | POST   | `/v1/users/deactivate` | Deactivate a user and revoke its keys (human sessions only)       |
 
-Local users are the self-hosted identities behind non-public Yard access. All four operations
-require the operator scope `users:manage` and reject machine principals. Raw `byuk_` sign-in keys
-are returned exactly once from create and reset-key, stored only as SHA-256 digests, and never
-appear in listings, audit events, or logs; listings expose only the non-secret key prefix.
-Deactivation is a tombstone: it revokes every active sign-in key and Yard browser session in the
-same transaction, removes every group membership, and answers `CONFLICT` when repeated.
+Local users are the self-hosted identities behind non-public Yard access. These four operations are
+available only in self-hosted Core and are omitted from the Blob Yard Cloud contract, where Better
+Auth owns identity. They require the operator scope `users:manage` and reject machine principals.
+Raw `byuk_` sign-in keys are returned exactly once from create and reset-key, stored only as SHA-256
+digests, and never appear in listings, audit events, or logs; listings expose only the non-secret
+key prefix. Deactivation is a tombstone: it revokes every active sign-in key and Yard browser
+session in the same transaction, removes every group membership, and answers `CONFLICT` when
+repeated.
 
 ## Workspace group routes
 
