@@ -27,6 +27,8 @@ mod contract_tests;
 mod deploy_edge_tests;
 #[path = "yards_tests/failures.rs"]
 mod failure_tests;
+#[path = "yards_tests/identity_journey.rs"]
+mod identity_journey_tests;
 #[path = "yards_tests/journey.rs"]
 mod journey_tests;
 #[path = "yards_tests/lifecycle_edges.rs"]

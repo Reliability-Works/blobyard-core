@@ -7,7 +7,7 @@ pub(super) fn dns_label(value: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
 }
 
-pub(super) fn role_name(value: &str) -> bool {
+pub(crate) fn role_name(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 32
         && value.as_bytes()[0].is_ascii_lowercase()
@@ -16,7 +16,7 @@ pub(super) fn role_name(value: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
 }
 
-pub(super) fn permission(value: &str) -> bool {
+pub(crate) fn permission(value: &str) -> bool {
     value.len() <= 128 && dotted_identifier(value)
 }
 

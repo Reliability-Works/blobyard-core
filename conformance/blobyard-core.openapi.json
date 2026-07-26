@@ -1814,6 +1814,38 @@
         "x-blobyard-sdk": true
       }
     },
+    "/yards/access/roles": {
+      "post": {
+        "description": "Replaces one active Yard access grant's declared application roles.",
+        "operationId": "setYardAccessRoles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardAccessRolesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardAccessRolesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "set-roles"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_yard_access_roles" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/yards/access/visibility": {
       "post": {
         "description": "Sets one Yard's visibility policy. Human sessions only.",
@@ -1843,6 +1875,66 @@
         },
         "x-blobyard-cli": { "command": ["access", "set-visibility"] },
         "x-blobyard-mcp": { "tool": "blobyard_set_yard_visibility" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/application-policy": {
+      "get": {
+        "description": "Reads one Yard's current approved application policy.",
+        "operationId": "getYardApplicationPolicy",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetYardApplicationPolicySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["application-policy", "get"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_yard_application_policy" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Approves and activates one canonical Yard application policy.",
+        "operationId": "setYardApplicationPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardApplicationPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardApplicationPolicySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["application-policy", "set"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_yard_application_policy" },
         "x-blobyard-sdk": true
       }
     },
@@ -2031,6 +2123,105 @@
         },
         "x-blobyard-cli": { "command": ["env", "list"] },
         "x-blobyard-mcp": { "tool": "blobyard_list_yard_environments" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/management-roles": {
+      "get": {
+        "description": "Lists one deterministic page of Yard management-role assignments.",
+        "operationId": "listYardManagementRoles",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardManagementRolesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["management-roles", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_management_roles" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/management-roles/revoke": {
+      "post": {
+        "description": "Revokes one Yard management-role assignment.",
+        "operationId": "revokeYardManagementRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardManagementRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardManagementRoleSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["management-roles", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_management_role" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/management-roles/set": {
+      "post": {
+        "description": "Creates or changes one Yard management-role assignment.",
+        "operationId": "setYardManagementRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardManagementRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardManagementRoleSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["management-roles", "set"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_yard_management_role" },
         "x-blobyard-sdk": true
       }
     },

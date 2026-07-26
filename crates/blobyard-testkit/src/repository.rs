@@ -22,7 +22,8 @@ pub use previews::{PreviewConformanceRepository, preview_conformance, preview_ev
 pub use sharing::{share_event, sharing_conformance};
 pub use yards::{
     YardConformanceFixture, YardConformanceRepository, granted_event, new_grant, revoked_event,
-    visibility_event, yard_conformance, yard_event,
+    visibility_event, yard_application_policy, yard_conformance, yard_event, yard_owner_event,
+    yard_policy_event,
 };
 
 /// Runs the deterministic metadata repository contract against one empty adapter.
@@ -47,7 +48,7 @@ fn repository_conformance_validated(
     repository: &dyn MetadataRepository,
     fixtures: ValidatedNamespaceFixtures,
 ) -> Result<(), RepositoryError> {
-    if repository.schema_version()? != 21 {
+    if repository.schema_version()? != 22 {
         return Err(RepositoryError::SchemaTooNew);
     }
     let project = namespace_conformance(repository, fixtures)?;

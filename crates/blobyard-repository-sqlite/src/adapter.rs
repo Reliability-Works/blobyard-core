@@ -84,14 +84,24 @@ mod yard_access;
 mod yard_access_principals;
 #[path = "yard_access_record_validation.rs"]
 mod yard_access_record_validation;
+#[path = "yard_application_policy.rs"]
+mod yard_application_policy;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]
 mod yard_finalise;
 #[path = "yard_history.rs"]
 mod yard_history;
+#[path = "yard_identity.rs"]
+mod yard_identity;
+#[path = "yard_identity_grants.rs"]
+mod yard_identity_grants;
+#[path = "yard_identity_resolution.rs"]
+mod yard_identity_resolution;
 #[path = "yard_lifecycle.rs"]
 mod yard_lifecycle;
+#[path = "yard_management_roles.rs"]
+mod yard_management_roles;
 #[path = "yard_queries.rs"]
 mod yard_queries;
 #[path = "yard_rows.rs"]

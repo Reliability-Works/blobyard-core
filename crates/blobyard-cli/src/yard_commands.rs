@@ -56,6 +56,8 @@ pub enum AccessCommand {
     Grant(GrantAccessArgs),
     /// Revoke one Web Yard access grant.
     Revoke(RevokeAccessArgs),
+    /// Replace one Web Yard access grant's application roles.
+    SetRoles(SetAccessRolesArgs),
 }
 
 /// Arguments for `blobyard access list`.
@@ -109,6 +111,101 @@ pub struct RevokeAccessArgs {
     /// Stable grant identifier.
     #[arg(value_name = "GRANT_ID")]
     pub grant_id: String,
+}
+
+/// Arguments for `blobyard access set-roles`.
+#[derive(Clone, Debug, Args)]
+pub struct SetAccessRolesArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Stable grant identifier.
+    #[arg(value_name = "GRANT_ID")]
+    pub grant_id: String,
+    /// Replacement application role. Repeatable; omit all roles to clear.
+    #[arg(long = "role", value_name = "ROLE")]
+    pub roles: Vec<String>,
+}
+
+/// Yard management-role operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum ManagementRolesCommand {
+    /// List Yard management-role assignments.
+    List(ManagementRolesListArgs),
+    /// Create or change one Yard management-role assignment.
+    Set(SetManagementRoleArgs),
+    /// Revoke one Yard management-role assignment.
+    Revoke(RevokeManagementRoleArgs),
+}
+
+/// Arguments for `blobyard management-roles list`.
+#[derive(Clone, Debug, Args)]
+pub struct ManagementRolesListArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Opaque continuation cursor.
+    #[arg(long, value_name = "CURSOR")]
+    pub cursor: Option<String>,
+}
+
+/// Arguments for `blobyard management-roles set`.
+#[derive(Clone, Debug, Args)]
+pub struct SetManagementRoleArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Stable active local-user identifier.
+    #[arg(value_name = "USER_ID")]
+    pub user_id: String,
+    /// Management role: owner, admin, developer, or auditor.
+    #[arg(value_name = "ROLE")]
+    pub role: String,
+}
+
+/// Arguments for `blobyard management-roles revoke`.
+#[derive(Clone, Debug, Args)]
+pub struct RevokeManagementRoleArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Stable active local-user identifier.
+    #[arg(value_name = "USER_ID")]
+    pub user_id: String,
+}
+
+/// Yard application-policy operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum ApplicationPolicyCommand {
+    /// Read the current approved policy.
+    Get(ApplicationPolicyGetArgs),
+    /// Approve a policy graph from a JSON file.
+    Set(ApplicationPolicySetArgs),
+}
+
+/// Arguments for `blobyard application-policy get`.
+#[derive(Clone, Debug, Args)]
+pub struct ApplicationPolicyGetArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+}
+
+/// Arguments for `blobyard application-policy set`.
+#[derive(Clone, Debug, Args)]
+pub struct ApplicationPolicySetArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// JSON file containing `defaultRole` and `roles`.
+    #[arg(long, value_name = "FILE", required_unless_present = "policy_json")]
+    pub policy: Option<PathBuf>,
+    /// Inline policy JSON used by MCP and non-interactive callers.
+    #[arg(long, value_name = "JSON", conflicts_with = "policy")]
+    pub policy_json: Option<String>,
+    /// SHA-256 digest of the canonical source manifest.
+    #[arg(long, value_name = "DIGEST")]
+    pub source_manifest_digest: String,
 }
 
 /// Web Yard browser-session operations.

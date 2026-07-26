@@ -2,7 +2,73 @@ use blobyard_contract::{
     AuditValue, NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy,
     YardAccessPrincipalKind,
 };
-use blobyard_core::Slug;
+use blobyard_core::{ApplicationPolicyGraph, ApplicationRoleDefinition, Slug};
+use std::collections::BTreeMap;
+
+/// Builds the deterministic approved policy used by Yard repository conformance.
+#[must_use]
+pub fn yard_application_policy() -> ApplicationPolicyGraph {
+    ApplicationPolicyGraph {
+        default_role: None,
+        roles: BTreeMap::from([
+            (
+                "editor".to_owned(),
+                ApplicationRoleDefinition {
+                    inherits: vec!["viewer".to_owned()],
+                    permissions: vec!["content.write".to_owned()],
+                },
+            ),
+            (
+                "viewer".to_owned(),
+                ApplicationRoleDefinition {
+                    inherits: Vec::new(),
+                    permissions: vec!["content.read".to_owned()],
+                },
+            ),
+        ]),
+    }
+}
+
+/// Builds the deterministic owner-assignment audit used by Yard conformance.
+#[must_use]
+pub fn yard_owner_event(yard_id: &str, user_id: &str, at: u64) -> NewAuditEvent {
+    let mut event = event(
+        "yard.management_role_set",
+        "yard_management_role",
+        "yardId",
+        yard_id,
+        at,
+    );
+    event.metadata.extend([
+        ("from".to_owned(), AuditValue::Null),
+        ("to".to_owned(), AuditValue::String("owner".to_owned())),
+        ("userId".to_owned(), AuditValue::String(user_id.to_owned())),
+    ]);
+    event
+}
+
+/// Builds the deterministic policy-approval audit used by Yard conformance.
+#[must_use]
+pub fn yard_policy_event(yard_id: &str, digest: &str, at: u64) -> NewAuditEvent {
+    let mut event = event(
+        "yard.application_policy_set",
+        "yard_application_policy",
+        "yardId",
+        yard_id,
+        at,
+    );
+    event.metadata.extend([
+        ("fromRevision".to_owned(), AuditValue::Null),
+        ("permissionCount".to_owned(), AuditValue::Number(2)),
+        ("roleCount".to_owned(), AuditValue::Number(2)),
+        (
+            "sourceManifestDigest".to_owned(),
+            AuditValue::String(digest.to_owned()),
+        ),
+        ("toRevision".to_owned(), AuditValue::Number(1)),
+    ]);
+    event
+}
 
 pub(super) fn new_yard(name: &Slug, number: u64) -> NewWebYard {
     NewWebYard {

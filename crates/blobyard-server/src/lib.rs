@@ -164,6 +164,7 @@ repository_surface!(
     blobyard_contract::InboxRepository,
     blobyard_contract::PreviewRepository,
     blobyard_contract::WebYardRepository,
+    blobyard_contract::YardIdentityRepository,
 );
 
 fn normalize_origin(value: &str) -> Result<String, ServerError> {

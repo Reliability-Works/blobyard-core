@@ -12,6 +12,12 @@ fn started(repository: &crate::adapter::SqliteRepository, name: &str, number: u6
         &deploy(&candidate, number, false),
         &created(&candidate.id, number),
     ));
+    crate::adapter::tests::approve_access_policy(
+        repository,
+        &candidate.id,
+        "user_fixture",
+        number + 100,
+    );
     candidate
 }
 
@@ -74,12 +80,14 @@ fn grants_validate_roles_and_conceal_foreign_yards() {
     crowded.app_roles = (0..17).map(|index| format!("role{index}")).collect();
     let mut unnamed = new_grant("grant_invalid", &docs.id, None, None, 3);
     unnamed.id.clear();
-    for invalid in [crowded, unnamed] {
-        assert_eq!(
-            repository.insert_yard_access_grant(&invalid, &granted_event(&docs.id, &invalid, 3)),
-            Err(RepositoryError::InvalidInput)
-        );
-    }
+    assert_eq!(
+        repository.insert_yard_access_grant(&crowded, &granted_event(&docs.id, &crowded, 3)),
+        Err(RepositoryError::Conflict)
+    );
+    assert_eq!(
+        repository.insert_yard_access_grant(&unnamed, &granted_event(&docs.id, &unnamed, 3)),
+        Err(RepositoryError::InvalidInput)
+    );
 }
 
 #[test]

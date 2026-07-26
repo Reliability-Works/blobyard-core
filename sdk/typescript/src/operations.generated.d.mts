@@ -624,6 +624,85 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly YardManagementRole: "owner" | "admin" | "developer" | "auditor";
+  readonly YardManagementRoleAssignment: Readonly<{
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly role: Schemas["YardManagementRole"];
+    readonly updatedAt: Schemas["IsoTimestamp"];
+    readonly userId: Schemas["Identifier"];
+  }>;
+  readonly ListYardManagementRolesQuery: Readonly<{
+    readonly cursor?: Schemas["Cursor"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly ListYardManagementRolesResult: Readonly<{
+    readonly items: readonly Schemas["YardManagementRoleAssignment"][];
+    readonly nextCursor: Schemas["Cursor"] | null;
+  }>;
+  readonly ListYardManagementRolesSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListYardManagementRolesResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly SetYardManagementRoleRequest: Readonly<{
+    readonly role: Schemas["YardManagementRole"];
+    readonly userId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly SetYardManagementRoleResult: Schemas["YardManagementRoleAssignment"];
+  readonly SetYardManagementRoleSuccessEnvelope: Readonly<{
+    readonly data: Schemas["SetYardManagementRoleResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RevokeYardManagementRoleRequest: Readonly<{
+    readonly userId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly RevokeYardManagementRoleResult: Schemas["EmptyResult"];
+  readonly RevokeYardManagementRoleSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RevokeYardManagementRoleResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly ApplicationRoleName: string;
+  readonly ApplicationPermission: string;
+  readonly ApplicationRoleDefinition: Readonly<{
+    readonly inherits: readonly Schemas["ApplicationRoleName"][];
+    readonly permissions: readonly Schemas["ApplicationPermission"][];
+  }>;
+  readonly ApplicationRoleDefinitionMap: Readonly<
+    Record<string, Schemas["ApplicationRoleDefinition"]>
+  >;
+  readonly YardApplicationPolicy: Readonly<{
+    readonly approvedAt: Schemas["IsoTimestamp"];
+    readonly approvedByPrincipalId: Schemas["Identifier"];
+    readonly defaultRole: Schemas["ApplicationRoleName"] | null;
+    readonly revision: number;
+    readonly roles: Schemas["ApplicationRoleDefinitionMap"];
+    readonly sourceManifestDigest: string;
+  }>;
+  readonly GetYardApplicationPolicyQuery: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly GetYardApplicationPolicyResult: Readonly<{
+    readonly policy: Schemas["YardApplicationPolicy"] | null;
+  }>;
+  readonly GetYardApplicationPolicySuccessEnvelope: Readonly<{
+    readonly data: Schemas["GetYardApplicationPolicyResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly SetYardApplicationPolicyRequest: Readonly<{
+    readonly defaultRole: Schemas["ApplicationRoleName"] | null;
+    readonly roles: Schemas["ApplicationRoleDefinitionMap"];
+    readonly sourceManifestDigest: string;
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly SetYardApplicationPolicyResult: Schemas["GetYardApplicationPolicyResult"];
+  readonly SetYardApplicationPolicySuccessEnvelope: Readonly<{
+    readonly data: Schemas["SetYardApplicationPolicyResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly YardVisibility:
     "public" | "owner" | "selected" | "workspace" | "authenticated-link" | "any-authenticated";
   readonly YardAccessPrincipalKind: "user" | "group" | "guest-invite" | "link";
@@ -677,6 +756,19 @@ export interface Schemas {
   readonly RevokeYardAccessResult: Schemas["EmptyResult"];
   readonly RevokeYardAccessSuccessEnvelope: Readonly<{
     readonly data: Schemas["RevokeYardAccessResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly SetYardAccessRolesRequest: Readonly<{
+    readonly appRoles: readonly Schemas["ApplicationRoleName"][];
+    readonly grantId: Schemas["Identifier"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly SetYardAccessRolesResult: Readonly<{
+    readonly grant: Schemas["YardAccessGrantSummary"];
+  }>;
+  readonly SetYardAccessRolesSuccessEnvelope: Readonly<{
+    readonly data: Schemas["SetYardAccessRolesResult"];
     readonly ok: true;
     readonly requestId: string;
   }>;
@@ -1491,6 +1583,10 @@ export type GetYardAccessInput = Readonly<{
   readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly signal?: AbortSignal;
 }>;
+export type GetYardApplicationPolicyInput = Readonly<{
+  readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly signal?: AbortSignal;
+}>;
 export type GrantYardAccessInput = Readonly<{
   readonly body: Schemas["GrantYardAccessRequest"];
   readonly signal?: AbortSignal;
@@ -1588,6 +1684,13 @@ export type ListWorkspacesInput = Readonly<{
 }>;
 export type ListYardEnvironmentsInput = Readonly<{
   readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
+  readonly signal?: AbortSignal;
+}>;
+export type ListYardManagementRolesInput = Readonly<{
+  readonly query: Readonly<{
+    readonly yardId: Schemas["Identifier"];
+    readonly cursor?: Schemas["Cursor"];
+  }>;
   readonly signal?: AbortSignal;
 }>;
 export type ListYardSessionsInput = Readonly<{
@@ -1697,6 +1800,10 @@ export type RevokeYardAccessInput = Readonly<{
   readonly body: Schemas["RevokeYardAccessRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type RevokeYardManagementRoleInput = Readonly<{
+  readonly body: Schemas["RevokeYardManagementRoleRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type RevokeYardSessionInput = Readonly<{
   readonly body: Schemas["RevokeYardSessionRequest"];
   readonly signal?: AbortSignal;
@@ -1707,6 +1814,18 @@ export type RollbackWebYardInput = Readonly<{
 }>;
 export type SetRetentionInput = Readonly<{
   readonly body: Schemas["SetRetentionRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type SetYardAccessRolesInput = Readonly<{
+  readonly body: Schemas["SetYardAccessRolesRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type SetYardApplicationPolicyInput = Readonly<{
+  readonly body: Schemas["SetYardApplicationPolicyRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type SetYardManagementRoleInput = Readonly<{
+  readonly body: Schemas["SetYardManagementRoleRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type SetYardVisibilityInput = Readonly<{
@@ -2183,6 +2302,18 @@ export declare const operations: Readonly<{
     risk: "read";
     successStatus: 200;
   }>;
+  readonly getYardApplicationPolicy: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/application-policy";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "read";
+    successStatus: 200;
+  }>;
   readonly grantYardAccess: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2421,6 +2552,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly ["yard:manage"];
     requiredUserScopes: readonly ["yard:read"];
     risk: "read";
+    successStatus: 200;
+  }>;
+  readonly listYardManagementRoles: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/management-roles";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
     successStatus: 200;
   }>;
   readonly listYardSessions: Readonly<{
@@ -2735,6 +2878,18 @@ export declare const operations: Readonly<{
     risk: "destructive";
     successStatus: 200;
   }>;
+  readonly revokeYardManagementRole: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/management-roles/revoke";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "destructive";
+    successStatus: 200;
+  }>;
   readonly revokeYardSession: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2769,6 +2924,42 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["retention:manage"];
     risk: "write";
+    successStatus: 200;
+  }>;
+  readonly setYardAccessRoles: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/access/roles";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
+  readonly setYardApplicationPolicy: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/application-policy";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
+  readonly setYardManagementRole: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/management-roles/set";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
     successStatus: 200;
   }>;
   readonly setYardVisibility: Readonly<{
@@ -2869,6 +3060,7 @@ export type RequiredOperationId =
   | "getRetentionOverview"
   | "getUploadStatus"
   | "getYardAccess"
+  | "getYardApplicationPolicy"
   | "grantYardAccess"
   | "listAuditEvents"
   | "listCiTrusts"
@@ -2885,6 +3077,7 @@ export type RequiredOperationId =
   | "listWebYardDeploys"
   | "listWebYards"
   | "listYardEnvironments"
+  | "listYardManagementRoles"
   | "listYardSessions"
   | "logoutCliSession"
   | "pollDeviceLogin"
@@ -2911,9 +3104,13 @@ export type RequiredOperationId =
   | "revokePreview"
   | "revokeShare"
   | "revokeYardAccess"
+  | "revokeYardManagementRole"
   | "revokeYardSession"
   | "rollbackWebYard"
   | "setRetention"
+  | "setYardAccessRoles"
+  | "setYardApplicationPolicy"
+  | "setYardManagementRole"
   | "setYardVisibility"
   | "startDeviceLogin"
   | "startWebYardDeploy"
@@ -2966,6 +3163,7 @@ export interface OperationInputs {
   readonly getRetentionOverview: GetRetentionOverviewInput;
   readonly getUploadStatus: GetUploadStatusInput;
   readonly getYardAccess: GetYardAccessInput;
+  readonly getYardApplicationPolicy: GetYardApplicationPolicyInput;
   readonly grantYardAccess: GrantYardAccessInput;
   readonly health: HealthInput;
   readonly listApiTokens: ListApiTokensInput;
@@ -2986,6 +3184,7 @@ export interface OperationInputs {
   readonly listWebYards: ListWebYardsInput;
   readonly listWorkspaces: ListWorkspacesInput;
   readonly listYardEnvironments: ListYardEnvironmentsInput;
+  readonly listYardManagementRoles: ListYardManagementRolesInput;
   readonly listYardSessions: ListYardSessionsInput;
   readonly logoutCliSession: LogoutCliSessionInput;
   readonly pollDeviceLogin: PollDeviceLoginInput;
@@ -3012,9 +3211,13 @@ export interface OperationInputs {
   readonly revokePreview: RevokePreviewInput;
   readonly revokeShare: RevokeShareInput;
   readonly revokeYardAccess: RevokeYardAccessInput;
+  readonly revokeYardManagementRole: RevokeYardManagementRoleInput;
   readonly revokeYardSession: RevokeYardSessionInput;
   readonly rollbackWebYard: RollbackWebYardInput;
   readonly setRetention: SetRetentionInput;
+  readonly setYardAccessRoles: SetYardAccessRolesInput;
+  readonly setYardApplicationPolicy: SetYardApplicationPolicyInput;
+  readonly setYardManagementRole: SetYardManagementRoleInput;
   readonly setYardVisibility: SetYardVisibilityInput;
   readonly startDeviceLogin: StartDeviceLoginInput;
   readonly startWebYardDeploy: StartWebYardDeployInput;
@@ -3060,6 +3263,7 @@ export interface OperationOutputs {
   readonly getRetentionOverview: Schemas["GetRetentionOverviewResult"];
   readonly getUploadStatus: Schemas["GetUploadStatusResult"];
   readonly getYardAccess: Schemas["GetYardAccessResult"];
+  readonly getYardApplicationPolicy: Schemas["GetYardApplicationPolicyResult"];
   readonly grantYardAccess: Schemas["GrantYardAccessResult"];
   readonly health: Schemas["HealthResult"];
   readonly listApiTokens: Schemas["ListApiTokensResult"];
@@ -3080,6 +3284,7 @@ export interface OperationOutputs {
   readonly listWebYards: Schemas["ListWebYardsResult"];
   readonly listWorkspaces: Schemas["ListWorkspacesResult"];
   readonly listYardEnvironments: Schemas["ListYardEnvironmentsResult"];
+  readonly listYardManagementRoles: Schemas["ListYardManagementRolesResult"];
   readonly listYardSessions: Schemas["ListYardSessionsResult"];
   readonly logoutCliSession: Schemas["LogoutCliSessionResult"];
   readonly pollDeviceLogin: Schemas["PollDeviceLoginResult"];
@@ -3106,9 +3311,13 @@ export interface OperationOutputs {
   readonly revokePreview: Schemas["RevokePreviewResult"];
   readonly revokeShare: Schemas["RevokeShareResult"];
   readonly revokeYardAccess: Schemas["RevokeYardAccessResult"];
+  readonly revokeYardManagementRole: Schemas["RevokeYardManagementRoleResult"];
   readonly revokeYardSession: Schemas["RevokeYardSessionResult"];
   readonly rollbackWebYard: Schemas["RollbackWebYardResult"];
   readonly setRetention: Schemas["SetRetentionResult"];
+  readonly setYardAccessRoles: Schemas["SetYardAccessRolesResult"];
+  readonly setYardApplicationPolicy: Schemas["SetYardApplicationPolicyResult"];
+  readonly setYardManagementRole: Schemas["SetYardManagementRoleResult"];
   readonly setYardVisibility: Schemas["SetYardVisibilityResult"];
   readonly startDeviceLogin: Schemas["StartDeviceLoginResult"];
   readonly startWebYardDeploy: Schemas["StartWebYardDeployResult"];
@@ -3214,6 +3423,9 @@ export interface OperationBindings {
   readonly getYardAccess: (
     options: GetYardAccessInput,
   ) => Promise<OperationOutputs["getYardAccess"]>;
+  readonly getYardApplicationPolicy: (
+    options: GetYardApplicationPolicyInput,
+  ) => Promise<OperationOutputs["getYardApplicationPolicy"]>;
   readonly grantYardAccess: (
     options: GrantYardAccessInput,
   ) => Promise<OperationOutputs["grantYardAccess"]>;
@@ -3252,6 +3464,9 @@ export interface OperationBindings {
   readonly listYardEnvironments: (
     options: ListYardEnvironmentsInput,
   ) => Promise<OperationOutputs["listYardEnvironments"]>;
+  readonly listYardManagementRoles: (
+    options: ListYardManagementRolesInput,
+  ) => Promise<OperationOutputs["listYardManagementRoles"]>;
   readonly listYardSessions: (
     options: ListYardSessionsInput,
   ) => Promise<OperationOutputs["listYardSessions"]>;
@@ -3316,6 +3531,9 @@ export interface OperationBindings {
   readonly revokeYardAccess: (
     options: RevokeYardAccessInput,
   ) => Promise<OperationOutputs["revokeYardAccess"]>;
+  readonly revokeYardManagementRole: (
+    options: RevokeYardManagementRoleInput,
+  ) => Promise<OperationOutputs["revokeYardManagementRole"]>;
   readonly revokeYardSession: (
     options: RevokeYardSessionInput,
   ) => Promise<OperationOutputs["revokeYardSession"]>;
@@ -3323,6 +3541,15 @@ export interface OperationBindings {
     options: RollbackWebYardInput,
   ) => Promise<OperationOutputs["rollbackWebYard"]>;
   readonly setRetention: (options: SetRetentionInput) => Promise<OperationOutputs["setRetention"]>;
+  readonly setYardAccessRoles: (
+    options: SetYardAccessRolesInput,
+  ) => Promise<OperationOutputs["setYardAccessRoles"]>;
+  readonly setYardApplicationPolicy: (
+    options: SetYardApplicationPolicyInput,
+  ) => Promise<OperationOutputs["setYardApplicationPolicy"]>;
+  readonly setYardManagementRole: (
+    options: SetYardManagementRoleInput,
+  ) => Promise<OperationOutputs["setYardManagementRole"]>;
   readonly setYardVisibility: (
     options: SetYardVisibilityInput,
   ) => Promise<OperationOutputs["setYardVisibility"]>;

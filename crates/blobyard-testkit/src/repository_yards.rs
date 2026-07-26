@@ -1,7 +1,7 @@
 use blobyard_contract::{
     LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, NewYardFile,
     RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
-    WorkspaceGroupRepository, YardDeployStatus, YardSessionRepository,
+    WorkspaceGroupRepository, YardDeployStatus, YardIdentityRepository, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -14,6 +14,8 @@ mod delivery;
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+#[path = "repository_yards_policy.rs"]
+mod policy;
 #[path = "repository_yards_session_direct.rs"]
 mod session_direct;
 #[path = "repository_yards_session_fixtures.rs"]
@@ -29,7 +31,10 @@ mod sessions;
 
 use crate::FixtureExecutionTracker;
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
-pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
+pub use fixtures::{
+    granted_event, new_grant, revoked_event, visibility_event, yard_application_policy,
+    yard_owner_event, yard_policy_event,
+};
 
 /// Combined repository surface needed by Web Yard conformance.
 pub trait YardConformanceRepository:
@@ -39,6 +44,7 @@ pub trait YardConformanceRepository:
     + LocalUserRepository
     + WorkspaceGroupRepository
     + YardSessionRepository
+    + YardIdentityRepository
     + LifecycleRepository
 {
 }
@@ -50,6 +56,7 @@ impl<
         + LocalUserRepository
         + WorkspaceGroupRepository
         + YardSessionRepository
+        + YardIdentityRepository
         + LifecycleRepository,
 > YardConformanceRepository for T
 {
@@ -123,6 +130,7 @@ pub fn yard_conformance(
         return Err(RepositoryError::Unavailable);
     }
     sessions::create_session_user(repository)?;
+    policy::approve_application_policy(repository, &first.yard.id)?;
     access::assert_access_controls(repository, &first, &version_id)?;
     let mut tracker = FixtureExecutionTracker::new("testkit", "yard-sessions");
     sessions::assert_session_controls(repository, &first, &version_id, &mut tracker)?;

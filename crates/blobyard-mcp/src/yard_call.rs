@@ -7,6 +7,9 @@ use crate::Scope;
 use crate::tool_call::{optional_bool, required_string};
 use serde_json::{Map, Value};
 
+#[path = "yard_identity_call.rs"]
+mod identity;
+
 /// A validated MCP operation for public Web Yards.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WebYardToolCall {
@@ -84,6 +87,66 @@ pub enum WebYardToolCall {
         /// Stable grant identifier.
         grant_id: String,
     },
+    /// List Yard management-role assignments.
+    ListYardManagementRoles {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Optional continuation cursor.
+        cursor: Option<String>,
+    },
+    /// Create or change one Yard management-role assignment.
+    SetYardManagementRole {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable active local-user identifier.
+        user_id: String,
+        /// Replacement management role.
+        role: String,
+    },
+    /// Revoke one Yard management-role assignment.
+    RevokeYardManagementRole {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable active local-user identifier.
+        user_id: String,
+    },
+    /// Read one Yard's approved application policy.
+    GetYardApplicationPolicy {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
+    /// Approve one Yard application policy.
+    SetYardApplicationPolicy {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Canonical source-manifest digest.
+        source_manifest_digest: String,
+        /// Optional declared default role.
+        default_role: Option<String>,
+        /// Role-definition map.
+        roles: Value,
+    },
+    /// Replace one Yard access grant's application roles.
+    SetYardAccessRoles {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable active grant identifier.
+        grant_id: String,
+        /// Replacement application roles.
+        roles: Vec<String>,
+    },
     /// List retained browser sessions for one Web Yard.
     ListYardSessions {
         /// CLI scope overrides.
@@ -129,6 +192,12 @@ pub(crate) fn is_yard_tool(name: &str) -> bool {
             | "set_yard_visibility"
             | "grant_yard_access"
             | "revoke_yard_access"
+            | "list_yard_management_roles"
+            | "set_yard_management_role"
+            | "revoke_yard_management_role"
+            | "get_yard_application_policy"
+            | "set_yard_application_policy"
+            | "set_yard_access_roles"
             | "list_yard_sessions"
             | "revoke_yard_session"
             | "rollback_web_yard"
@@ -142,6 +211,9 @@ pub(crate) fn parse_yard_call(
     scope: Scope,
 ) -> Result<WebYardToolCall, String> {
     reject_unknown(name, arguments)?;
+    if identity::is_tool(name) {
+        return identity::parse(name, arguments, scope);
+    }
     match name {
         "deploy_web_yard" => parse_deploy(scope, arguments),
         "list_web_yards" => Ok(WebYardToolCall::ListWebYards { scope }),
@@ -190,13 +262,7 @@ pub(crate) fn parse_yard_call(
             yard: required_string(arguments, "yard")?,
             deploy_id: crate::optional_string(arguments, "deploy_id")?,
         }),
-        "delete_web_yard" => {
-            require_true(arguments, "confirm")?;
-            Ok(WebYardToolCall::DeleteWebYard {
-                scope,
-                yard: required_string(arguments, "yard")?,
-            })
-        }
+        "delete_web_yard" => parse_delete(scope, arguments),
         _ => Err(format!("unknown tool: {name}")),
     }
 }
@@ -212,7 +278,18 @@ fn parse_deploy(scope: Scope, arguments: &Map<String, Value>) -> Result<WebYardT
     })
 }
 
-fn string_list(arguments: &Map<String, Value>, key: &str) -> Result<Vec<String>, String> {
+fn parse_delete(scope: Scope, arguments: &Map<String, Value>) -> Result<WebYardToolCall, String> {
+    require_true(arguments, "confirm")?;
+    Ok(WebYardToolCall::DeleteWebYard {
+        scope,
+        yard: required_string(arguments, "yard")?,
+    })
+}
+
+pub(super) fn string_list(
+    arguments: &Map<String, Value>,
+    key: &str,
+) -> Result<Vec<String>, String> {
     let Some(value) = arguments.get(key) else {
         return Ok(Vec::new());
     };
@@ -244,7 +321,15 @@ fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), Stri
         "list_yard_deploys"
         | "list_yard_environments"
         | "get_yard_access"
+        | "get_yard_application_policy"
         | "list_yard_sessions" => &["yard"],
+        "list_yard_management_roles" => &["yard", "cursor"],
+        "set_yard_management_role" => &["yard", "user_id", "role"],
+        "revoke_yard_management_role" => &["yard", "user_id"],
+        "set_yard_application_policy" => {
+            &["yard", "source_manifest_digest", "default_role", "roles"]
+        }
+        "set_yard_access_roles" => &["yard", "grant_id", "roles"],
         "set_yard_visibility" => &["yard", "visibility"],
         "grant_yard_access" => &[
             "yard",

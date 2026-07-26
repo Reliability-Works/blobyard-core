@@ -65,6 +65,18 @@ auditor) controls who configures and operates the Yard. The application plane (r
 declares, granted only by the Yard owner) controls what an authenticated user may do inside the
 application. Application code checks permissions; it can never grant them.
 
+Core keeps control-plane authentication separate from Yard users. A non-machine operator credential
+with `yard:manage` may bootstrap the first `owner` assignment only while a Yard has no owner.
+Assignments target active local users in the same workspace, and changing or revoking the last owner
+fails without mutation. The new management-role and application-policy operations reject CI
+principals; existing deployment operations retain their existing CI authorization.
+
+An approved application policy stores the canonical manifest role graph, its deterministic
+transitive role and permission closure, the source-manifest digest, and a monotonically increasing
+revision. New non-empty access-grant role arrays must name roles in that policy. Legacy unknown
+roles remain visible in management reads but contribute no runtime authority. An empty role array
+continues to grant admission without requiring an application policy.
+
 Application code receives a sanitised identity, never platform account cookies or management
 credentials:
 
@@ -94,6 +106,13 @@ identity origin sets no cookie, so each Yard sign-in re-enters the key. Session 
 server-side on every delivery request; client-supplied tenant identifiers are never authorization
 inputs, and revocation takes effect on the next request. Guest invitations, link redemption, and
 OIDC identities arrive in later slices.
+
+`GET /.blobyard/session/identity` returns the exact live `YardIdentity` on a private Yard origin
+when the host-bound session remains admitted. It accepts only same-origin `GET`, emits
+`Content-Type: application/json` and `Cache-Control: private, no-store`, and never exposes cookies
+or other credential material. Public Yards, unknown hosts, invalid sessions, denied users, and
+unsupported methods receive the same concealed not-found response, with no sign-in redirect and no
+permissive CORS headers.
 
 ## Workspace groups
 

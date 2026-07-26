@@ -155,22 +155,28 @@ that classification explicitly and excludes it from SDK, CLI, and MCP generation
 
 ## Web Yard routes
 
-| Method | Route                         | Purpose                                                 |
-| ------ | ----------------------------- | ------------------------------------------------------- |
-| POST   | `/v1/yards/deploys/start`     | Reserve a deployment and its immutable manifest         |
-| POST   | `/v1/yards/deploys/finalise`  | Verify uploaded files and make the deployment live      |
-| POST   | `/v1/yards/deploys/fail`      | Record a bounded deployment failure                     |
-| GET    | `/v1/yards`                   | List named Yards in the authorized project              |
-| GET    | `/v1/yards/deploys`           | List immutable deployment history for one Yard          |
-| GET    | `/v1/yards/environments`      | List active environments for one Yard                   |
-| GET    | `/v1/yards/access`            | Read one Yard's effective visibility and active grants  |
-| POST   | `/v1/yards/access/visibility` | Set one Yard's visibility policy (human sessions only)  |
-| POST   | `/v1/yards/access/grant`      | Grant one principal scoped access (human sessions only) |
-| POST   | `/v1/yards/access/revoke`     | Revoke one access grant (human sessions only)           |
-| GET    | `/v1/yards/sessions`          | List retained browser sessions for one Yard             |
-| POST   | `/v1/yards/sessions/revoke`   | Revoke one browser session (human sessions only)        |
-| POST   | `/v1/yards/rollback`          | Repoint the stable host to an earlier ready deployment  |
-| POST   | `/v1/yards/delete`            | Delete a Yard and schedule its retained bytes           |
+| Method | Route                               | Purpose                                                 |
+| ------ | ----------------------------------- | ------------------------------------------------------- |
+| POST   | `/v1/yards/deploys/start`           | Reserve a deployment and its immutable manifest         |
+| POST   | `/v1/yards/deploys/finalise`        | Verify uploaded files and make the deployment live      |
+| POST   | `/v1/yards/deploys/fail`            | Record a bounded deployment failure                     |
+| GET    | `/v1/yards`                         | List named Yards in the authorized project              |
+| GET    | `/v1/yards/deploys`                 | List immutable deployment history for one Yard          |
+| GET    | `/v1/yards/environments`            | List active environments for one Yard                   |
+| GET    | `/v1/yards/access`                  | Read one Yard's effective visibility and active grants  |
+| POST   | `/v1/yards/access/visibility`       | Set one Yard's visibility policy (human sessions only)  |
+| POST   | `/v1/yards/access/grant`            | Grant one principal scoped access (human sessions only) |
+| POST   | `/v1/yards/access/roles`            | Replace one active grant's application roles            |
+| POST   | `/v1/yards/access/revoke`           | Revoke one access grant (human sessions only)           |
+| GET    | `/v1/yards/management-roles`        | List Yard-scoped human management roles                 |
+| POST   | `/v1/yards/management-roles/set`    | Create or change one management role                    |
+| POST   | `/v1/yards/management-roles/revoke` | Revoke one management role                              |
+| GET    | `/v1/yards/application-policy`      | Read the current approved application policy            |
+| POST   | `/v1/yards/application-policy`      | Approve a canonical application role graph              |
+| GET    | `/v1/yards/sessions`                | List retained browser sessions for one Yard             |
+| POST   | `/v1/yards/sessions/revoke`         | Revoke one browser session (human sessions only)        |
+| POST   | `/v1/yards/rollback`                | Repoint the stable host to an earlier ready deployment  |
+| POST   | `/v1/yards/delete`                  | Delete a Yard and schedule its retained bytes           |
 
 ## Yard sessions and the browser flow
 
@@ -195,10 +201,22 @@ and `authenticated-link` accept either a direct user grant or an active grant he
 user's current groups; link redemption arrives later. `POST /.blobyard/session/logout` requires a
 matching Origin when supplied, revokes the current session, and clears the cookie idempotently.
 
+`GET /.blobyard/session/identity` uses that same live path to return the sanitised current local
+user, matching groups, Yard management role, effective application-role closure, permissions, and
+session ID. It accepts only a same-origin `GET`, returns `Cache-Control: private, no-store`, emits
+no permissive CORS headers, and conceals every invalid or public path as not found without
+redirecting.
+
 `GET /v1/yards/sessions` requires Yard read authority and returns retained metadata without raw
 tokens. `POST /v1/yards/sessions/revoke` requires a human Yard manager, is idempotent for an already
 revoked session, and records `yard.session_revoked`. Both operations conceal cross-workspace Yard
 and session identifiers.
+
+The six management-role, application-policy, and access-role operations require a non-machine
+operator credential with `yard:manage` in Core. Core does not infer a local user from the operator
+token. The first assignment may bootstrap an owner only while the Yard has no owner; later changes
+preserve at least one owner and target active same-workspace local users. Existing Yard operations
+retain their previous authorization behavior.
 
 ## Local user routes
 

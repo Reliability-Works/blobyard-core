@@ -1,6 +1,9 @@
 use super::Runner;
 use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand};
-use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
+use crate::yard_commands::{
+    AccessCommand, ApplicationPolicyCommand, EnvCommand, ManagementRolesCommand, YardCommand,
+    YardSessionsCommand,
+};
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
 
@@ -84,6 +87,10 @@ impl Runner {
             Command::Yard { command } => self.execute_yard(command).await,
             Command::Env { command } => self.execute_env(command).await,
             Command::Access { command } => self.execute_access(command).await,
+            Command::ManagementRoles { command } => self.execute_management_roles(command).await,
+            Command::ApplicationPolicy { command } => {
+                self.execute_application_policy(command).await
+            }
             Command::YardSessions { command } => self.execute_yard_sessions(command).await,
             _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
         }
@@ -98,6 +105,34 @@ impl Runner {
             AccessCommand::SetVisibility(arguments) => self.access_set_visibility(arguments).await,
             AccessCommand::Grant(arguments) => self.access_grant(arguments).await,
             AccessCommand::Revoke(arguments) => self.access_revoke(arguments).await,
+            AccessCommand::SetRoles(arguments) => self.access_set_roles(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_management_roles(
+        &self,
+        command: &ManagementRolesCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            ManagementRolesCommand::List(arguments) => self.list_management_roles(arguments).await,
+            ManagementRolesCommand::Set(arguments) => self.set_management_role(arguments).await,
+            ManagementRolesCommand::Revoke(arguments) => {
+                self.revoke_management_role(arguments).await
+            }
+        }
+    }
+
+    pub(super) async fn execute_application_policy(
+        &self,
+        command: &ApplicationPolicyCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            ApplicationPolicyCommand::Get(arguments) => {
+                self.get_application_policy(arguments).await
+            }
+            ApplicationPolicyCommand::Set(arguments) => {
+                self.set_application_policy(arguments).await
+            }
         }
     }
 

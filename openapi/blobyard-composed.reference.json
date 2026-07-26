@@ -1143,6 +1143,201 @@
         ]
       }
     },
+    "/yards/management-roles": {
+      "get": {
+        "operationId": "listYardManagementRoles",
+        "description": "Lists one deterministic page of Yard management-role assignments.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListYardManagementRolesSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["management-roles", "list"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_list_yard_management_roles"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          }
+        ]
+      }
+    },
+    "/yards/management-roles/set": {
+      "post": {
+        "operationId": "setYardManagementRole",
+        "description": "Creates or changes one Yard management-role assignment.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetYardManagementRoleSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["management-roles", "set"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_set_yard_management_role"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetYardManagementRoleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yards/management-roles/revoke": {
+      "post": {
+        "operationId": "revokeYardManagementRole",
+        "description": "Revokes one Yard management-role assignment.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeYardManagementRoleSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["management-roles", "revoke"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_revoke_yard_management_role"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeYardManagementRoleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yards/application-policy": {
+      "get": {
+        "operationId": "getYardApplicationPolicy",
+        "description": "Reads one Yard's current approved application policy.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetYardApplicationPolicySuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["application-policy", "get"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_get_yard_application_policy"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "setYardApplicationPolicy",
+        "description": "Approves and activates one canonical Yard application policy.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetYardApplicationPolicySuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["application-policy", "set"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_set_yard_application_policy"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetYardApplicationPolicyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/yards/access": {
       "get": {
         "operationId": "getYardAccess",
@@ -1289,6 +1484,44 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RevokeYardAccessRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yards/access/roles": {
+      "post": {
+        "operationId": "setYardAccessRoles",
+        "description": "Replaces one active Yard access grant's declared application roles.",
+        "responses": {
+          "200": {
+            "description": "Operation completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetYardAccessRolesSuccessEnvelope"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        },
+        "x-blobyard-sdk": true,
+        "x-blobyard-cli": {
+          "command": ["access", "set-roles"]
+        },
+        "x-blobyard-mcp": {
+          "tool": "blobyard_set_yard_access_roles"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetYardAccessRolesRequest"
               }
             }
           }
@@ -6208,6 +6441,332 @@
         },
         "required": ["data", "ok", "requestId"]
       },
+      "YardManagementRole": {
+        "type": "string",
+        "description": "Yard-scoped human management role.",
+        "enum": ["owner", "admin", "developer", "auditor"]
+      },
+      "YardManagementRoleAssignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "role": {
+            "$ref": "#/components/schemas/YardManagementRole"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["createdAt", "role", "updatedAt", "userId"]
+      },
+      "ListYardManagementRolesQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["yardId"]
+      },
+      "ListYardManagementRolesResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/YardManagementRoleAssignment"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cursor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"]
+      },
+      "ListYardManagementRolesSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListYardManagementRolesResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "SetYardManagementRoleRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/YardManagementRole"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["role", "userId", "yardId"]
+      },
+      "SetYardManagementRoleResult": {
+        "$ref": "#/components/schemas/YardManagementRoleAssignment"
+      },
+      "SetYardManagementRoleSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetYardManagementRoleResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "RevokeYardManagementRoleRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["userId", "yardId"]
+      },
+      "RevokeYardManagementRoleResult": {
+        "$ref": "#/components/schemas/EmptyResult"
+      },
+      "RevokeYardManagementRoleSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevokeYardManagementRoleResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "ApplicationRoleName": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,31}$"
+      },
+      "ApplicationPermission": {
+        "type": "string",
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*){1,3}$"
+      },
+      "ApplicationRoleDefinition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "inherits": {
+            "type": "array",
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ApplicationRoleName"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "maxItems": 64,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ApplicationPermission"
+            }
+          }
+        },
+        "required": ["inherits", "permissions"]
+      },
+      "ApplicationRoleDefinitionMap": {
+        "type": "object",
+        "maxProperties": 32,
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9-]{0,31}$"
+        },
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ApplicationRoleDefinition"
+        }
+      },
+      "YardApplicationPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "approvedAt": {
+            "$ref": "#/components/schemas/IsoTimestamp"
+          },
+          "approvedByPrincipalId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "defaultRole": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationRoleName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "roles": {
+            "$ref": "#/components/schemas/ApplicationRoleDefinitionMap"
+          },
+          "sourceManifestDigest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "approvedAt",
+          "approvedByPrincipalId",
+          "defaultRole",
+          "revision",
+          "roles",
+          "sourceManifestDigest"
+        ]
+      },
+      "GetYardApplicationPolicyQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["yardId"]
+      },
+      "GetYardApplicationPolicyResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YardApplicationPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["policy"]
+      },
+      "GetYardApplicationPolicySuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GetYardApplicationPolicyResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "SetYardApplicationPolicyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "defaultRole": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationRoleName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "$ref": "#/components/schemas/ApplicationRoleDefinitionMap"
+          },
+          "sourceManifestDigest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["defaultRole", "roles", "sourceManifestDigest", "yardId"]
+      },
+      "SetYardApplicationPolicyResult": {
+        "$ref": "#/components/schemas/GetYardApplicationPolicyResult"
+      },
+      "SetYardApplicationPolicySuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetYardApplicationPolicyResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
       "YardVisibility": {
         "type": "string",
         "description": "Audience allowed to open one Yard.",
@@ -6451,6 +7010,55 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/RevokeYardAccessResult"
+          },
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation identifier."
+          }
+        },
+        "required": ["data", "ok", "requestId"]
+      },
+      "SetYardAccessRolesRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ApplicationRoleName"
+            }
+          },
+          "grantId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "yardId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["appRoles", "grantId", "yardId"]
+      },
+      "SetYardAccessRolesResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/YardAccessGrantSummary"
+          }
+        },
+        "required": ["grant"]
+      },
+      "SetYardAccessRolesSuccessEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetYardAccessRolesResult"
           },
           "ok": {
             "type": "boolean",

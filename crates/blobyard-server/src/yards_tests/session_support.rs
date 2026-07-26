@@ -15,6 +15,7 @@ pub(super) struct SessionFixture {
     pub(super) deployment_host: String,
     pub(super) fixture: TransferFixture,
     pub(super) host: String,
+    pub(super) grant_id: String,
     pub(super) yard_id: String,
     pub(super) login_key: String,
     pub(super) user_id: String,
@@ -60,7 +61,7 @@ pub(super) async fn setup() -> SessionFixture {
         serde_json::json!({ "yardId": yard_id, "visibility": "selected" }),
     )
     .await;
-    mutate(
+    let granted = mutate(
         &fixture,
         "/v1/yards/access/grant",
         serde_json::json!({
@@ -71,10 +72,15 @@ pub(super) async fn setup() -> SessionFixture {
         }),
     )
     .await;
+    let grant_id = granted["data"]["grant"]["id"]
+        .as_str()
+        .expect("grant ID")
+        .to_owned();
     SessionFixture {
         deployment_host,
         fixture,
         host,
+        grant_id,
         yard_id,
         login_key,
         user_id,

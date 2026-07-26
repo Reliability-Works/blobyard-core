@@ -2359,6 +2359,266 @@ components:
         - data
         - ok
         - requestId
+    YardManagementRole:
+      type: string
+      description: Yard-scoped human management role.
+      enum:
+        - owner
+        - admin
+        - developer
+        - auditor
+    YardManagementRoleAssignment:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        role:
+          $ref: "#/components/schemas/YardManagementRole"
+        updatedAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - createdAt
+        - role
+        - updatedAt
+        - userId
+    ListYardManagementRolesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListYardManagementRolesResult:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/YardManagementRoleAssignment"
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    ListYardManagementRolesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListYardManagementRolesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetYardManagementRoleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          $ref: "#/components/schemas/YardManagementRole"
+        userId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - role
+        - userId
+        - yardId
+    SetYardManagementRoleResult:
+      $ref: "#/components/schemas/YardManagementRoleAssignment"
+    SetYardManagementRoleSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetYardManagementRoleResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeYardManagementRoleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - userId
+        - yardId
+    RevokeYardManagementRoleResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeYardManagementRoleSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeYardManagementRoleResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ApplicationRoleName:
+      type: string
+      pattern: ^[a-z][a-z0-9-]{0,31}$
+    ApplicationPermission:
+      type: string
+      maxLength: 128
+      pattern: ^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*){1,3}$
+    ApplicationRoleDefinition:
+      type: object
+      additionalProperties: false
+      properties:
+        inherits:
+          type: array
+          maxItems: 8
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ApplicationRoleName"
+        permissions:
+          type: array
+          maxItems: 64
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ApplicationPermission"
+      required:
+        - inherits
+        - permissions
+    ApplicationRoleDefinitionMap:
+      type: object
+      maxProperties: 32
+      propertyNames:
+        pattern: ^[a-z][a-z0-9-]{0,31}$
+      additionalProperties:
+        $ref: "#/components/schemas/ApplicationRoleDefinition"
+    YardApplicationPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        approvedAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        approvedByPrincipalId:
+          $ref: "#/components/schemas/Identifier"
+        defaultRole:
+          anyOf:
+            - $ref: "#/components/schemas/ApplicationRoleName"
+            - type: "null"
+        revision:
+          type: integer
+          minimum: 1
+        roles:
+          $ref: "#/components/schemas/ApplicationRoleDefinitionMap"
+        sourceManifestDigest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+      required:
+        - approvedAt
+        - approvedByPrincipalId
+        - defaultRole
+        - revision
+        - roles
+        - sourceManifestDigest
+    GetYardApplicationPolicyQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    GetYardApplicationPolicyResult:
+      type: object
+      additionalProperties: false
+      properties:
+        policy:
+          anyOf:
+            - $ref: "#/components/schemas/YardApplicationPolicy"
+            - type: "null"
+      required:
+        - policy
+    GetYardApplicationPolicySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetYardApplicationPolicyResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetYardApplicationPolicyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        defaultRole:
+          anyOf:
+            - $ref: "#/components/schemas/ApplicationRoleName"
+            - type: "null"
+        roles:
+          $ref: "#/components/schemas/ApplicationRoleDefinitionMap"
+        sourceManifestDigest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - defaultRole
+        - roles
+        - sourceManifestDigest
+        - yardId
+    SetYardApplicationPolicyResult:
+      $ref: "#/components/schemas/GetYardApplicationPolicyResult"
+    SetYardApplicationPolicySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetYardApplicationPolicyResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     YardVisibility:
       type: string
       description: Audience allowed to open one Yard.
@@ -2557,6 +2817,48 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/RevokeYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetYardAccessRolesRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          maxItems: 16
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ApplicationRoleName"
+        grantId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - appRoles
+        - grantId
+        - yardId
+    SetYardAccessRolesResult:
+      type: object
+      additionalProperties: false
+      properties:
+        grant:
+          $ref: "#/components/schemas/YardAccessGrantSummary"
+      required:
+        - grant
+    SetYardAccessRolesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetYardAccessRolesResult"
         ok:
           type: boolean
           const: true
@@ -4797,10 +5099,15 @@ x-blobyard-path-order:
   - /previews/revoke
   - /yards
   - /yards/environments
+  - /yards/management-roles
+  - /yards/management-roles/set
+  - /yards/management-roles/revoke
+  - /yards/application-policy
   - /yards/access
   - /yards/access/visibility
   - /yards/access/grant
   - /yards/access/revoke
+  - /yards/access/roles
   - /yards/sessions
   - /yards/sessions/revoke
   - /yards/deploys

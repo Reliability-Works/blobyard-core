@@ -43,8 +43,8 @@
     },
     {
       "path": "blobyard-core.openapi.json",
-      "sha256": "e57b18e28843d9bd8746e32b674ffb493561f02f150572e22fc54569b4c8c95c",
-      "size": 73063
+      "sha256": "256840ebf6f3f84cb9c07ac1fc3bde1c29accec9b880b5c94c53497c56b0d2ff",
+      "size": 80021
     },
     {
       "path": "blobyard-hosted-extension.openapi.json",
@@ -53,13 +53,13 @@
     },
     {
       "path": "blobyard-shared.openapi.json",
-      "sha256": "86ba45a47ad4cff9bfb5ddcaf207b639e7374e5ed9139ff4702e0bf631c156ee",
-      "size": 137659
+      "sha256": "a83840f4b8725ac419fde28b4c6b946ce1cacca6fca785f2c9e362cb5bc1be0a",
+      "size": 146852
     },
     {
       "path": "operations.json",
-      "sha256": "b4436c4ebb512caf53a28249c5c439456c642fc82e8ea03ba46c15d4027e9207",
-      "size": 29451
+      "sha256": "fd5ac6db0ff365509fca2a5a1e351423302fe9bc1416ffe285122d49f962b5fa",
+      "size": 31445
     }
   ],
   "schemaVersion": 1,

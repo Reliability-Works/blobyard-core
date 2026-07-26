@@ -82,8 +82,5 @@ pub(super) fn validate_parts(parts: &[ExportPart]) -> Result<(), HostedMigration
 }
 
 pub(super) fn valid_checksum(value: &str) -> bool {
-    value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    blobyard_core::valid_source_manifest_digest(value)
 }

@@ -27,8 +27,11 @@ mod group_row_tests;
 mod group_validation_tests;
 #[path = "adapter_token_fixtures.rs"]
 mod token_fixtures;
+#[path = "adapter_yard_identity_fixtures.rs"]
+mod yard_identity_fixtures;
 
 use token_fixtures::{session, token, token_audit};
+pub(super) use yard_identity_fixtures::approve_access_policy;
 
 fn yard_fixture() -> blobyard_testkit::YardConformanceFixture {
     blobyard_testkit::YardConformanceFixture::new("docs", "inactive", "history")

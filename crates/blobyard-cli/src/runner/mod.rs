@@ -23,6 +23,8 @@ mod retry;
 mod sharing;
 mod transfers;
 mod workspaces;
+mod yard_identity;
+mod yard_selection;
 mod yard_sessions;
 mod yards;
 
@@ -111,6 +113,8 @@ impl Runner {
             Command::Yard { .. }
             | Command::Env { .. }
             | Command::Access { .. }
+            | Command::ManagementRoles { .. }
+            | Command::ApplicationPolicy { .. }
             | Command::YardSessions { .. } => self.execute_yard_family(command).await,
             Command::App { .. } | Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
                 self.execute_local(command)

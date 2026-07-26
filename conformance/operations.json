@@ -495,6 +495,19 @@
       "risk": "read"
     },
     {
+      "id": "getYardApplicationPolicy",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/application-policy",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "read"
+    },
+    {
       "id": "grantYardAccess",
       "idempotency": {
         "required": false,
@@ -753,6 +766,19 @@
       "requiredCiActions": ["yard:manage"],
       "requiredUserScopes": ["yard:read"],
       "risk": "read"
+    },
+    {
+      "id": "listYardManagementRoles",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/management-roles",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
     },
     {
       "id": "listYardSessions",
@@ -1093,6 +1119,19 @@
       "risk": "destructive"
     },
     {
+      "id": "revokeYardManagementRole",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/management-roles/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "destructive"
+    },
+    {
       "id": "revokeYardSession",
       "idempotency": {
         "required": false,
@@ -1130,6 +1169,45 @@
       "requiredCiActions": [],
       "requiredUserScopes": ["retention:manage"],
       "risk": "write"
+    },
+    {
+      "id": "setYardAccessRoles",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/access/roles",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "setYardApplicationPolicy",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/application-policy",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
+    },
+    {
+      "id": "setYardManagementRole",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/management-roles/set",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
     },
     {
       "id": "setYardVisibility",
