@@ -43,6 +43,8 @@ prepare_context_command="release/prepare-docker-context.sh dist packaging/docker
 grep -Fq 'dockerfile: deploy/docker/server-release.Dockerfile' <<<"$containers_job"
 grep -Fq 'name: Prepare verified image context' <<<"$containers_job"
 grep -Fq "$prepare_context_command" <<<"$containers_job"
+grep -Fq 'push-to-registry: true' <<<"$containers_job"
+grep -Fq 'create-storage-record: false' <<<"$containers_job"
 if grep -Fq "if: \${{ matrix.surface == 'cli' }}" <<<"$containers_job"; then
   printf 'Release workflow only prepares a verified CLI image context.\n' >&2
   exit 1

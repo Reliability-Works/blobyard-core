@@ -462,6 +462,7 @@ jobs:
           subject-name: ${{ matrix.image }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+          create-storage-record: false
 
       - name: Verify candidate isolation, signature, provenance, and binary
         shell: bash
