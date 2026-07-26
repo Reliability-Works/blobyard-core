@@ -7,7 +7,7 @@ use blobyard_contract::{
     TransferRepository, WorkspaceRecord,
 };
 use blobyard_core::Slug;
-use blobyard_repository_sqlite::SqliteRepository;
+use blobyard_repository_sqlite::{SqliteRepository, current_schema_version};
 
 const INITIAL_SCHEMA: &str = include_str!("../migrations/0001_initial.sql");
 const LOCAL_AUTH_SCHEMA: &str = include_str!("../migrations/0002_local_auth.sql");
@@ -70,7 +70,10 @@ fn sqlite_satisfies_the_metadata_contract() {
     blobyard_testkit::lifecycle_conformance(&repository).expect("lifecycle conformance");
     drop(repository);
     let reopened = SqliteRepository::open(&path).expect("reopened repository");
-    assert_eq!(reopened.schema_version().expect("schema version"), 21);
+    assert_eq!(
+        reopened.schema_version().expect("schema version"),
+        current_schema_version()
+    );
 }
 
 #[test]
@@ -174,7 +177,10 @@ fn sqlite_migrates_v5_tokens_with_safe_lifecycle_defaults() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(
+        repository.schema_version().expect("schema version"),
+        current_schema_version()
+    );
     let tokens = repository.list_api_tokens().expect("migrated tokens");
     let active = tokens
         .iter()
@@ -230,7 +236,10 @@ fn sqlite_migrates_completed_v3_objects_without_losing_download_metadata() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(
+        repository.schema_version().expect("schema version"),
+        current_schema_version()
+    );
     let objects = repository
         .list_stored_objects("project_v3", None, true)
         .expect("migrated objects");
@@ -290,7 +299,10 @@ fn sqlite_migrates_v4_objects_into_lifecycle_schema() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(
+        repository.schema_version().expect("schema version"),
+        current_schema_version()
+    );
     let object = repository
         .object_version("version_v4")
         .expect("migrated object");
