@@ -12,6 +12,7 @@ test-seams = []
 
 [dependencies]
 blobyard-api-client = { path = "../blobyard-api-client" }
+blobyard-contract = { path = "../blobyard-contract" }
 blobyard-core = { path = "../blobyard-core" }
 blobyard-mcp = { path = "../blobyard-mcp" }
 clap.workspace = true

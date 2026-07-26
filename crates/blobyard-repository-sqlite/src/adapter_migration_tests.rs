@@ -1,23 +1,8 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::SqliteRepository;
+use super::{SqliteRepository, assert_tables};
 use blobyard_contract::RepositoryError;
 use rusqlite::Connection;
-
-fn assert_tables(repository: &SqliteRepository, tables: &[&str]) {
-    let connection = repository.test_connection().expect("connection");
-    for table in tables {
-        let exists: bool = connection
-            .query_row(
-                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
-                [table],
-                |row| row.get(0),
-            )
-            .expect("table query");
-        assert!(exists, "{table}");
-    }
-    drop(connection);
-}
 
 fn legacy_upload_fixture(path: &std::path::Path, schema: u32, upload_sql: &str) {
     let mut connection = Connection::open(path).expect("legacy connection");
@@ -138,7 +123,7 @@ fn inbox_migration_preserves_version_eleven_data_and_adds_empty_capability_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 16);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     assert!(
         repository
             .list_inboxes("project")
@@ -169,7 +154,7 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 16);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     assert_eq!(
         repository.list_inboxes("project").expect("inboxes").len(),
         1
@@ -181,30 +166,4 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
             .is_empty()
     );
     assert_tables(&repository, &["previews", "preview_files"]);
-}
-
-#[test]
-fn partial_migration_rejects_newer_targets_and_maps_each_database_failure() {
-    assert_eq!(
-        super::super::migrations::apply_through(
-            &mut Connection::open_in_memory().expect("newer connection"),
-            super::super::migrations::CURRENT_SCHEMA_VERSION + 1,
-        ),
-        Err(RepositoryError::SchemaTooNew)
-    );
-
-    let completed = (0..1_000).find(|&denied_index| {
-        let mut connection = Connection::open_in_memory().expect("denied connection");
-        let observed = super::install_denial(&connection, denied_index);
-        let result = super::super::migrations::apply_through(&mut connection, 9);
-        let count = observed.load(std::sync::atomic::Ordering::Relaxed);
-        if count <= denied_index {
-            result.expect("migration succeeds after every authorization point");
-            true
-        } else {
-            assert_eq!(result, Err(RepositoryError::Unavailable));
-            false
-        }
-    });
-    assert!(completed.is_some(), "migration denial sweep must terminate");
 }

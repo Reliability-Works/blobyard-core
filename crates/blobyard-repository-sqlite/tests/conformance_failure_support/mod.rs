@@ -11,10 +11,13 @@ use blobyard_repository_sqlite::SqliteRepository;
 /// Result-corruption adapters for conformance assertions.
 pub mod corrupting;
 pub(crate) use corrupting::{Corrupting, Corruption};
+mod faulting_groups;
 mod faulting_inboxes;
 mod faulting_lifecycle;
+mod faulting_local_users;
 mod faulting_previews;
 mod faulting_sharing;
+mod faulting_yard_sessions;
 mod faulting_yards;
 
 pub(crate) struct Faulting<'a, T> {
@@ -37,7 +40,7 @@ pub(crate) fn yard_fixture() -> blobyard_testkit::YardConformanceFixture {
 pub(crate) fn every_operation_fails_closed(
     mut run: impl FnMut(usize) -> Result<(), RepositoryError>,
 ) {
-    let successful_index = (0..128).find(|&failure_index| run(failure_index).is_ok());
+    let successful_index = (0..256).find(|&failure_index| run(failure_index).is_ok());
     assert!(successful_index.is_some(), "conformance must terminate");
     assert_ne!(
         successful_index,

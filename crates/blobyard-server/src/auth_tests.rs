@@ -9,9 +9,8 @@ use axum::{
     response::IntoResponse,
 };
 use blobyard_contract::{
-    AuditValue, CiAction, GithubOidcIdentity, LocalApiTokenRecord, LocalMachineSessionRecord,
-    MachineSessionMintResult, NewAuditEvent, NewMachineSession, ObjectSource, ProjectRecord,
-    RepositoryError,
+    AuditValue, CiAction, LocalApiTokenRecord, LocalMachineSessionRecord, NewAuditEvent,
+    ObjectSource, ProjectRecord, RepositoryError,
 };
 use blobyard_core::{GeneratedSecretKind, SecretString, Slug};
 

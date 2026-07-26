@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "adapter_failure_map_tests/groups.rs"]
+mod poisoned_groups;
 #[path = "adapter_failure_map_tests/yards.rs"]
 mod poisoned_yards;
 
@@ -49,6 +51,22 @@ fn assert_poisoned_credentials(repository: &SqliteRepository) {
         2,
         &revoke_event,
     ));
+}
+
+fn assert_poisoned_local_users(repository: &SqliteRepository) {
+    let user = blobyard_testkit::local_user("workspace_fixture", "user_fixture", None, 1);
+    let key = blobyard_testkit::login_key("userkey_fixture", "user_fixture", 'a', 1);
+    let created =
+        blobyard_testkit::local_user_event("audit_user_created", &user, "user.created", 1);
+    let reset =
+        blobyard_testkit::local_user_event("audit_user_reset", &user, "user.login_key_reset", 1);
+    let deactivated =
+        blobyard_testkit::local_user_event("audit_user_deactivated", &user, "user.deactivated", 2);
+    unavailable(repository.create_local_user(&user, &key, &created));
+    unavailable(repository.list_local_users("workspace_fixture"));
+    unavailable(repository.reset_local_user_login_key(&key, 1, &reset));
+    unavailable(repository.authenticate_local_user_key(&checksum('c'), 2));
+    unavailable(repository.deactivate_local_user("user_fixture", 2, &deactivated));
 }
 
 fn assert_poisoned_ci(repository: &SqliteRepository) {
@@ -244,6 +262,8 @@ fn assert_poisoned_lifecycle(repository: &SqliteRepository) {
 fn assert_every_public_operation(repository: &SqliteRepository) {
     assert_poisoned_metadata(repository);
     assert_poisoned_credentials(repository);
+    assert_poisoned_local_users(repository);
+    poisoned_groups::assert_poisoned_groups(repository);
     assert_poisoned_ci(repository);
     assert_poisoned_transfers(repository);
     assert_poisoned_sharing(repository);

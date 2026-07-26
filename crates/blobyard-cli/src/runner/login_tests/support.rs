@@ -159,7 +159,7 @@ impl Environment for EmptyEnvironment {
 }
 
 pub(in crate::runner) struct Fixture {
-    pub(super) command: Command,
+    pub(in crate::runner) command: Command,
     pub(in crate::runner) runner: Runner,
     pub(in crate::runner) store: Arc<FakeStore>,
     pub(in crate::runner) transport: Arc<QueueTransport>,

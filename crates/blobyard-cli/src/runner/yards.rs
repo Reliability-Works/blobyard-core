@@ -1,7 +1,7 @@
 use super::{Runner, command_result};
 use crate::OutputMode;
-use crate::commands::{DeleteYardArgs, RollbackYardArgs, ShowYardArgs, YardNameArgs};
 use crate::config::validate_yard_name;
+use crate::yard_commands::{DeleteYardArgs, RollbackYardArgs, ShowYardArgs, YardNameArgs};
 use blobyard_api_client::{
     ApiRequest, DeleteWebYardRequest, EmptyResponse, Endpoint, ListWebYardsQuery,
     ListYardDeploysQuery, RollbackWebYardRequest, WebYardPage, WebYardSummary, YardDeployPage,
@@ -184,7 +184,7 @@ fn named_yard<'a>(
         .ok_or_else(|| BlobyardError::from_code(ErrorCode::NotFound))
 }
 
-fn select_yard<'a>(
+pub(super) fn select_yard<'a>(
     yards: &'a [WebYardSummary],
     name: Option<&str>,
 ) -> Result<&'a WebYardSummary, BlobyardError> {

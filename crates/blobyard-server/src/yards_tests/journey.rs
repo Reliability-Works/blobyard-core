@@ -46,7 +46,7 @@ async fn assert_head_and_range(fixture: &test_seams::TransferFixture, host: &str
     assert_eq!(body(range).await.as_ref(), b"yard");
 }
 
-async fn publish(
+pub(super) async fn publish(
     fixture: &test_seams::TransferFixture,
     client_deploy_id: &str,
     index: &[u8],
@@ -110,6 +110,38 @@ async fn replace_and_assert_history(
     .await;
     assert_eq!(history["data"]["items"][0]["status"], "live");
     assert_eq!(history["data"]["items"][1]["status"], "superseded");
+}
+
+async fn assert_production_environment(
+    fixture: &test_seams::TransferFixture,
+    first: &serde_json::Value,
+) {
+    let yard_id = first["data"]["yardId"].as_str().expect("yard ID");
+    let environments = response_json(
+        crate::contract_test_support::send(
+            fixture,
+            "GET",
+            &format!("/v1/yards/environments?yardId={yard_id}"),
+            b"",
+            false,
+        )
+        .await,
+    )
+    .await;
+    let listed = environments["data"]["environments"]
+        .as_array()
+        .expect("environment items");
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0]["id"], format!("yardenv_{yard_id}"));
+    assert_eq!(listed[0]["kind"], "production");
+    assert_eq!(listed[0]["name"], "production");
+    assert_eq!(listed[0]["createdAt"], listed[0]["updatedAt"]);
+    assert!(
+        listed[0]["createdAt"]
+            .as_str()
+            .expect("creation timestamp")
+            .ends_with('Z')
+    );
 }
 
 async fn rollback_first(
@@ -201,6 +233,7 @@ async fn web_yard_journey_preserves_immutable_deploys_and_controls_the_stable_al
     assert_public_resolution(&fixture, &stable_host, b"first index").await;
     assert_public_resolution(&fixture, &first_host, b"first index").await;
     assert_current_yard(&fixture, &first).await;
+    assert_production_environment(&fixture, &first).await;
     replace_and_assert_history(&fixture, &first, &stable_host, &first_host).await;
     rollback_first(&fixture, &first, &stable_host).await;
     fail_and_assert_audit(&fixture).await;

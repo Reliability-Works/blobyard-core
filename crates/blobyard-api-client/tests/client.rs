@@ -206,18 +206,26 @@ async fn self_hosted_clients_send_core_operations() {
 }
 
 #[tokio::test]
-async fn cloud_clients_reject_self_hosted_bootstrap_before_transport() {
+async fn cloud_clients_reject_self_hosted_operations_before_transport() {
     let transport = Arc::new(QueueTransport::new(Ok(response(
         200,
         Some("must_not_send"),
         r#"{"ok":true,"data":{},"requestId":"must_not_send"}"#,
     ))));
     let client = ApiClient::for_deployment(transport.clone(), ApiDeployment::Cloud);
-    let error = client
-        .execute::<EmptyResponse>(ApiRequest::new(Endpoint::ExchangeBootstrapToken))
-        .await
-        .expect_err("self-hosted bootstrap must be unavailable in Cloud");
-    assert_eq!(error.error().code(), ErrorCode::OperationUnsupported);
-    assert_eq!(error.retry_advice(), RetryAdvice::Never);
+    for endpoint in [
+        Endpoint::ExchangeBootstrapToken,
+        Endpoint::CreateLocalUser,
+        Endpoint::ListLocalUsers,
+        Endpoint::ResetLocalUserLoginKey,
+        Endpoint::DeactivateLocalUser,
+    ] {
+        let error = client
+            .execute::<EmptyResponse>(ApiRequest::new(endpoint))
+            .await
+            .expect_err("self-hosted operation must be unavailable in Cloud");
+        assert_eq!(error.error().code(), ErrorCode::OperationUnsupported);
+        assert_eq!(error.retry_advice(), RetryAdvice::Never);
+    }
     assert_eq!(transport.calls(), 0);
 }

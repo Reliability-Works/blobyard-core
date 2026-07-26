@@ -1,6 +1,6 @@
 use super::{
-    super::contracts, super::public_fallback, super::read, super::require_read, faulted_state,
-    public_request, request,
+    super::contracts, super::public_fallback, super::read, super::require_read, public_request,
+    request,
 };
 use crate::{auth::Principal, test_support::error_status, transfers::test_seams};
 use axum::{
@@ -45,7 +45,7 @@ pub(super) fn deploy(status: YardDeployStatus) -> YardDeployRecord {
     }
 }
 
-fn list_query() -> ListWebYardsQuery {
+pub(super) fn list_query() -> ListWebYardsQuery {
     ListWebYardsQuery {
         workspace: Slug::new("fixture").expect("workspace"),
         project: Slug::new("project").expect("project"),
@@ -108,134 +108,6 @@ fn foreign_and_corrupt_yard_relationships_fail_closed() {
     assert_eq!(
         error_status(read::yard_for_deploy(&fixture.state, &principal, &corrupt)),
         StatusCode::NOT_FOUND
-    );
-}
-
-#[test]
-fn persisted_yard_relationships_fail_closed_for_foreign_authority_and_identity() {
-    let fixture = test_seams::fixture(&["yard:manage"]);
-    let principal = Principal(fixture.principal.clone());
-    let _ = super::super::deploy::start(
-        &fixture.state,
-        &principal,
-        &request("client-deploy-edge-0001"),
-        Ok(2),
-    )
-    .expect("deploy start");
-    let persisted_yard = fixture
-        .state
-        .repository
-        .list_web_yards(&fixture.project.id)
-        .expect("Yard list")
-        .into_iter()
-        .next()
-        .expect("Yard");
-    let mut persisted_deploy = fixture
-        .state
-        .repository
-        .list_yard_deploys(&persisted_yard.id)
-        .expect("deploy list")
-        .into_iter()
-        .next()
-        .expect("deploy");
-    let mut foreign_principal = principal.clone();
-    foreign_principal.0.workspace_id = "workspace_foreign".to_owned();
-    let deploy_query = blobyard_api_client::ListYardDeploysQuery {
-        yard_id: persisted_yard.id,
-    };
-    assert_eq!(
-        error_status(read::list_deploys(
-            &fixture.state,
-            &foreign_principal,
-            &deploy_query,
-        )),
-        StatusCode::NOT_FOUND
-    );
-    assert_eq!(
-        error_status(read::yard_for_deploy(
-            &fixture.state,
-            &foreign_principal,
-            &persisted_deploy,
-        )),
-        StatusCode::NOT_FOUND
-    );
-    persisted_deploy.workspace_id = "workspace_foreign".to_owned();
-    assert_eq!(
-        error_status(read::yard_for_deploy(
-            &fixture.state,
-            &principal,
-            &persisted_deploy,
-        )),
-        StatusCode::NOT_FOUND
-    );
-}
-
-#[test]
-fn project_bound_yard_read_accepts_only_the_matching_project() {
-    let fixture = test_seams::fixture(&["yard:read"]);
-    let mut principal = Principal(fixture.principal);
-    principal.0.project_id = Some("project_fixture".to_owned());
-    read::authorize_yard(&principal, &yard(WebYardStatus::Active))
-        .expect("matching project binding");
-    principal.0.project_id = Some("project_foreign".to_owned());
-    assert_eq!(
-        error_status(read::authorize_yard(
-            &principal,
-            &yard(WebYardStatus::Active),
-        )),
-        StatusCode::NOT_FOUND
-    );
-}
-
-#[test]
-fn read_operations_propagate_repository_and_presentation_failures() {
-    let fixture = test_seams::fixture(&["yard:read", "yard:manage"]);
-    let principal = Principal(fixture.principal.clone());
-    let _ = super::super::deploy::start(
-        &fixture.state,
-        &principal,
-        &request("client-deploy-edge-0001"),
-        Ok(1),
-    )
-    .expect("deploy start");
-    let persisted_yard = fixture
-        .state
-        .repository
-        .list_web_yards(&fixture.project.id)
-        .expect("Yard list")
-        .into_iter()
-        .next()
-        .expect("Yard");
-    let query = list_query();
-    assert_eq!(
-        error_status(read::list(&faulted_state(&fixture, 2), &principal, &query)),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    let deploy_query = blobyard_api_client::ListYardDeploysQuery {
-        yard_id: persisted_yard.id,
-    };
-    for failure_index in 0..=1 {
-        assert_eq!(
-            error_status(read::list_deploys(
-                &faulted_state(&fixture, failure_index),
-                &principal,
-                &deploy_query,
-            )),
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "failure index {failure_index}"
-        );
-    }
-    let _ = read::list_deploys(&fixture.state, &principal, &deploy_query)
-        .expect("uploading deploy history");
-    let mut invalid = fixture.state;
-    invalid.web_yard_origin = "bad\norigin".to_owned();
-    assert_eq!(
-        error_status(read::list(&invalid, &principal, &query)),
-        StatusCode::INTERNAL_SERVER_ERROR
-    );
-    assert_eq!(
-        error_status(read::list_deploys(&invalid, &principal, &deploy_query)),
-        StatusCode::INTERNAL_SERVER_ERROR
     );
 }
 

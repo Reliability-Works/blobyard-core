@@ -35,6 +35,71 @@ pub enum WebYardToolCall {
         /// Project-unique Web Yard name.
         yard: String,
     },
+    /// List active environments for one Web Yard.
+    ListYardEnvironments {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
+    /// Show one Web Yard's effective visibility and active grants.
+    GetYardAccess {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
+    /// Set one Web Yard's visibility policy.
+    SetYardVisibility {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Requested audience.
+        visibility: String,
+    },
+    /// Grant one principal scoped access to a Web Yard.
+    GrantYardAccess {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Principal kind.
+        principal_kind: String,
+        /// Stable principal identifier.
+        principal_id: String,
+        /// Application roles granted to the principal.
+        roles: Vec<String>,
+        /// Optional environment restriction.
+        environment_id: Option<String>,
+        /// Optional RFC 3339 expiry.
+        expires_at: Option<String>,
+    },
+    /// Revoke one Web Yard access grant.
+    RevokeYardAccess {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable grant identifier.
+        grant_id: String,
+    },
+    /// List retained browser sessions for one Web Yard.
+    ListYardSessions {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+    },
+    /// Revoke one retained Web Yard browser session.
+    RevokeYardSession {
+        /// CLI scope overrides.
+        scope: Scope,
+        /// Project-unique Web Yard name.
+        yard: String,
+        /// Stable Yard browser-session identifier.
+        session_id: String,
+    },
     /// Repoint a Web Yard to an earlier immutable deploy.
     RollbackWebYard {
         /// CLI scope overrides.
@@ -59,6 +124,13 @@ pub(crate) fn is_yard_tool(name: &str) -> bool {
         "deploy_web_yard"
             | "list_web_yards"
             | "list_yard_deploys"
+            | "list_yard_environments"
+            | "get_yard_access"
+            | "set_yard_visibility"
+            | "grant_yard_access"
+            | "revoke_yard_access"
+            | "list_yard_sessions"
+            | "revoke_yard_session"
             | "rollback_web_yard"
             | "delete_web_yard"
     )
@@ -76,6 +148,42 @@ pub(crate) fn parse_yard_call(
         "list_yard_deploys" => Ok(WebYardToolCall::ListYardDeploys {
             scope,
             yard: required_string(arguments, "yard")?,
+        }),
+        "list_yard_environments" => Ok(WebYardToolCall::ListYardEnvironments {
+            scope,
+            yard: required_string(arguments, "yard")?,
+        }),
+        "get_yard_access" => Ok(WebYardToolCall::GetYardAccess {
+            scope,
+            yard: required_string(arguments, "yard")?,
+        }),
+        "set_yard_visibility" => Ok(WebYardToolCall::SetYardVisibility {
+            scope,
+            yard: required_string(arguments, "yard")?,
+            visibility: required_string(arguments, "visibility")?,
+        }),
+        "grant_yard_access" => Ok(WebYardToolCall::GrantYardAccess {
+            scope,
+            yard: required_string(arguments, "yard")?,
+            principal_kind: required_string(arguments, "principal_kind")?,
+            principal_id: required_string(arguments, "principal_id")?,
+            roles: string_list(arguments, "roles")?,
+            environment_id: crate::optional_string(arguments, "environment_id")?,
+            expires_at: crate::optional_string(arguments, "expires_at")?,
+        }),
+        "revoke_yard_access" => Ok(WebYardToolCall::RevokeYardAccess {
+            scope,
+            yard: required_string(arguments, "yard")?,
+            grant_id: required_string(arguments, "grant_id")?,
+        }),
+        "list_yard_sessions" => Ok(WebYardToolCall::ListYardSessions {
+            scope,
+            yard: required_string(arguments, "yard")?,
+        }),
+        "revoke_yard_session" => Ok(WebYardToolCall::RevokeYardSession {
+            scope,
+            yard: required_string(arguments, "yard")?,
+            session_id: required_string(arguments, "session_id")?,
         }),
         "rollback_web_yard" => Ok(WebYardToolCall::RollbackWebYard {
             scope,
@@ -104,6 +212,24 @@ fn parse_deploy(scope: Scope, arguments: &Map<String, Value>) -> Result<WebYardT
     })
 }
 
+fn string_list(arguments: &Map<String, Value>, key: &str) -> Result<Vec<String>, String> {
+    let Some(value) = arguments.get(key) else {
+        return Ok(Vec::new());
+    };
+    let items = value
+        .as_array()
+        .ok_or_else(|| format!("{key} must be an array of strings"))?;
+    items
+        .iter()
+        .map(|item| {
+            item.as_str()
+                .filter(|text| !text.is_empty())
+                .map(ToOwned::to_owned)
+                .ok_or_else(|| format!("{key} must contain non-empty strings"))
+        })
+        .collect()
+}
+
 fn require_true(arguments: &Map<String, Value>, key: &str) -> Result<(), String> {
     match optional_bool(arguments, key)? {
         Some(true) => Ok(()),
@@ -115,7 +241,21 @@ fn require_true(arguments: &Map<String, Value>, key: &str) -> Result<(), String>
 fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), String> {
     let specific: &[&str] = match name {
         "deploy_web_yard" => &["directory", "yard", "spa", "clean_urls", "public"],
-        "list_yard_deploys" => &["yard"],
+        "list_yard_deploys"
+        | "list_yard_environments"
+        | "get_yard_access"
+        | "list_yard_sessions" => &["yard"],
+        "set_yard_visibility" => &["yard", "visibility"],
+        "grant_yard_access" => &[
+            "yard",
+            "principal_kind",
+            "principal_id",
+            "roles",
+            "environment_id",
+            "expires_at",
+        ],
+        "revoke_yard_access" => &["yard", "grant_id"],
+        "revoke_yard_session" => &["yard", "session_id"],
         "delete_web_yard" => &["yard", "confirm"],
         "rollback_web_yard" => &["yard", "deploy_id"],
         _ => &[],

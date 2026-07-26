@@ -10,6 +10,15 @@ use blobyard_contract::RepositoryError;
 use rusqlite::Connection;
 
 #[test]
+fn generic_query_result_mapping_preserves_success_and_stabilizes_failure() {
+    assert_eq!(super::map_query_result(Ok(7_u8)), Ok(7));
+    assert_eq!(
+        super::map_query_result::<()>(Err(rusqlite::Error::InvalidQuery)),
+        Err(RepositoryError::Unavailable)
+    );
+}
+
+#[test]
 fn repository_initialization_and_metadata_queries_map_adapter_failures() {
     let connection = Connection::open_in_memory().expect("connection");
     install_denial(&connection, 0);

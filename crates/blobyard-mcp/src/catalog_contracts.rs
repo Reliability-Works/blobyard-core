@@ -239,6 +239,13 @@ pub(crate) fn list_yard_deploys_contract(
     )
 }
 
+pub(crate) fn list_yard_environments_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    ("List active environments for a Web Yard.", vec!["yard"])
+}
+
 pub(crate) fn rollback_yard_contract(
     properties: &mut Map<String, Value>,
 ) -> (&'static str, Vec<&'static str>) {

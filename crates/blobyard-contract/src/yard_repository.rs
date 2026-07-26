@@ -1,6 +1,8 @@
 use crate::{
-    DeletionPlan, NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError,
-    WebYardRecord, YardDeployRecord, YardDeploymentRecord, YardFileTarget, YardStartRecord,
+    DeletionPlan, NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile,
+    RepositoryError, WebYardRecord, YardAccessGrantRecord, YardAccessPolicyRecord,
+    YardDeployRecord, YardDeploymentRecord, YardEnvironmentRecord, YardFileTarget, YardStartRecord,
+    YardVisibility,
 };
 
 /// One durable byte-cleanup plan created when a Web Yard deploy is pruned.
@@ -51,12 +53,86 @@ pub trait WebYardRepository: Send + Sync {
     /// Returns validation or provider failures.
     fn list_yard_deploys(&self, yard_id: &str) -> Result<Vec<YardDeployRecord>, RepositoryError>;
 
+    /// Lists active environments for one Yard, production first then by name.
+    ///
+    /// An unknown Yard produces an empty list.
+    ///
+    /// # Errors
+    ///
+    /// Returns validation or provider failures.
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError>;
+
     /// Reads one deploy by stable identifier.
     ///
     /// # Errors
     ///
     /// Returns not-found, validation, or provider failures.
     fn yard_deploy_by_id(&self, deploy_id: &str) -> Result<YardDeployRecord, RepositoryError>;
+
+    /// Reads one Yard's visibility policy. An absent policy means public.
+    ///
+    /// # Errors
+    ///
+    /// Returns validation or provider failures.
+    fn get_yard_access_policy(
+        &self,
+        yard_id: &str,
+    ) -> Result<Option<YardAccessPolicyRecord>, RepositoryError>;
+
+    /// Atomically upserts one Yard's visibility policy and records its audit event.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found, validation, or provider failures.
+    fn set_yard_visibility(
+        &self,
+        yard_id: &str,
+        visibility: YardVisibility,
+        updated_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessPolicyRecord, RepositoryError>;
+
+    /// Atomically inserts one active access grant and records its audit event.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found, validation, conflict, or provider failures.
+    fn insert_yard_access_grant(
+        &self,
+        grant: &NewYardAccessGrant,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessGrantRecord, RepositoryError>;
+
+    /// Atomically revokes one grant. Repeated revocation is idempotent.
+    ///
+    /// Returns whether this call newly revoked the grant.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found, validation, or provider failures.
+    fn revoke_yard_access_grant(
+        &self,
+        yard_id: &str,
+        grant_id: &str,
+        revoked_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<bool, RepositoryError>;
+
+    /// Lists active, unexpired grants for one Yard in newest-first order.
+    ///
+    /// An unknown Yard produces an empty list.
+    ///
+    /// # Errors
+    ///
+    /// Returns validation or provider failures.
+    fn list_yard_access_grants(
+        &self,
+        yard_id: &str,
+        now_ms: u64,
+    ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError>;
 
     /// Atomically snapshots, finalises, promotes, audits, and prunes one deploy.
     ///
@@ -128,5 +204,7 @@ pub trait WebYardRepository: Send + Sync {
         &self,
         host_label: &str,
         normalized_request_path: &str,
+        session_token_hash: Option<&str>,
+        now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError>;
 }

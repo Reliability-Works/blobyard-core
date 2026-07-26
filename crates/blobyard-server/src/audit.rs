@@ -16,6 +16,8 @@ use blobyard_core::Slug;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+include!("audit_local_users.rs");
+
 pub(crate) fn routes() -> Router<AppState> {
     Router::new().route("/v1/audit", get(list))
 }

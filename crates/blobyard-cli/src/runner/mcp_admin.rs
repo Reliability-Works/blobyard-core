@@ -1,7 +1,7 @@
 use super::Runner;
 use blobyard_api_client::{ApiRequest, Endpoint};
 use blobyard_core::{BlobyardError, ErrorCode};
-use blobyard_mcp::{AdminToolCall, Scope};
+use blobyard_mcp::{AdminToolCall, GroupToolCall, Scope};
 use serde_json::{Value, json};
 
 impl Runner {
@@ -25,9 +25,14 @@ impl Runner {
 
 fn require_admin_confirmation(call: &AdminToolCall) -> Result<(), BlobyardError> {
     let confirmed = match call {
-        AdminToolCall::RevokeInvite { confirmed, .. }
+        AdminToolCall::Group(
+            GroupToolCall::RemoveMember { confirmed, .. }
+            | GroupToolCall::Deactivate { confirmed, .. },
+        )
+        | AdminToolCall::RevokeInvite { confirmed, .. }
         | AdminToolCall::UpdateMemberRole { confirmed, .. }
         | AdminToolCall::RemoveMember { confirmed, .. }
+        | AdminToolCall::DeactivateLocalUser { confirmed, .. }
         | AdminToolCall::RevokeApiToken { confirmed, .. }
         | AdminToolCall::RevokeCiTrust { confirmed, .. }
         | AdminToolCall::RevokeCliSession { confirmed, .. } => Some(*confirmed),
@@ -45,6 +50,7 @@ fn require_admin_confirmation(call: &AdminToolCall) -> Result<(), BlobyardError>
 
 const fn admin_scope(call: &AdminToolCall) -> &Scope {
     match call {
+        AdminToolCall::Group(call) => group_scope(call),
         AdminToolCall::ListAudit { scope, .. }
         | AdminToolCall::ListMembers { scope }
         | AdminToolCall::ListInvites { scope }
@@ -52,6 +58,8 @@ const fn admin_scope(call: &AdminToolCall) -> &Scope {
         | AdminToolCall::RevokeInvite { scope, .. }
         | AdminToolCall::UpdateMemberRole { scope, .. }
         | AdminToolCall::RemoveMember { scope, .. }
+        | AdminToolCall::ListLocalUsers { scope }
+        | AdminToolCall::DeactivateLocalUser { scope, .. }
         | AdminToolCall::ListApiTokens { scope }
         | AdminToolCall::RevokeApiToken { scope, .. }
         | AdminToolCall::ListCiTrusts { scope }
@@ -62,8 +70,21 @@ const fn admin_scope(call: &AdminToolCall) -> &Scope {
     }
 }
 
+const fn group_scope(call: &GroupToolCall) -> &Scope {
+    match call {
+        GroupToolCall::List { scope, .. }
+        | GroupToolCall::Create { scope, .. }
+        | GroupToolCall::Rename { scope, .. }
+        | GroupToolCall::ListMembers { scope, .. }
+        | GroupToolCall::AddMember { scope, .. }
+        | GroupToolCall::RemoveMember { scope, .. }
+        | GroupToolCall::Deactivate { scope, .. } => scope,
+    }
+}
+
 fn admin_request(runner: &Runner, call: AdminToolCall) -> Result<ApiRequest, BlobyardError> {
     match call {
+        AdminToolCall::Group(call) => group_request(runner, call),
         AdminToolCall::ListAudit { cursor, .. } => Ok(ApiRequest::new(Endpoint::ListAudit)
             .with_query(workspace_query(runner, cursor.as_deref())?)),
         AdminToolCall::ListMembers { .. } => workspace_read(runner, Endpoint::ListMembers),
@@ -88,6 +109,10 @@ fn admin_request(runner: &Runner, call: AdminToolCall) -> Result<ApiRequest, Blo
             Endpoint::RemoveMember,
             &json!({ "targetUserId": user_id }),
         ),
+        AdminToolCall::ListLocalUsers { .. } => workspace_read(runner, Endpoint::ListLocalUsers),
+        AdminToolCall::DeactivateLocalUser { user_id, .. } => Ok(runner
+            .mutation(Endpoint::DeactivateLocalUser)
+            .with_json(json!({ "userId": user_id }))),
         AdminToolCall::ListApiTokens { .. } => Ok(ApiRequest::new(Endpoint::ListApiTokens)),
         AdminToolCall::RevokeApiToken { token_id, .. } => Ok(runner
             .mutation(Endpoint::RevokeApiToken)
@@ -117,6 +142,42 @@ fn admin_request(runner: &Runner, call: AdminToolCall) -> Result<ApiRequest, Blo
         AdminToolCall::RevokeCliSession { session_id, .. } => Ok(runner
             .mutation(Endpoint::RevokeCliSession)
             .with_json(json!({ "sessionId": session_id }))),
+    }
+}
+
+fn group_request(runner: &Runner, call: GroupToolCall) -> Result<ApiRequest, BlobyardError> {
+    match call {
+        GroupToolCall::List { cursor, .. } => Ok(ApiRequest::new(Endpoint::ListGroups)
+            .with_query(workspace_query(runner, cursor.as_deref())?)),
+        GroupToolCall::Create { name, .. } => {
+            workspace_write(runner, Endpoint::CreateGroup, &json!({ "name": name }))
+        }
+        GroupToolCall::Rename { group_id, name, .. } => Ok(runner
+            .mutation(Endpoint::RenameGroup)
+            .with_json(json!({ "groupId": group_id, "name": name }))),
+        GroupToolCall::ListMembers {
+            group_id, cursor, ..
+        } => {
+            let mut query = url::form_urlencoded::Serializer::new(String::new());
+            query.append_pair("groupId", &group_id);
+            if let Some(value) = cursor {
+                query.append_pair("cursor", &value);
+            }
+            Ok(ApiRequest::new(Endpoint::ListGroupMembers).with_query(query.finish()))
+        }
+        GroupToolCall::AddMember {
+            group_id, user_id, ..
+        } => Ok(runner
+            .mutation(Endpoint::AddGroupMember)
+            .with_json(json!({ "groupId": group_id, "userId": user_id }))),
+        GroupToolCall::RemoveMember {
+            group_id, user_id, ..
+        } => Ok(runner
+            .mutation(Endpoint::RemoveGroupMember)
+            .with_json(json!({ "groupId": group_id, "userId": user_id }))),
+        GroupToolCall::Deactivate { group_id, .. } => Ok(runner
+            .mutation(Endpoint::DeactivateGroup)
+            .with_json(json!({ "groupId": group_id }))),
     }
 }
 
@@ -219,6 +280,9 @@ fn create_ci_trust_request(
     workspace_write(runner, Endpoint::CreateCiTrust, &body)
 }
 
+#[cfg(test)]
+#[path = "mcp_admin_group_tests.rs"]
+mod group_tests;
 #[cfg(test)]
 #[path = "mcp_admin_tests.rs"]
 mod tests;

@@ -72,6 +72,13 @@ pub async fn run_with(cli: Cli, dependencies: ApplicationDependencies) -> Render
         )
         .await;
     }
+    if let Command::App { command } = &cli.command {
+        let renderer = OutputRenderer::new(options, Diagnostics::default());
+        return match crate::app_manifest::execute(command, dependencies.paths.cwd()) {
+            Ok(result) => renderer.success(result),
+            Err(error) => renderer.failure(&error),
+        };
+    }
     if matches!(&cli.command, Command::Mcp { .. })
         && (cli.global.json || cli.global.quiet || cli.global.verbose)
     {

@@ -93,10 +93,12 @@ fn state() -> (TempDir, AppState, ProjectRecord) {
         Arc::new(FilesystemStorage::open(&temporary.path().join("objects")).expect("storage"));
     let staging_directory = temporary.path().join("staging");
     std::fs::create_dir(&staging_directory).expect("staging");
+    let capability_key = Arc::new(SecretString::new("capability-key").expect("secret"));
     let state = AppState {
         repository,
         storage,
-        capability_key: Arc::new(SecretString::new("capability-key").expect("secret")),
+        yard_continuation_key: Arc::new(crate::yard_session_contracts::derive_key(&capability_key)),
+        capability_key,
         public_origin: "http://127.0.0.1:8787".to_owned(),
         web_yard_origin: "http://localhost:8787".to_owned(),
         staging_directory,

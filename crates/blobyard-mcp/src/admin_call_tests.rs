@@ -1,15 +1,20 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+#![allow(
+    clippy::too_many_lines,
+    reason = "the administration parser matrix keeps the complete read surface together"
+)]
 
 use super::*;
 use serde_json::json;
 
-fn parse(name: &str, value: &Value) -> AdminToolCall {
+pub(super) fn parse(name: &str, value: &Value) -> AdminToolCall {
     parse_admin_call(name, &arguments(value), Scope::default()).expect("valid administration call")
 }
 
 #[test]
 fn recognizes_only_administration_tools() {
     for name in [
+        "list_groups",
         "list_audit",
         "list_members",
         "list_invites",
@@ -17,6 +22,8 @@ fn recognizes_only_administration_tools() {
         "revoke_invite",
         "update_member_role",
         "remove_member",
+        "list_local_users",
+        "deactivate_local_user",
         "list_api_tokens",
         "revoke_api_token",
         "list_ci_trusts",
@@ -32,6 +39,13 @@ fn recognizes_only_administration_tools() {
 
 #[test]
 fn parses_administration_reads() {
+    assert_eq!(
+        parse("create_group", &json!({ "name": "Reviewers" })),
+        AdminToolCall::Group(GroupToolCall::Create {
+            scope: Scope::default(),
+            name: "Reviewers".to_owned(),
+        })
+    );
     assert_eq!(
         parse("list_audit", &json!({ "cursor": "next" })),
         AdminToolCall::ListAudit {
@@ -56,6 +70,12 @@ fn parses_administration_reads() {
         (
             "list_invites",
             AdminToolCall::ListInvites {
+                scope: Scope::default(),
+            },
+        ),
+        (
+            "list_local_users",
+            AdminToolCall::ListLocalUsers {
                 scope: Scope::default(),
             },
         ),
@@ -129,72 +149,6 @@ fn parses_member_administration_writes() {
             confirmed: true,
         }
     );
-}
-
-#[test]
-fn parses_credential_administration_writes() {
-    assert_eq!(
-        parse(
-            "revoke_api_token",
-            &json!({ "confirm": true, "token_id": "token_1" }),
-        ),
-        AdminToolCall::RevokeApiToken {
-            scope: Scope::default(),
-            token_id: "token_1".to_owned(),
-            confirmed: true,
-        }
-    );
-    assert_eq!(
-        parse(
-            "revoke_ci_trust",
-            &json!({ "confirm": true, "trust_id": "trust_1" }),
-        ),
-        AdminToolCall::RevokeCiTrust {
-            scope: Scope::default(),
-            trust_id: "trust_1".to_owned(),
-            confirmed: true,
-        }
-    );
-    assert_eq!(
-        parse(
-            "revoke_cli_session",
-            &json!({ "confirm": true, "session_id": "session_1" }),
-        ),
-        AdminToolCall::RevokeCliSession {
-            scope: Scope::default(),
-            session_id: "session_1".to_owned(),
-            confirmed: true,
-        }
-    );
-}
-
-#[test]
-fn parses_ci_trust_with_optional_environment() {
-    let required = json!({
-        "allowed_actions": ["upload", "share"],
-        "allowed_ref_glob": "refs/heads/main",
-        "repository": "acme/artifacts",
-        "workflow_path": ".github/workflows/upload-artifacts.yml",
-        "workflow_ref": "refs/heads/main"
-    });
-    let parsed = parse("create_ci_trust", &required);
-    assert!(matches!(
-        parsed,
-        AdminToolCall::CreateCiTrust {
-            environment: None,
-            ..
-        }
-    ));
-    let mut with_environment = arguments(&required);
-    with_environment.insert("environment".to_owned(), json!("Production"));
-    assert!(matches!(
-        parse_admin_call("create_ci_trust", &with_environment, Scope::default()),
-        Ok(AdminToolCall::CreateCiTrust {
-            allowed_actions,
-            environment: Some(environment),
-            ..
-        }) if allowed_actions == ["upload", "share"] && environment == "Production"
-    ));
 }
 
 #[test]

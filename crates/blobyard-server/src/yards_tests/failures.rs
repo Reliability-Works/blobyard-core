@@ -5,13 +5,36 @@ use crate::{
 };
 use axum::http::StatusCode;
 
-const DENIED_ROUTES: [(&str, &str, &[u8]); 7] = [
+const DENIED_ROUTES: [(&str, &str, &[u8]); 14] = [
     (
         "GET",
         "/v1/yards?workspace=fixture&project=project",
         b"",
     ),
     ("GET", "/v1/yards/deploys?yardId=missing", b""),
+    ("GET", "/v1/yards/environments?yardId=missing", b""),
+    ("GET", "/v1/yards/access?yardId=missing", b""),
+    ("GET", "/v1/yards/sessions?yardId=missing", b""),
+    (
+        "POST",
+        "/v1/yards/access/visibility",
+        br#"{"yardId":"missing","visibility":"owner"}"#,
+    ),
+    (
+        "POST",
+        "/v1/yards/access/grant",
+        br#"{"yardId":"missing","principalKind":"user","principalId":"user_reader","appRoles":[]}"#,
+    ),
+    (
+        "POST",
+        "/v1/yards/access/revoke",
+        br#"{"yardId":"missing","grantId":"grant_missing"}"#,
+    ),
+    (
+        "POST",
+        "/v1/yards/sessions/revoke",
+        br#"{"yardId":"missing","sessionId":"session_missing"}"#,
+    ),
     (
         "POST",
         "/v1/yards/deploys/start",
@@ -122,7 +145,12 @@ async fn yard_routes_reject_malformed_or_incomplete_deploys_without_publication(
 #[tokio::test]
 async fn every_yard_route_maps_extractor_rejections_to_the_public_error_contract() {
     let fixture = test_seams::fixture(&["object:write", "yard:manage"]);
-    for path in ["/v1/yards?workspace=fixture", "/v1/yards/deploys"] {
+    for path in [
+        "/v1/yards?workspace=fixture",
+        "/v1/yards/deploys",
+        "/v1/yards/environments",
+        "/v1/yards/sessions",
+    ] {
         assert_error(
             send(&fixture, "GET", path, b"", false).await,
             StatusCode::BAD_REQUEST,
@@ -135,6 +163,7 @@ async fn every_yard_route_maps_extractor_rejections_to_the_public_error_contract
         "/v1/yards/deploys/fail",
         "/v1/yards/rollback",
         "/v1/yards/delete",
+        "/v1/yards/sessions/revoke",
     ] {
         assert_error(
             send(&fixture, "POST", path, b"{", false).await,

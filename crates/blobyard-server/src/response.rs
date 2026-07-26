@@ -56,6 +56,40 @@ pub(crate) fn secure_html(html: String, policy: &'static str) -> Result<Response
     )
 }
 
+pub(crate) fn redirect(
+    status: StatusCode,
+    location: &str,
+    cookie: Option<axum::http::HeaderValue>,
+) -> Result<Response<Body>, ApiError> {
+    let mut response = ApiError::internal_result(
+        Response::builder()
+            .status(status)
+            .header(header::LOCATION, location)
+            .header(header::CACHE_CONTROL, "no-store")
+            .header(header::REFERRER_POLICY, "no-referrer")
+            .body(Body::empty()),
+    )?;
+    if let Some(cookie) = cookie {
+        response.headers_mut().insert(header::SET_COOKIE, cookie);
+    }
+    Ok(response)
+}
+
+pub(crate) fn escape_html(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        match character {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#39;"),
+            _ => escaped.push(character),
+        }
+    }
+    escaped
+}
+
 #[derive(Serialize)]
 pub(crate) struct Health {
     status: &'static str,

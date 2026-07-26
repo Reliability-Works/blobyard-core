@@ -77,10 +77,12 @@ The server reuses the browser-approved CLI session and typed API client. It writ
 messages to standard output, keeps diagnostics on standard error, and never returns refresh tokens,
 R2 credentials, or signed transfer URLs to the agent.
 
-The MCP catalog covers workspace rename and safe account-export operations. Stripe-hosted billing
-sessions and both phases of account deletion are intentionally absent because they would return a
-hosted payment URL or destructive confirmation capability to model context. Use the authenticated
-CLI or API for those operations, and keep final deletion confirmation under direct human control.
+The MCP catalog covers workspace rename, safe account-export operations, and redacted Yard session
+management through `blobyard_list_yard_sessions` and `blobyard_revoke_yard_session`. Stripe-hosted
+billing sessions and both phases of account deletion are intentionally absent because they would
+return a hosted payment URL or destructive confirmation capability to model context. Use the
+authenticated CLI or API for those operations, and keep final deletion confirmation under direct
+human control.
 
 ## Projects and objects
 
@@ -141,6 +143,44 @@ blobyard sessions revoke session_123
 `blobyard tokens create` prints the raw token once. MCP intentionally excludes token creation so a
 new bearer credential is never returned to model context. Use `blobyard trusts create --help` for
 the repository, workflow, ref, environment, and allowed-action fields.
+
+## Local users
+
+Local users are the self-hosted identities behind non-public Yard access. Creation and key reset
+print the raw `byuk_` sign-in key once; MCP intentionally excludes both so raw sign-in keys never
+enter model context. Listing and deactivation are available over MCP as `blobyard_list_local_users`
+and `blobyard_deactivate_local_user`.
+
+```bash
+blobyard users create "Ada Lovelace" --email ada@example.test --workspace team
+blobyard users list --workspace team
+blobyard users reset-key user_123
+blobyard users deactivate user_123
+```
+
+Deactivation tombstones the user and revokes every active sign-in key and Yard browser session in
+the same transaction. It also removes the user from every workspace group without revoking grants
+held by those groups.
+
+## Workspace groups
+
+Groups grant Yard access to a managed set of local users. All group commands require a human
+`users:manage` session. List commands accept `--cursor`; the returned cursor is opaque and belongs
+only to that exact group or workspace scope.
+
+```bash
+blobyard groups create "Reviewers"
+blobyard groups list
+blobyard groups rename group_0123456789abcdef0123456789abcdef "Approvers"
+blobyard groups members group_0123456789abcdef0123456789abcdef
+blobyard groups add-member group_0123456789abcdef0123456789abcdef user_123
+blobyard groups remove-member group_0123456789abcdef0123456789abcdef user_123
+blobyard groups deactivate group_0123456789abcdef0123456789abcdef
+```
+
+Deactivation is a tombstone: it removes every member and revokes every active Yard grant held by the
+group in one audited transaction. Group membership is checked during sign-in, exchange, and every
+private delivery, so removing a member or deactivating a group denies the next request.
 
 ## Billing and account lifecycle
 
@@ -203,6 +243,22 @@ Human output labels the one-time result as `Share URL: https://blobyard.com/s/<c
 can be copied directly. `--json` keeps the typed `shareUrl` field, while `--quiet` suppresses the
 human line.
 
+## Application manifests
+
+Create a minimal static application manifest in the current directory, or validate a manifest before
+deployment work begins:
+
+```bash
+blobyard app init
+blobyard app validate
+blobyard app validate path/to/blobyard.toml
+```
+
+`blobyard app init` creates `blobyard.toml` and refuses to overwrite an existing file.
+`blobyard app validate` applies the complete versioned schema and cross-field contract, then reports
+the application name, runtime, and declared capability counts. Both commands are local-only and do
+not require a profile, credentials, or API connection.
+
 ## Web Yards
 
 Publish a prebuilt static directory to a stable public destination:
@@ -258,6 +314,49 @@ blobyard yard history marketing
 blobyard yard rollback marketing <deploy-id>
 blobyard yard delete marketing --force
 ```
+
+List the active environments of one Web Yard. Every Yard has a `production` environment, and the
+Yard name may be omitted when the project contains exactly one Yard:
+
+```bash
+blobyard env list marketing
+```
+
+Inspect and control who may open one Web Yard. `access list` shows the effective visibility and
+active grants, `set-visibility` accepts `public`, `owner`, `selected`, `workspace`,
+`authenticated-link`, or `any-authenticated`, and grants admit one principal with optional
+application roles, an optional environment restriction, and an optional RFC 3339 expiry. The three
+mutations require a signed-in human session; CI tokens cannot change access policy. Public Yards
+serve anonymously. Other modes use a live Yard browser session and re-evaluate policy on every
+request. In Core, `owner` admits no browser principal, while `selected` and `authenticated-link`
+accept either a direct user grant or an active grant held by one of the user's current groups; link
+redemption arrives later.
+
+```bash
+blobyard access list marketing
+blobyard access set-visibility marketing owner
+blobyard access grant marketing --principal-kind user --principal-id user_123 \
+  --role editor --role viewer --expires 2027-01-01T00:00:00Z
+blobyard access revoke marketing <grant-id>
+```
+
+Opening a non-public Yard with `GET` plus `Accept: text/html` redirects to the Core sign-in page.
+Enter the local user's `byuk_` sign-in key. Core returns through a one-time exchange on the exact
+Yard host and sets a host-only HttpOnly cookie. The identity origin does not retain a login cookie,
+so signing into another Yard requires the key again. Missing, revoked, expired, wrong-host, or
+no-longer-authorized sessions are rejected on the next request.
+
+List retained browser sessions for one Yard or revoke a session by its stable identifier. The Yard
+name may be omitted from `list` when the project contains exactly one Yard. Listings contain
+identity, host, lifecycle, creation, expiry, and last-used metadata, never raw cookie material.
+
+```bash
+blobyard yard-sessions list marketing
+blobyard yard-sessions revoke marketing yardsession_123
+```
+
+The same redacted operations are available to agents as `blobyard_list_yard_sessions` and
+`blobyard_revoke_yard_session`.
 
 See [web-yards.md](web-yards.md) for routing behavior, API and MCP automation, retention, plan
 limits, public-content isolation, and recovery guidance.

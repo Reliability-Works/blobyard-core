@@ -26,10 +26,16 @@ impl Endpoint {
             | Self::GetRetention
             | Self::ListWebYards
             | Self::ListYardDeploys
+            | Self::ListYardEnvironments
+            | Self::ListYardSessions
+            | Self::GetYardAccess
             | Self::ListAudit
             | Self::ListMembers
             | Self::ListInvites
             | Self::ListApiTokens
+            | Self::ListGroups
+            | Self::ListGroupMembers
+            | Self::ListLocalUsers
             | Self::ListCiTrusts
             | Self::ListCliSessions
             | Self::GetBilling
@@ -43,7 +49,7 @@ impl Endpoint {
     }
 }
 
-const ENDPOINT_PATHS: [&str; 76] = [
+const ENDPOINT_PATHS: [&str; 94] = [
     "/v1/health",
     "/v1/bootstrap/exchange",
     "/v1/cli/device/start",
@@ -84,6 +90,13 @@ const ENDPOINT_PATHS: [&str; 76] = [
     "/v1/yards/deploys/fail",
     "/v1/yards",
     "/v1/yards/deploys",
+    "/v1/yards/environments",
+    "/v1/yards/access",
+    "/v1/yards/access/visibility",
+    "/v1/yards/access/grant",
+    "/v1/yards/access/revoke",
+    "/v1/yards/sessions",
+    "/v1/yards/sessions/revoke",
     "/v1/yards/rollback",
     "/v1/yards/delete",
     "/v1/audit",
@@ -96,6 +109,17 @@ const ENDPOINT_PATHS: [&str; 76] = [
     "/v1/api-tokens",
     "/v1/api-tokens",
     "/v1/api-tokens/revoke",
+    "/v1/groups",
+    "/v1/groups",
+    "/v1/groups/rename",
+    "/v1/groups/members",
+    "/v1/groups/members",
+    "/v1/groups/members/remove",
+    "/v1/groups/deactivate",
+    "/v1/users",
+    "/v1/users",
+    "/v1/users/reset-key",
+    "/v1/users/deactivate",
     "/v1/ci/trusts",
     "/v1/ci/trusts",
     "/v1/ci/trusts/revoke",

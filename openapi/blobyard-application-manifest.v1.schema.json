@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blobyard.com/schemas/application-manifest/v1.json",
+  "title": "Blob Yard application manifest",
+  "description": "Canonical JSON representation of the versioned Blob Yard application manifest. The human-authored form is TOML; this schema validates its canonical JSON projection. Unknown fields fail closed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "application"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "runtime"],
+      "properties": {
+        "name": { "$ref": "#/$defs/dns_label" },
+        "runtime": { "enum": ["blobyard-js-1"] }
+      }
+    },
+    "frontend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory"],
+      "properties": {
+        "directory": { "$ref": "#/$defs/relative_path" },
+        "spa_fallback": { "type": "boolean", "default": false },
+        "clean_urls": { "type": "boolean", "default": true }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_role": { "$ref": "#/$defs/role_name" },
+        "roles": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 32,
+          "propertyNames": { "$ref": "#/$defs/role_name" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "inherits": {
+                "type": "array",
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/role_name" }
+              },
+              "permissions": {
+                "type": "array",
+                "maxItems": 64,
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/permission" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["migrations"],
+      "properties": {
+        "migrations": { "$ref": "#/$defs/relative_path" }
+      }
+    },
+    "buckets": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "$ref": "#/$defs/dns_label" },
+          "visibility": { "enum": ["private", "public-read"], "default": "private" },
+          "max_object_size": { "$ref": "#/$defs/byte_size" }
+        }
+      }
+    },
+    "functions": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "entry", "type"],
+        "properties": {
+          "name": { "$ref": "#/$defs/dns_label" },
+          "entry": { "$ref": "#/$defs/module_path" },
+          "type": { "enum": ["rpc", "http", "webhook", "event", "scheduled", "queue"] },
+          "permissions": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/permission" }
+          },
+          "database": { "enum": ["none", "read", "read-write"], "default": "none" },
+          "buckets": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/bucket_grant" }
+          },
+          "secrets": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/secret_name" }
+          },
+          "network": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/egress_target" }
+          },
+          "email": { "type": "boolean", "default": false },
+          "event": { "$ref": "#/$defs/event_name" },
+          "queue": { "$ref": "#/$defs/dns_label" }
+        }
+      }
+    },
+    "jobs": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "function", "schedule", "timezone"],
+        "properties": {
+          "name": { "$ref": "#/$defs/dns_label" },
+          "function": { "$ref": "#/$defs/dns_label" },
+          "schedule": { "$ref": "#/$defs/cron" },
+          "timezone": { "$ref": "#/$defs/timezone" },
+          "retry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "max_attempts": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3 },
+              "backoff": { "enum": ["fixed", "exponential"], "default": "exponential" }
+            }
+          }
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "method", "function"],
+        "properties": {
+          "path": { "$ref": "#/$defs/route_path" },
+          "method": { "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] },
+          "function": { "$ref": "#/$defs/dns_label" },
+          "auth": { "enum": ["required", "public"], "default": "required" }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "function_class": { "enum": ["standard"], "default": "standard" },
+        "function_timeout": { "$ref": "#/$defs/duration" },
+        "concurrency": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["function"],
+      "properties": {
+        "function": { "$ref": "#/$defs/dns_label" },
+        "timeout": { "$ref": "#/$defs/duration" }
+      }
+    }
+  },
+  "$defs": {
+    "dns_label": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "role_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "permission": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*){1,3}$",
+      "maxLength": 128
+    },
+    "secret_name": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+    },
+    "event_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*){1,3}$",
+      "maxLength": 128
+    },
+    "bucket_grant": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?:(read|write|read-write)$"
+    },
+    "egress_target": {
+      "type": "string",
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}:(?:443|80)$",
+      "maxLength": 256
+    },
+    "relative_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*$",
+      "maxLength": 256
+    },
+    "module_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.\\.?(?:/|$))[A-Za-z0-9._-]+)*\\.(?:ts|js|mts|mjs)$",
+      "maxLength": 256
+    },
+    "route_path": {
+      "type": "string",
+      "pattern": "^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?$",
+      "maxLength": 256
+    },
+    "byte_size": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,5}(?:KiB|MiB|GiB)$"
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,3}(?:ms|s|m)$"
+    },
+    "cron": {
+      "type": "string",
+      "pattern": "^\\S+ \\S+ \\S+ \\S+ \\S+$",
+      "maxLength": 64
+    },
+    "timezone": {
+      "type": "string",
+      "pattern": "^[A-Za-z_]+(?:/[A-Za-z0-9_+-]+){1,2}$|^UTC$",
+      "maxLength": 64
+    }
+  }
+}

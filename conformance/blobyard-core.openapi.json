@@ -392,6 +392,234 @@
         "x-blobyard-sdk": true
       }
     },
+    "/groups": {
+      "get": {
+        "description": "Lists active and deactivated groups in one workspace. Human sessions only.",
+        "operationId": "listGroups",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListGroupsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_groups" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Creates one empty workspace group. Human sessions only.",
+        "operationId": "createGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateGroupSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_group" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/groups/deactivate": {
+      "post": {
+        "description": "Tombstones one group and revokes its active Yard grants. Human sessions only.",
+        "operationId": "deactivateGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateGroupSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "deactivate"] },
+        "x-blobyard-mcp": { "tool": "blobyard_deactivate_group" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/groups/members": {
+      "get": {
+        "description": "Lists current members of one active workspace group. Human sessions only.",
+        "operationId": "listGroupMembers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "groupId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListGroupMembersSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "members"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_group_members" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Adds one active same-workspace user to a group. Human sessions only.",
+        "operationId": "addGroupMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/AddGroupMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/AddGroupMemberSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "add-member"] },
+        "x-blobyard-mcp": { "tool": "blobyard_add_group_member" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/groups/members/remove": {
+      "post": {
+        "description": "Removes one current group membership. Human sessions only.",
+        "operationId": "removeGroupMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RemoveGroupMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RemoveGroupMemberSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "remove-member"] },
+        "x-blobyard-mcp": { "tool": "blobyard_remove_group_member" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/groups/rename": {
+      "post": {
+        "description": "Renames one active workspace group. Human sessions only.",
+        "operationId": "renameGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RenameGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RenameGroupSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["groups", "rename"] },
+        "x-blobyard-mcp": { "tool": "blobyard_rename_group" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health",
@@ -1239,6 +1467,134 @@
         "x-blobyard-sdk": true
       }
     },
+    "/users": {
+      "get": {
+        "description": "Lists local users in one workspace with active sign-in key prefixes. Human sessions only.",
+        "operationId": "listLocalUsers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Slug" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListLocalUsersSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "list"] },
+        "x-blobyard-deployments": ["self-hosted"],
+        "x-blobyard-mcp": { "tool": "blobyard_list_local_users" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Creates one local user and returns the raw sign-in key once. Human sessions only.",
+        "operationId": "createLocalUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateLocalUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateLocalUserSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "create"] },
+        "x-blobyard-deployments": ["self-hosted"],
+        "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/users/deactivate": {
+      "post": {
+        "description": "Deactivates one local user and revokes every active sign-in key. Human sessions only.",
+        "operationId": "deactivateLocalUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateLocalUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/DeactivateLocalUserSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "deactivate"] },
+        "x-blobyard-deployments": ["self-hosted"],
+        "x-blobyard-mcp": { "tool": "blobyard_deactivate_local_user" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/users/reset-key": {
+      "post": {
+        "description": "Revokes every active sign-in key for one user and returns the replacement key once. Human sessions only.",
+        "operationId": "resetLocalUserLoginKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResetLocalUserLoginKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ResetLocalUserLoginKeySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["users", "reset-key"] },
+        "x-blobyard-deployments": ["self-hosted"],
+        "x-blobyard-mcp": { "excluded": "Raw sign-in keys stay outside model context." },
+        "x-blobyard-sdk": true
+      }
+    },
     "/workspaces": {
       "get": {
         "operationId": "listWorkspaces",
@@ -1361,6 +1717,132 @@
         },
         "x-blobyard-cli": { "command": ["yard", "list"] },
         "x-blobyard-mcp": { "tool": "blobyard_list_web_yards" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access": {
+      "get": {
+        "description": "Reads one Yard's effective visibility and active access grants.",
+        "operationId": "getYardAccess",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GetYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_get_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/grant": {
+      "post": {
+        "description": "Grants one principal scoped access to a Yard. Human sessions only.",
+        "operationId": "grantYardAccess",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/GrantYardAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/GrantYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "grant"] },
+        "x-blobyard-mcp": { "tool": "blobyard_grant_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/revoke": {
+      "post": {
+        "description": "Revokes one Yard access grant. Human sessions only.",
+        "operationId": "revokeYardAccess",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardAccessSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_access" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/access/visibility": {
+      "post": {
+        "description": "Sets one Yard's visibility policy. Human sessions only.",
+        "operationId": "setYardVisibility",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardVisibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/SetYardVisibilitySuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["access", "set-visibility"] },
+        "x-blobyard-mcp": { "tool": "blobyard_set_yard_visibility" },
         "x-blobyard-sdk": true
       }
     },
@@ -1522,6 +2004,36 @@
         "x-blobyard-sdk": true
       }
     },
+    "/yards/environments": {
+      "get": {
+        "description": "Lists active environments for one Yard.",
+        "operationId": "listYardEnvironments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardEnvironmentsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["env", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_environments" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/yards/rollback": {
       "post": {
         "description": "Promotes a retained successful deploy. Workspace administrator access is required.",
@@ -1551,6 +2063,68 @@
         },
         "x-blobyard-cli": { "command": ["yard", "rollback"] },
         "x-blobyard-mcp": { "tool": "blobyard_rollback_web_yard" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/sessions": {
+      "get": {
+        "description": "Lists browser sessions for one Yard without exposing token material.",
+        "operationId": "listYardSessions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardSessionsSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard-sessions", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_sessions" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/sessions/revoke": {
+      "post": {
+        "description": "Revokes one Yard browser session. Human sessions only.",
+        "operationId": "revokeYardSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardSessionSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["yard-sessions", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_session" },
         "x-blobyard-sdk": true
       }
     }

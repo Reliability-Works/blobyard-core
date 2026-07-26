@@ -1,8 +1,12 @@
+use crate::AppCommand;
 use crate::account_commands::AccountCommand;
 use crate::billing_commands::BillingCommand;
 use crate::headless_commands::{
-    AuditCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand, SharesCommand,
-    TokensCommand, TrustsCommand, WorkspacesCommand,
+    AuditCommand, GroupsCommand, InvitesCommand, MembersCommand, PreviewsCommand, SessionsCommand,
+    SharesCommand, TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
+};
+use crate::yard_commands::{
+    AccessCommand, DeployArgs, EnvCommand, YardCommand, YardSessionsCommand,
 };
 use clap::{Args, Subcommand, ValueEnum};
 use std::num::NonZeroU32;
@@ -12,6 +16,12 @@ use std::{fmt, fmt::Formatter};
 /// Operations supported by the Blobyard CLI contract.
 #[derive(Clone, Debug, Subcommand)]
 pub enum Command {
+    /// Create or validate a local application manifest.
+    App {
+        /// The application manifest operation.
+        #[command(subcommand)]
+        command: AppCommand,
+    },
     /// Configure isolated Blob Yard Cloud or self-hosted connections.
     Profiles {
         /// The profile operation.
@@ -76,6 +86,24 @@ pub enum Command {
     },
     /// Deploy a static directory to a named public Web Yard.
     Deploy(DeployArgs),
+    /// Inspect Web Yard environments.
+    Env {
+        /// The environment operation.
+        #[command(subcommand)]
+        command: EnvCommand,
+    },
+    /// Inspect or manage Web Yard access policy.
+    Access {
+        /// The access operation.
+        #[command(subcommand)]
+        command: AccessCommand,
+    },
+    /// Inspect or revoke Web Yard browser sessions.
+    YardSessions {
+        /// The browser-session operation.
+        #[command(subcommand)]
+        command: YardSessionsCommand,
+    },
     /// Inspect or manage Web Yards.
     Yard {
         /// The Web Yard operation.
@@ -117,6 +145,18 @@ pub enum Command {
         /// The API-token operation.
         #[command(subcommand)]
         command: TokensCommand,
+    },
+    /// Inspect or manage workspace groups.
+    Groups {
+        /// The workspace-group operation.
+        #[command(subcommand)]
+        command: GroupsCommand,
+    },
+    /// Inspect or manage local users.
+    Users {
+        /// The local-user operation.
+        #[command(subcommand)]
+        command: UsersCommand,
     },
     /// Inspect or manage GitHub OIDC trusts.
     Trusts {
@@ -281,86 +321,6 @@ pub struct PreviewArgs {
     /// Preview lifetime, such as `7d`.
     #[arg(long, value_name = "DURATION")]
     pub expires: Option<String>,
-}
-
-/// Arguments for `blobyard deploy`.
-#[derive(Clone, Debug, Args)]
-#[allow(
-    clippy::struct_excessive_bools,
-    reason = "the public CLI contract exposes four independent deploy switches"
-)]
-pub struct DeployArgs {
-    /// Static directory containing `index.html`.
-    #[arg(value_name = "DIRECTORY", conflicts_with = "all")]
-    pub directory: Option<PathBuf>,
-    /// Named Web Yard within the selected project.
-    #[arg(long, value_name = "NAME", conflicts_with = "all")]
-    pub yard: Option<String>,
-    /// Deploy every Web Yard configured in `.blobyard.toml`.
-    #[arg(long, conflicts_with_all = ["directory", "yard"])]
-    pub all: bool,
-    /// Use the root entry file for unmatched extensionless paths.
-    #[arg(long)]
-    pub spa: bool,
-    /// Resolve extensionless paths to matching HTML files.
-    #[arg(long)]
-    pub clean_urls: bool,
-    /// Acknowledge that deployed files become public.
-    #[arg(long)]
-    pub public: bool,
-}
-
-/// Web Yard management operations.
-#[derive(Clone, Debug, Subcommand)]
-pub enum YardCommand {
-    /// List Web Yards in the selected project.
-    List,
-    /// Show one Web Yard, selecting it automatically when only one exists.
-    Show(ShowYardArgs),
-    /// List immutable deploy history for a Web Yard.
-    History(YardNameArgs),
-    /// Repoint a Web Yard to an earlier deploy.
-    Rollback(RollbackYardArgs),
-    /// Delete a Web Yard and all of its deploys.
-    Delete(DeleteYardArgs),
-}
-
-/// Arguments for `blobyard yard show`.
-#[derive(Clone, Debug, Args)]
-pub struct ShowYardArgs {
-    /// Project-unique Web Yard name.
-    #[arg(value_name = "NAME")]
-    pub name: Option<String>,
-}
-
-/// Arguments selecting one named Web Yard.
-#[derive(Clone, Debug, Args)]
-pub struct YardNameArgs {
-    /// Project-unique Web Yard name.
-    #[arg(value_name = "NAME")]
-    pub name: String,
-}
-
-/// Arguments for `blobyard yard rollback`.
-#[derive(Clone, Debug, Args)]
-pub struct RollbackYardArgs {
-    /// Project-unique Web Yard name.
-    #[arg(value_name = "NAME")]
-    pub name: String,
-    /// Specific immutable deploy identifier. The previous deploy is used when omitted.
-    #[arg(value_name = "DEPLOY_ID")]
-    pub deploy_id: Option<String>,
-}
-
-/// Arguments for `blobyard yard delete`.
-#[derive(Clone, Debug, Args)]
-pub struct DeleteYardArgs {
-    /// Project-unique Web Yard name.
-    #[arg(value_name = "NAME")]
-    pub name: String,
-    /// Confirm deletion without an interactive prompt.
-    #[arg(long)]
-    pub force: bool,
 }
 
 /// Inbox operations.

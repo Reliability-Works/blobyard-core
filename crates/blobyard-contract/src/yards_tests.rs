@@ -35,10 +35,17 @@ fn yard_paths_are_portable_normalized_relative_paths() {
     assert!(!is_valid_yard_path("/index.html"));
     assert!(!is_valid_yard_path("assets/../index.html"));
     assert!(!is_valid_yard_path("assets\\app.js"));
+    assert!(!is_valid_yard_path(".blobyard/session/exchange"));
+    assert!(!is_valid_yard_path(".blobyard/index.html"));
+    assert!(is_valid_yard_path("assets/.blobyard/app.js"));
     assert!(!is_valid_yard_path(&"a".repeat(1_025)));
+}
 
+#[test]
+fn yard_request_paths_allow_root_and_reject_reserved_or_absolute_paths() {
     assert!(is_valid_yard_request_path(""));
     assert!(is_valid_yard_request_path("docs/"));
     assert!(!is_valid_yard_request_path("/docs"));
     assert!(!is_valid_yard_request_path("/"));
+    assert!(!is_valid_yard_request_path(".blobyard/session/logout"));
 }

@@ -5,7 +5,7 @@ use crate::Endpoint;
 pub enum OperationAvailability {
     /// Available in Blob Yard Cloud and self-hosted deployments.
     Core,
-    /// Available only while bootstrapping a self-hosted deployment.
+    /// Available only in a self-hosted deployment.
     SelfHostedOnly,
     /// Available only in Blob Yard Cloud.
     HostedExtension,
@@ -18,7 +18,11 @@ impl Endpoint {
     #[must_use]
     pub const fn availability(self) -> OperationAvailability {
         match self {
-            Self::ExchangeBootstrapToken => OperationAvailability::SelfHostedOnly,
+            Self::ExchangeBootstrapToken
+            | Self::ListLocalUsers
+            | Self::CreateLocalUser
+            | Self::ResetLocalUserLoginKey
+            | Self::DeactivateLocalUser => OperationAvailability::SelfHostedOnly,
             Self::DeviceStart
             | Self::DevicePoll
             | Self::TokenRefresh

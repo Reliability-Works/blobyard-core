@@ -27,6 +27,7 @@ fn confirmed_mutations_require_each_operation_argument() {
             json!({ "confirm": true, "user_id": "user_1" }),
         ),
         ("remove_member", json!({ "confirm": true })),
+        ("deactivate_local_user", json!({ "confirm": true })),
         ("revoke_api_token", json!({ "confirm": true })),
         ("revoke_ci_trust", json!({ "confirm": true })),
         ("revoke_cli_session", json!({ "confirm": true })),

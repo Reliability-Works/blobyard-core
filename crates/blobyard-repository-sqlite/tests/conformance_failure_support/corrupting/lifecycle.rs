@@ -15,6 +15,10 @@ impl<T: LifecycleRepository> LifecycleRepository for Corrupting<'_, T> {
         before: Option<u64>,
         limit: u32,
     ) -> Result<AuditPage, RepositoryError> {
+        let call = self
+            .audit_list_calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1;
         self.inner
             .list_audit(workspace_id, before, limit)
             .map(|mut page| {
@@ -24,6 +28,23 @@ impl<T: LifecycleRepository> LifecycleRepository for Corrupting<'_, T> {
                     (Corruption::AuditCursor, None) => page.next_before = None,
                     (Corruption::AuditNextAction, Some(_)) => {
                         "changed".clone_into(&mut page.items[0].action);
+                    }
+                    (Corruption::GroupAuditRecord, None) => corrupt_group_audit_record(&mut page),
+                    (Corruption::GroupSuccessExtraAudit, None)
+                        if page
+                            .items
+                            .iter()
+                            .any(|event| event.id == "audit_group_created") =>
+                    {
+                        add_extra_group_audit(&mut page);
+                    }
+                    (Corruption::GroupFailedMutationAudit, None) if matches!(call, 7 | 8) => {
+                        let mut phantom = page.items[0].clone();
+                        "audit_group_duplicate".clone_into(&mut phantom.id);
+                        page.items.push(phantom);
+                    }
+                    (Corruption::GroupFailedMutationSnapshot, None) if call == 8 => {
+                        page.items.pop();
                     }
                     _ => {}
                 }
@@ -119,4 +140,25 @@ impl<T: LifecycleRepository> LifecycleRepository for Corrupting<'_, T> {
     fn retained_projects(&self) -> Result<Vec<String>, RepositoryError> {
         self.inner.retained_projects()
     }
+}
+
+fn corrupt_group_audit_record(page: &mut AuditPage) {
+    if let Some(event) = page
+        .items
+        .iter_mut()
+        .find(|event| event.id == "audit_group_created")
+    {
+        "changed".clone_into(&mut event.actor);
+    }
+}
+
+fn add_extra_group_audit(page: &mut AuditPage) {
+    let mut phantom = page
+        .items
+        .iter()
+        .find(|event| event.id == "audit_group_created")
+        .expect("created event")
+        .clone();
+    "audit_group_created_extra".clone_into(&mut phantom.id);
+    page.items.push(phantom);
 }

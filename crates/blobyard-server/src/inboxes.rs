@@ -23,7 +23,7 @@ mod operations;
 #[path = "inbox_browser.rs"]
 mod browser;
 
-struct PeerFingerprint(String);
+pub(crate) struct PeerFingerprint(pub(crate) String);
 
 impl FromRequestParts<AppState> for PeerFingerprint {
     type Rejection = std::convert::Infallible;

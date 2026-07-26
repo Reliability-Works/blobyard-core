@@ -157,7 +157,7 @@ fn overflowing_tokens() -> Vec<blobyard_contract::LocalApiTokenRecord> {
     values
 }
 
-fn mismatched_events(
+pub(super) fn mismatched_events(
     event: &blobyard_contract::NewAuditEvent,
 ) -> Vec<blobyard_contract::NewAuditEvent> {
     let mut events = Vec::new();

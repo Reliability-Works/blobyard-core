@@ -21,6 +21,8 @@ blobyard-storage-filesystem = { path = "../blobyard-storage-filesystem" }
 blobyard-storage-s3 = { path = "../blobyard-storage-s3" }
 clap.workspace = true
 futures-util.workspace = true
+hex.workspace = true
+hmac.workspace = true
 percent-encoding.workspace = true
 reqwest.workspace = true
 rustls-webpki.workspace = true

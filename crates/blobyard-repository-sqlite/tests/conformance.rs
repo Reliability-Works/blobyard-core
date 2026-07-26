@@ -61,6 +61,8 @@ fn sqlite_satisfies_the_metadata_contract() {
         .expect("fixture workspace");
     blobyard_testkit::credential_conformance(&repository, &workspace.id)
         .expect("credential conformance");
+    blobyard_testkit::local_user_conformance(&repository, &workspace.id)
+        .expect("local user conformance");
     blobyard_testkit::transfer_conformance(&repository, "project_fixture")
         .expect("transfer conformance");
     blobyard_testkit::yard_conformance(&repository, &yard_fixture()).expect("Web Yard conformance");
@@ -68,7 +70,7 @@ fn sqlite_satisfies_the_metadata_contract() {
     blobyard_testkit::lifecycle_conformance(&repository).expect("lifecycle conformance");
     drop(repository);
     let reopened = SqliteRepository::open(&path).expect("reopened repository");
-    assert_eq!(reopened.schema_version().expect("schema version"), 16);
+    assert_eq!(reopened.schema_version().expect("schema version"), 21);
 }
 
 #[test]
@@ -132,7 +134,11 @@ fn sqlite_refuses_a_newer_schema() {
     let path = temporary.path().join("future.sqlite3");
     let connection = rusqlite::Connection::open(&path).expect("sqlite");
     connection
-        .pragma_update(None, "user_version", 17)
+        .pragma_update(
+            None,
+            "user_version",
+            blobyard_repository_sqlite::current_schema_version() + 1,
+        )
         .expect("future version");
     drop(connection);
     assert_eq!(
@@ -168,7 +174,7 @@ fn sqlite_migrates_v5_tokens_with_safe_lifecycle_defaults() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 16);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     let tokens = repository.list_api_tokens().expect("migrated tokens");
     let active = tokens
         .iter()
@@ -224,7 +230,7 @@ fn sqlite_migrates_completed_v3_objects_without_losing_download_metadata() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 16);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     let objects = repository
         .list_stored_objects("project_v3", None, true)
         .expect("migrated objects");
@@ -284,7 +290,7 @@ fn sqlite_migrates_v4_objects_into_lifecycle_schema() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 16);
+    assert_eq!(repository.schema_version().expect("schema version"), 21);
     let object = repository
         .object_version("version_v4")
         .expect("migrated object");

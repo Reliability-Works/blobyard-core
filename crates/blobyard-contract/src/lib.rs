@@ -4,13 +4,18 @@ mod auth;
 mod ci;
 mod inboxes;
 mod lifecycle;
+mod local_users;
 mod migration;
 mod previews;
 mod repository;
 mod sharing;
 mod storage;
 mod transfers;
+mod workspace_groups;
+mod yard_access;
+mod yard_environments;
 mod yard_repository;
+mod yard_sessions;
 mod yards;
 
 fn is_valid_relative_path(value: &str, maximum_bytes: usize) -> bool {
@@ -39,6 +44,10 @@ pub use lifecycle::{
     NewAuditEvent, NewObjectDeletion, ObjectDeletionTarget, RetentionOverview,
     RetentionPolicyRecord, RetentionRunRecord,
 };
+pub use local_users::{
+    LocalUserListing, LocalUserLoginKeyRecord, LocalUserRecord, LocalUserRepository,
+    LocalUserStatus,
+};
 pub use migration::{
     MigrationObjectRecord, MigrationRepository, MigrationRetentionRecord, MigrationShareRecord,
     MigrationSnapshot,
@@ -62,7 +71,25 @@ pub use transfers::{
     ReservationStrategy, StoredObjectRecord, TransferRepository, UploadPartRecord,
     UploadReservationRecord,
 };
+pub use workspace_groups::{
+    MAXIMUM_ACTIVE_GROUP_GRANTS, MAXIMUM_ACTIVE_GROUPS, MAXIMUM_GROUP_MEMBERS, MAXIMUM_USER_GROUPS,
+    WorkspaceGroupCursor, WorkspaceGroupMemberCursor, WorkspaceGroupMemberPage,
+    WorkspaceGroupMemberRecord, WorkspaceGroupPage, WorkspaceGroupRecord, WorkspaceGroupRepository,
+    WorkspaceGroupStatus, normalize_group_name,
+};
+pub use yard_access::{
+    NewYardAccessGrant, YardAccessGrantRecord, YardAccessPolicyRecord, YardAccessPrincipalKind,
+    YardVisibility,
+};
+pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};
+pub use yard_sessions::{
+    NewYardContinuation, NewYardSession, YARD_CONTINUATION_LIFETIME_MS,
+    YARD_EXCHANGE_CODE_LIFETIME_MS, YARD_LOGIN_RATE_LIMIT, YARD_LOGIN_RATE_WINDOW_MS,
+    YARD_SESSION_COOKIE_NAME, YARD_SESSION_LIFETIME_MS, YARD_SESSION_REVOCATION_BOUND_MS,
+    YardAdmission, YardContinuationRecord, YardSessionAuditContext, YardSessionExchange,
+    YardSessionListing, YardSessionRecord, YardSessionRepository, YardSessionStatus,
+};
 pub use yards::{
     MAXIMUM_YARD_PATH_BYTES, NewWebYard, NewYardDeploy, NewYardFile, WebYardRecord, WebYardStatus,
     YardDeployRecord, YardDeployStatus, YardDeploymentRecord, YardFileTarget, YardStartRecord,

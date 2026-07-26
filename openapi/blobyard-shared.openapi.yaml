@@ -2301,6 +2301,383 @@ components:
         - data
         - ok
         - requestId
+    YardEnvironmentSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        kind:
+          type: string
+          enum:
+            - production
+            - staging
+            - preview
+        name:
+          $ref: "#/components/schemas/Slug"
+        updatedAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+      required:
+        - createdAt
+        - id
+        - kind
+        - name
+        - updatedAt
+    ListYardEnvironmentsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListYardEnvironmentsResult:
+      type: object
+      additionalProperties: false
+      properties:
+        environments:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardEnvironmentSummary"
+      required:
+        - environments
+    ListYardEnvironmentsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListYardEnvironmentsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    YardVisibility:
+      type: string
+      description: Audience allowed to open one Yard.
+      enum:
+        - public
+        - owner
+        - selected
+        - workspace
+        - authenticated-link
+        - any-authenticated
+    YardAccessPrincipalKind:
+      type: string
+      description: Kind of principal one access grant covers.
+      enum:
+        - user
+        - group
+        - guest-invite
+        - link
+    YardAccessGrantSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 16
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        environmentId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+        expiresAt:
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        principalId:
+          type: string
+          minLength: 1
+          maxLength: 256
+        principalKind:
+          $ref: "#/components/schemas/YardAccessPrincipalKind"
+      required:
+        - appRoles
+        - createdAt
+        - environmentId
+        - expiresAt
+        - id
+        - principalId
+        - principalKind
+    GetYardAccessQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    GetYardAccessResult:
+      type: object
+      additionalProperties: false
+      properties:
+        grants:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardAccessGrantSummary"
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+      required:
+        - grants
+        - visibility
+    GetYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GetYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    SetYardVisibilityRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - visibility
+        - yardId
+    SetYardVisibilityResult:
+      type: object
+      additionalProperties: false
+      properties:
+        visibility:
+          $ref: "#/components/schemas/YardVisibility"
+      required:
+        - visibility
+    SetYardVisibilitySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/SetYardVisibilityResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    GrantYardAccessRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 16
+        environmentId:
+          $ref: "#/components/schemas/Identifier"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        principalId:
+          type: string
+          minLength: 1
+          maxLength: 256
+        principalKind:
+          $ref: "#/components/schemas/YardAccessPrincipalKind"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - appRoles
+        - principalId
+        - principalKind
+        - yardId
+    GrantYardAccessResult:
+      type: object
+      additionalProperties: false
+      properties:
+        grant:
+          $ref: "#/components/schemas/YardAccessGrantSummary"
+      required:
+        - grant
+    GrantYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/GrantYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeYardAccessRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        grantId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - grantId
+        - yardId
+    RevokeYardAccessResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeYardAccessSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeYardAccessResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    YardSessionStatus:
+      type: string
+      description: Effective lifecycle state of one Yard browser session.
+      enum:
+        - active
+        - expired
+        - revoked
+    YardSessionSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        environmentId:
+          $ref: "#/components/schemas/Identifier"
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        hostLabel:
+          type: string
+          minLength: 1
+          maxLength: 253
+        id:
+          $ref: "#/components/schemas/Identifier"
+        lastUsedAt:
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/YardSessionStatus"
+        userDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        userId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - createdAt
+        - environmentId
+        - expiresAt
+        - hostLabel
+        - id
+        - lastUsedAt
+        - status
+        - userDisplayName
+        - userId
+        - yardId
+    ListYardSessionsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListYardSessionsResult:
+      type: object
+      additionalProperties: false
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/YardSessionSummary"
+      required:
+        - sessions
+    ListYardSessionsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListYardSessionsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeYardSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sessionId:
+          $ref: "#/components/schemas/Identifier"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - sessionId
+        - yardId
+    RevokeYardSessionResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RevokeYardSessionSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeYardSessionResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     ListWebYardDeploysQuery:
       type: object
       additionalProperties: false
@@ -2994,6 +3371,475 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/RevokeApiTokenResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    GroupStatus:
+      type: string
+      description: Persisted workspace-group lifecycle state.
+      enum:
+        - active
+        - deactivated
+    GroupSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Identifier"
+        workspaceId:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: NFC-normalized human-readable group name.
+          minLength: 2
+          maxLength: 80
+        status:
+          $ref: "#/components/schemas/GroupStatus"
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        deactivatedAt:
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
+        memberCount:
+          type: integer
+          description: Current active membership count.
+          minimum: 0
+          maximum: 500
+      required:
+        - id
+        - workspaceId
+        - name
+        - status
+        - createdAt
+        - deactivatedAt
+        - memberCount
+    GroupPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupSummary"
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    GroupMemberPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Identifier"
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    ListGroupsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+      required:
+        - workspace
+    ListGroupsResult:
+      $ref: "#/components/schemas/GroupPage"
+    ListGroupsSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListGroupsResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateGroupRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+        name:
+          type: string
+          description: Human-readable group name.
+      required:
+        - workspace
+        - name
+    CreateGroupResult:
+      type: object
+      additionalProperties: false
+      properties:
+        group:
+          $ref: "#/components/schemas/GroupSummary"
+      required:
+        - group
+    CreateGroupSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateGroupResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RenameGroupRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Identifier"
+        name:
+          type: string
+          description: Replacement human-readable group name.
+      required:
+        - groupId
+        - name
+    RenameGroupResult:
+      type: object
+      additionalProperties: false
+      properties:
+        group:
+          $ref: "#/components/schemas/GroupSummary"
+      required:
+        - group
+    RenameGroupSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RenameGroupResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ListGroupMembersQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Identifier"
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+      required:
+        - groupId
+    ListGroupMembersResult:
+      $ref: "#/components/schemas/GroupMemberPage"
+    ListGroupMembersSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListGroupMembersResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    AddGroupMemberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Identifier"
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - groupId
+        - userId
+    AddGroupMemberResult:
+      $ref: "#/components/schemas/EmptyResult"
+    AddGroupMemberSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/AddGroupMemberResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RemoveGroupMemberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Identifier"
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - groupId
+        - userId
+    RemoveGroupMemberResult:
+      $ref: "#/components/schemas/EmptyResult"
+    RemoveGroupMemberSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RemoveGroupMemberResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DeactivateGroupRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - groupId
+    DeactivateGroupResult:
+      $ref: "#/components/schemas/EmptyResult"
+    DeactivateGroupSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DeactivateGroupResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    LocalUserStatus:
+      type: string
+      description: Lifecycle state of one local user.
+      enum:
+        - active
+        - deactivated
+    LocalUserSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        email:
+          anyOf:
+            - type: string
+            - type: "null"
+        id:
+          $ref: "#/components/schemas/Identifier"
+        loginKeyPrefix:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Non-secret prefix of the active sign-in key when one exists.
+        status:
+          $ref: "#/components/schemas/LocalUserStatus"
+        workspaceId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - createdAt
+        - displayName
+        - email
+        - id
+        - loginKeyPrefix
+        - status
+        - workspaceId
+    ListLocalUsersQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - workspace
+    ListLocalUsersResult:
+      type: object
+      additionalProperties: false
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalUserSummary"
+      required:
+        - users
+    ListLocalUsersSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListLocalUsersResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateLocalUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        email:
+          anyOf:
+            - type: string
+            - type: "null"
+        workspace:
+          $ref: "#/components/schemas/Slug"
+      required:
+        - displayName
+        - workspace
+    CreateLocalUserResult:
+      type: object
+      additionalProperties: false
+      properties:
+        loginKey:
+          type: string
+          description: Raw sign-in key returned once.
+          pattern: ^byuk_
+        loginKeyPrefix:
+          type: string
+          description: Non-secret prefix shown in listings.
+        user:
+          $ref: "#/components/schemas/LocalUserSummary"
+      required:
+        - loginKey
+        - loginKeyPrefix
+        - user
+    CreateLocalUserSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateLocalUserResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    ResetLocalUserLoginKeyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - userId
+    ResetLocalUserLoginKeyResult:
+      type: object
+      additionalProperties: false
+      properties:
+        loginKey:
+          type: string
+          description: Raw sign-in key returned once.
+          pattern: ^byuk_
+        loginKeyPrefix:
+          type: string
+          description: Non-secret prefix shown in listings.
+      required:
+        - loginKey
+        - loginKeyPrefix
+    ResetLocalUserLoginKeySuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ResetLocalUserLoginKeyResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    DeactivateLocalUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - userId
+    DeactivateLocalUserResult:
+      $ref: "#/components/schemas/EmptyResult"
+    DeactivateLocalUserSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/DeactivateLocalUserResult"
         ok:
           type: boolean
           const: true
@@ -3950,6 +4796,13 @@ x-blobyard-path-order:
   - /previews
   - /previews/revoke
   - /yards
+  - /yards/environments
+  - /yards/access
+  - /yards/access/visibility
+  - /yards/access/grant
+  - /yards/access/revoke
+  - /yards/sessions
+  - /yards/sessions/revoke
   - /yards/deploys
   - /yards/deploys/start
   - /yards/deploys/finalise
@@ -3969,6 +4822,14 @@ x-blobyard-path-order:
   - /members/remove
   - /api-tokens
   - /api-tokens/revoke
+  - /groups
+  - /groups/rename
+  - /groups/members
+  - /groups/members/remove
+  - /groups/deactivate
+  - /users
+  - /users/reset-key
+  - /users/deactivate
   - /ci/trusts
   - /ci/trusts/revoke
   - /cli/sessions

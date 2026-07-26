@@ -1,13 +1,14 @@
 pub(super) use super::super::{present, success};
 pub(super) use crate::adapter::{SqliteRepository, yard_history};
 pub(super) use blobyard_contract::{
-    AuditValue, LifecycleRepository, NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile,
-    RepositoryError, TransferRepository, WebYardRepository, WebYardStatus, YardDeployStatus,
-    YardDeploymentRecord,
+    AuditValue, LifecycleRepository, LocalUserRepository, NewAuditEvent, NewWebYard, NewYardDeploy,
+    NewYardFile, RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
+    YardDeployStatus, YardDeploymentRecord,
 };
 use blobyard_core::Slug;
 
-pub(super) fn repository() -> (tempfile::TempDir, SqliteRepository, String, u64) {
+pub(in crate::adapter::yards::tests) fn repository()
+-> (tempfile::TempDir, SqliteRepository, String, u64) {
     let temporary = success(tempfile::tempdir());
     let repository = success(SqliteRepository::open(
         &temporary.path().join("metadata.sqlite3"),
@@ -16,6 +17,13 @@ pub(super) fn repository() -> (tempfile::TempDir, SqliteRepository, String, u64)
     success(blobyard_testkit::transfer_conformance(
         &repository,
         "project_fixture",
+    ));
+    let user = blobyard_testkit::local_user("workspace_fixture", "user_fixture", None, 100);
+    let key = blobyard_testkit::login_key("userkey_fixture", &user.id, '7', 100);
+    success(repository.create_local_user(
+        &user,
+        &key,
+        &blobyard_testkit::local_user_event("audit_user_fixture", &user, "user.created", 100),
     ));
     let mut objects = success(repository.list_stored_objects(
         "project_fixture",

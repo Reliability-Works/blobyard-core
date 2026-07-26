@@ -70,8 +70,20 @@ fn finalisation_is_idempotent_and_missing_public_targets_fail_closed() {
     assert_eq!(
         fixture
             .repository
-            .yard_file_by_host(&fixture.yard.host_label, "missing.txt"),
+            .yard_file_by_host(&fixture.yard.host_label, "missing.txt", None, 0),
         Err(RepositoryError::NotFound)
+    );
+    success(fixture.repository.set_yard_visibility(
+        &fixture.yard.id,
+        blobyard_contract::YardVisibility::Workspace,
+        11,
+        &blobyard_testkit::visibility_event(&fixture.yard.id, "public", "workspace", 11),
+    ));
+    assert_eq!(
+        fixture
+            .repository
+            .yard_file_by_host(&fixture.yard.host_label, "", Some("invalid"), 11),
+        Err(RepositoryError::InvalidInput)
     );
     assert_eq!(
         fixture.repository.rollback_web_yard(

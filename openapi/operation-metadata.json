@@ -6,6 +6,11 @@
       "requiredCiActions": ["upload"],
       "risk": "destructive"
     },
+    "addGroupMember": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "clearRetention": {
       "requiredUserScopes": ["retention:manage"],
       "requiredCiActions": [],
@@ -46,6 +51,11 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "createGroup": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "createInbox": {
       "requiredUserScopes": ["inbox:manage"],
       "requiredCiActions": [],
@@ -53,6 +63,11 @@
     },
     "createInvite": {
       "requiredUserScopes": ["members:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "createLocalUser": {
+      "requiredUserScopes": ["users:manage"],
       "requiredCiActions": [],
       "risk": "sensitive"
     },
@@ -90,6 +105,16 @@
       "requiredUserScopes": ["project:write"],
       "requiredCiActions": [],
       "risk": "write"
+    },
+    "deactivateLocalUser": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "deactivateGroup": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
     },
     "deleteObject": {
       "requiredUserScopes": ["object:write"],
@@ -157,6 +182,16 @@
       "requiredCiActions": ["upload"],
       "risk": "read"
     },
+    "getYardAccess": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
+    "grantYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "health": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "read" },
     "listApiTokens": {
       "requiredUserScopes": ["tokens:manage"],
@@ -183,10 +218,25 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "listGroupMembers": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
+    "listGroups": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
     "listInvites": {
       "requiredUserScopes": ["members:manage"],
       "requiredCiActions": [],
       "risk": "sensitive"
+    },
+    "listLocalUsers": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
     },
     "listMembers": {
       "requiredUserScopes": ["workspace:read"],
@@ -228,6 +278,16 @@
       "requiredCiActions": [],
       "risk": "read"
     },
+    "listYardEnvironments": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
+    "listYardSessions": {
+      "requiredUserScopes": ["yard:read"],
+      "requiredCiActions": ["yard:manage"],
+      "risk": "read"
+    },
     "logoutCliSession": {
       "requiredUserScopes": [],
       "requiredCiActions": [],
@@ -255,6 +315,11 @@
       "requiredCiActions": [],
       "risk": "write"
     },
+    "renameGroup": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "write"
+    },
     "requestAccountExport": {
       "requiredUserScopes": ["account:export"],
       "requiredCiActions": [],
@@ -274,6 +339,16 @@
       "requiredUserScopes": ["object:write"],
       "requiredCiActions": ["upload"],
       "risk": "write"
+    },
+    "removeGroupMember": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "resetLocalUserLoginKey": {
+      "requiredUserScopes": ["users:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
     },
     "resolveInbox": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
     "resolveShare": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
@@ -317,6 +392,16 @@
       "requiredCiActions": [],
       "risk": "destructive"
     },
+    "revokeYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeYardSession": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
     "rollbackWebYard": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": ["yard:manage"],
@@ -326,6 +411,11 @@
       "requiredUserScopes": ["retention:manage"],
       "requiredCiActions": [],
       "risk": "write"
+    },
+    "setYardVisibility": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
     },
     "startDeviceLogin": { "requiredUserScopes": [], "requiredCiActions": [], "risk": "sensitive" },
     "startWebYardDeploy": {

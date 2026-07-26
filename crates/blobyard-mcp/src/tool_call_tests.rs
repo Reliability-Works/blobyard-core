@@ -3,13 +3,17 @@
     reason = "tool parsing tests use fixed JSON fixtures"
 )]
 
-use crate::{Scope, ToolCall, WebYardToolCall};
+use crate::{Scope, ToolCall};
 use serde_json::json;
 
+#[path = "tool_call_access_error_tests.rs"]
+mod access_error_tests;
 #[path = "dashboard_call_tests.rs"]
 mod dashboard_tests;
 #[path = "tool_call_error_tests.rs"]
 mod error_tests;
+#[path = "tool_call_yard_tests.rs"]
+mod yard_tests;
 
 fn parse(name: &str, arguments: impl Into<serde_json::Value>) -> ToolCall {
     let arguments = arguments.into();
@@ -229,66 +233,5 @@ fn parses_inbox_and_retention_calls() {
     assert_eq!(
         parse("blobyard_clear_retention", json!({})),
         ToolCall::ClearRetention { scope: empty }
-    );
-}
-
-#[test]
-fn parses_web_yard_calls_with_explicit_public_and_delete_confirmation() {
-    let scope = Scope {
-        workspace: Some("team".into()),
-        project: Some("web".into()),
-    };
-    assert_eq!(
-        parse(
-            "blobyard_deploy_web_yard",
-            json!({
-                "workspace": "team", "project": "web", "directory": "./dist",
-                "yard": "documentation", "spa": true, "clean_urls": true, "public": true
-            })
-        ),
-        ToolCall::WebYard(WebYardToolCall::DeployWebYard {
-            scope,
-            directory: "./dist".into(),
-            yard: "documentation".into(),
-            spa: true,
-            clean_urls: true,
-        })
-    );
-    assert_eq!(
-        parse("blobyard_list_web_yards", json!({})),
-        ToolCall::WebYard(WebYardToolCall::ListWebYards {
-            scope: Scope::default()
-        })
-    );
-    assert_eq!(
-        parse(
-            "blobyard_list_yard_deploys",
-            json!({ "yard": "documentation" })
-        ),
-        ToolCall::WebYard(WebYardToolCall::ListYardDeploys {
-            scope: Scope::default(),
-            yard: "documentation".into()
-        })
-    );
-    assert_eq!(
-        parse(
-            "blobyard_rollback_web_yard",
-            json!({ "yard": "documentation", "deploy_id": "deploy_1" })
-        ),
-        ToolCall::WebYard(WebYardToolCall::RollbackWebYard {
-            scope: Scope::default(),
-            yard: "documentation".into(),
-            deploy_id: Some("deploy_1".into())
-        })
-    );
-    assert_eq!(
-        parse(
-            "blobyard_delete_web_yard",
-            json!({ "yard": "documentation", "confirm": true })
-        ),
-        ToolCall::WebYard(WebYardToolCall::DeleteWebYard {
-            scope: Scope::default(),
-            yard: "documentation".into()
-        })
     );
 }

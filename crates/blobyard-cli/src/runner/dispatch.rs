@@ -1,5 +1,6 @@
 use super::Runner;
-use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand, YardCommand};
+use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand};
+use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
 
@@ -18,6 +19,9 @@ impl Runner {
 
     pub(super) fn execute_local(&self, command: &Command) -> Result<CommandResult, BlobyardError> {
         match command {
+            Command::App { command } => {
+                crate::app_manifest::execute(command, self.config.paths().cwd())
+            }
             Command::Init => self.init_project(),
             Command::Completion(arguments) => Ok(CommandResult::local(
                 serde_json::json!({ "shell": arguments.shell.to_string() }),
@@ -44,6 +48,8 @@ impl Runner {
             | Command::Tokens { .. }
             | Command::Trusts { .. }
             | Command::Sessions { .. } => self.execute_admin_command(command).await,
+            Command::Users { command } => self.execute_users_command(command).await,
+            Command::Groups { command } => self.execute_groups_command(command).await,
             _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
         }
     }
@@ -58,6 +64,50 @@ impl Runner {
             YardCommand::History(arguments) => self.yard_history(arguments).await,
             YardCommand::Rollback(arguments) => self.rollback_yard(arguments).await,
             YardCommand::Delete(arguments) => self.delete_yard(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_env(
+        &self,
+        command: &EnvCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            EnvCommand::List(arguments) => self.list_environments(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_yard_family(
+        &self,
+        command: &Command,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            Command::Yard { command } => self.execute_yard(command).await,
+            Command::Env { command } => self.execute_env(command).await,
+            Command::Access { command } => self.execute_access(command).await,
+            Command::YardSessions { command } => self.execute_yard_sessions(command).await,
+            _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
+        }
+    }
+
+    pub(super) async fn execute_access(
+        &self,
+        command: &AccessCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            AccessCommand::List(arguments) => self.access_list(arguments).await,
+            AccessCommand::SetVisibility(arguments) => self.access_set_visibility(arguments).await,
+            AccessCommand::Grant(arguments) => self.access_grant(arguments).await,
+            AccessCommand::Revoke(arguments) => self.access_revoke(arguments).await,
+        }
+    }
+
+    pub(super) async fn execute_yard_sessions(
+        &self,
+        command: &YardSessionsCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            YardSessionsCommand::List(arguments) => self.list_yard_sessions(arguments).await,
+            YardSessionsCommand::Revoke(arguments) => self.revoke_yard_session(arguments).await,
         }
     }
 
@@ -143,6 +193,15 @@ mod tests {
                 .execute_headless(&Command::Whoami)
                 .await
                 .expect_err("unrelated headless command")
+                .code(),
+            ErrorCode::InternalError
+        );
+        assert_eq!(
+            fixture
+                .runner
+                .execute_yard_family(&Command::Whoami)
+                .await
+                .expect_err("unrelated Yard-family command")
                 .code(),
             ErrorCode::InternalError
         );

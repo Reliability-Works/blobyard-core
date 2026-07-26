@@ -27,6 +27,12 @@ pub enum GeneratedSecretKind {
     InboxCapability,
     /// Upload capability.
     UploadCapability,
+    /// Local-user sign-in key returned once at creation or reset.
+    UserLoginKey,
+    /// Single-use Yard-origin session exchange code.
+    YardExchangeCode,
+    /// Yard-origin browser session token.
+    YardSession,
 }
 
 impl GeneratedSecretKind {
@@ -41,6 +47,9 @@ impl GeneratedSecretKind {
             Self::ShareCapability => "bysh",
             Self::InboxCapability => "byin",
             Self::UploadCapability => "byu",
+            Self::UserLoginKey => "byuk",
+            Self::YardExchangeCode => "byx",
+            Self::YardSession => "byys",
         }
     }
 }

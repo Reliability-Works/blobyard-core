@@ -4,7 +4,9 @@ use crate::auth::hash;
 use crate::{Repository, api, api::AppState, error::ApiError};
 use axum::{Router, body::Body, response::IntoResponse, response::Response};
 use blobyard_api_client::RequestUploadRequest;
-use blobyard_contract::{LocalApiTokenRecord, ProjectRecord, RepositoryError, WorkspaceRecord};
+use blobyard_contract::{
+    LocalApiTokenRecord, ObjectStorage, ProjectRecord, RepositoryError, WorkspaceRecord,
+};
 use blobyard_core::{SecretString, Slug};
 use blobyard_repository_sqlite::SqliteRepository;
 use blobyard_storage_filesystem::FilesystemStorage;
@@ -56,7 +58,40 @@ impl TransferFixture {
             .expect("remove audit table");
     }
 
+    /// Corrupts persisted access-grant timestamps to force a presentation failure.
+    pub fn corrupt_grant_timestamps(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "UPDATE yard_access_grants SET created_at_ms = 9223372036854775807, expires_at_ms = NULL",
+            )
+            .expect("corrupt grant timestamps");
+    }
+
+    /// Corrupts every future grant insert to force a response-mapping failure.
+    pub fn corrupt_future_grant_inserts(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "CREATE TRIGGER corrupt_grant_inserts AFTER INSERT ON yard_access_grants BEGIN UPDATE yard_access_grants SET created_at_ms = 9223372036854775807, expires_at_ms = NULL WHERE id = NEW.id; END;",
+            )
+            .expect("corrupt future grant inserts");
+    }
+
     /// Removes CI trust storage to force a trust provider failure.
+    /// Corrupts persisted environment timestamps to force a presentation failure.
+    pub fn corrupt_environment_timestamps(&self) {
+        self.repository
+            .test_connection()
+            .expect("repository connection")
+            .execute_batch(
+                "UPDATE yard_environments SET created_at_ms = 9223372036854775807, updated_at_ms = 9223372036854775807",
+            )
+            .expect("corrupt environment timestamps");
+    }
+
     pub fn break_ci_trusts(&self) {
         self.repository
             .test_connection()
@@ -162,18 +197,29 @@ fn fixture_state(
     let repository: Arc<dyn Repository> = sqlite_repository;
     let storage =
         Arc::new(FilesystemStorage::open(&root.path().join("objects")).expect("storage fixture"));
+    fixture_state_with_repository(staging_directory, repository, storage)
+}
+
+pub(crate) fn fixture_state_with_repository(
+    staging_directory: std::path::PathBuf,
+    repository: Arc<dyn Repository>,
+    storage: Arc<dyn ObjectStorage>,
+) -> AppState {
+    let default_workspace = WorkspaceRecord {
+        id: "workspace_fixture".to_owned(),
+        name: "Fixture".to_owned(),
+        slug: Slug::new("fixture").expect("slug"),
+    };
+    let capability_key = Arc::new(SecretString::new("capability").expect("secret"));
     AppState {
         repository,
         storage,
-        capability_key: Arc::new(SecretString::new("capability").expect("secret")),
+        yard_continuation_key: Arc::new(crate::yard_session_contracts::derive_key(&capability_key)),
+        capability_key,
         public_origin: "http://127.0.0.1:8787".to_owned(),
         web_yard_origin: "http://localhost:8787".to_owned(),
         staging_directory,
-        default_workspace: WorkspaceRecord {
-            id: "workspace_fixture".to_owned(),
-            name: "Fixture".to_owned(),
-            slug: Slug::new("fixture").expect("slug"),
-        },
+        default_workspace,
         oidc_verifier: Arc::new(crate::oidc::UnavailableGithubOidcVerifier),
     }
 }

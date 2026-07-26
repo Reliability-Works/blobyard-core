@@ -172,6 +172,22 @@ fn rejects_implicit_or_malformed_web_yard_confirmation() {
 fn rejects_malformed_web_yard_management_calls() {
     assert_invalid([
         ("blobyard_list_yard_deploys", json!({}), "missing required"),
+        (
+            "blobyard_list_yard_environments",
+            json!({}),
+            "missing required",
+        ),
+        ("blobyard_list_yard_sessions", json!({}), "missing required"),
+        (
+            "blobyard_revoke_yard_session",
+            json!({}),
+            "missing required",
+        ),
+        (
+            "blobyard_revoke_yard_session",
+            json!({ "yard": "site" }),
+            "missing required",
+        ),
         ("blobyard_rollback_web_yard", json!({}), "missing required"),
         (
             "blobyard_rollback_web_yard",
@@ -207,7 +223,7 @@ fn rejects_malformed_web_yard_management_calls() {
     assert!(crate::yard_call::parse_yard_call("unknown", &Map::new(), Scope::default()).is_err());
 }
 
-fn assert_invalid<const N: usize>(cases: [(&str, serde_json::Value, &str); N]) {
+pub(super) fn assert_invalid<const N: usize>(cases: [(&str, serde_json::Value, &str); N]) {
     for (name, arguments, message) in cases {
         let error = ToolCall::parse(name, &arguments).expect_err("invalid fixture must fail");
         assert!(error.contains(message), "unexpected error: {error}");

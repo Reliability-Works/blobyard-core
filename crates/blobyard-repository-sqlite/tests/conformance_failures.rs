@@ -4,8 +4,12 @@
 /// Failure-injection adapters for repository conformance tests.
 pub mod conformance_failure_support;
 
+#[path = "conformance_failures/groups.rs"]
+mod group_failures;
 #[path = "conformance_failures/lifecycle.rs"]
 mod lifecycle_failures;
+#[path = "conformance_failures/local_users.rs"]
+mod local_user_failures;
 #[path = "conformance_failures/yards.rs"]
 mod yard_failures;
 

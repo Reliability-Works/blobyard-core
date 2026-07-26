@@ -6,21 +6,46 @@ use blobyard_core::{BlobyardUri, BlobyardUriError};
 mod ci;
 mod credentials;
 mod fault_forwarders;
+mod group_admission_fixture;
+mod groups;
 mod lifecycle;
+mod local_users;
 mod repository;
 mod storage;
 
 pub use ci::{CI_REPOSITORY, ci_trust, github_oidc_identity};
 pub use credentials::{cli_session_record, cli_session_revoked_event, credential_conformance};
 pub use fault_forwarders::FailureCounter;
+pub use group_admission_fixture::{
+    FixtureExecutionTracker, assert_group_admission_fixture_case,
+    assert_group_authorization_fixture_case, group_admission_fixture_conformance,
+};
+pub use groups::{GroupConformanceRepository, group_conformance, group_event};
 pub use lifecycle::lifecycle_conformance;
+pub use local_users::{local_user, local_user_conformance, local_user_event, login_key};
 pub use repository::{
     InboxConformanceRepository, PreviewConformanceRepository, YardConformanceFixture,
-    YardConformanceRepository, inbox_conformance, inbox_event, inbox_upload_event,
-    preview_conformance, preview_event, repository_conformance, share_event, sharing_conformance,
-    transfer_conformance, yard_conformance, yard_event,
+    YardConformanceRepository, granted_event, inbox_conformance, inbox_event, inbox_upload_event,
+    new_grant, preview_conformance, preview_event, repository_conformance, revoked_event,
+    share_event, sharing_conformance, transfer_conformance, visibility_event, yard_conformance,
+    yard_event,
 };
 pub use storage::storage_conformance;
+
+pub(crate) fn ensure_equal<T: Eq>(
+    actual: &T,
+    expected: &T,
+) -> Result<(), blobyard_contract::RepositoryError> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(blobyard_contract::RepositoryError::Unavailable)
+    }
+}
+
+pub(crate) fn hash(character: char) -> String {
+    std::iter::repeat_n(character, 64).collect()
+}
 
 /// A stable valid URI suitable for tests that do not care about object identity.
 pub const SAMPLE_BLOBYARD_URI: &str = "blobyard://sample/default/builds/app.zip?version=1";

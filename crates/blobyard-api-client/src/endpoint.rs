@@ -114,6 +114,20 @@ pub enum Endpoint {
     ListWebYards,
     /// List immutable deploys for a Web Yard.
     ListYardDeploys,
+    /// List active environments for a Web Yard.
+    ListYardEnvironments,
+    /// Read a Web Yard's effective visibility and active grants.
+    GetYardAccess,
+    /// Set a Web Yard's visibility policy.
+    SetYardVisibility,
+    /// Grant one principal scoped access to a Web Yard.
+    GrantYardAccess,
+    /// Revoke one Web Yard access grant.
+    RevokeYardAccess,
+    /// List retained browser sessions for one Web Yard.
+    ListYardSessions,
+    /// Revoke one Web Yard browser session.
+    RevokeYardSession,
     /// Repoint a Web Yard to an earlier deploy.
     RollbackWebYard,
     /// Delete a Web Yard and schedule its objects for cleanup.
@@ -138,6 +152,28 @@ pub enum Endpoint {
     CreateApiToken,
     /// Revoke a user API token.
     RevokeApiToken,
+    /// List workspace groups.
+    ListGroups,
+    /// Create a workspace group.
+    CreateGroup,
+    /// Rename a workspace group.
+    RenameGroup,
+    /// List current group members.
+    ListGroupMembers,
+    /// Add one group member.
+    AddGroupMember,
+    /// Remove one group member.
+    RemoveGroupMember,
+    /// Deactivate one workspace group.
+    DeactivateGroup,
+    /// List local users with active sign-in key prefixes.
+    ListLocalUsers,
+    /// Create a local user and return the raw sign-in key once.
+    CreateLocalUser,
+    /// Replace a local user's sign-in key and return the raw value once.
+    ResetLocalUserLoginKey,
+    /// Deactivate a local user and revoke every active sign-in key.
+    DeactivateLocalUser,
     /// List GitHub OIDC trusts.
     ListCiTrusts,
     /// Create a GitHub OIDC trust.
@@ -190,7 +226,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 76] = [
+    pub const ALL: [Self; 94] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -231,6 +267,13 @@ impl Endpoint {
         Self::FailYardDeploy,
         Self::ListWebYards,
         Self::ListYardDeploys,
+        Self::ListYardEnvironments,
+        Self::GetYardAccess,
+        Self::SetYardVisibility,
+        Self::GrantYardAccess,
+        Self::RevokeYardAccess,
+        Self::ListYardSessions,
+        Self::RevokeYardSession,
         Self::RollbackWebYard,
         Self::DeleteWebYard,
         Self::ListAudit,
@@ -243,6 +286,17 @@ impl Endpoint {
         Self::ListApiTokens,
         Self::CreateApiToken,
         Self::RevokeApiToken,
+        Self::ListGroups,
+        Self::CreateGroup,
+        Self::RenameGroup,
+        Self::ListGroupMembers,
+        Self::AddGroupMember,
+        Self::RemoveGroupMember,
+        Self::DeactivateGroup,
+        Self::ListLocalUsers,
+        Self::CreateLocalUser,
+        Self::ResetLocalUserLoginKey,
+        Self::DeactivateLocalUser,
         Self::ListCiTrusts,
         Self::CreateCiTrust,
         Self::RevokeCiTrust,
@@ -270,13 +324,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 74] = public_endpoints();
-
-    /// Returns the stable `OpenAPI` operation identifier.
-    #[must_use]
-    pub const fn operation_id(self) -> &'static str {
-        OPERATION_IDS[self as usize]
-    }
+    pub const PUBLIC: [Self; 92] = public_endpoints();
 
     /// Returns whether the endpoint durably replays an `Idempotency-Key` request.
     #[must_use]
@@ -293,8 +341,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 74] {
-    let mut public = [Endpoint::Health; 74];
+const fn public_endpoints() -> [Endpoint; 92] {
+    let mut public = [Endpoint::Health; 92];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {
@@ -307,85 +355,6 @@ const fn public_endpoints() -> [Endpoint; 74] {
     }
     public
 }
-
-const OPERATION_IDS: [&str; 76] = [
-    "health",
-    "exchangeBootstrapToken",
-    "startDeviceLogin",
-    "pollDeviceLogin",
-    "refreshCliSession",
-    "logoutCliSession",
-    "whoAmI",
-    "listWorkspaces",
-    "createWorkspace",
-    "listProjects",
-    "createProject",
-    "listObjects",
-    "deleteObject",
-    "requestUpload",
-    "requestUploadParts",
-    "completeUpload",
-    "abortUpload",
-    "getUploadStatus",
-    "requestDownload",
-    "createShare",
-    "listShares",
-    "resolveShare",
-    "downloadShare",
-    "revokeShare",
-    "createPreview",
-    "listPreviews",
-    "resolvePreview",
-    "revokePreview",
-    "createInbox",
-    "listInboxes",
-    "revokeInbox",
-    "resolveInbox",
-    "getRetention",
-    "setRetention",
-    "clearRetention",
-    "startWebYardDeploy",
-    "finaliseWebYardDeploy",
-    "failWebYardDeploy",
-    "listWebYards",
-    "listWebYardDeploys",
-    "rollbackWebYard",
-    "deleteWebYard",
-    "listAuditEvents",
-    "listMembers",
-    "listInvites",
-    "createInvite",
-    "revokeInvite",
-    "updateMemberRole",
-    "removeMember",
-    "listApiTokens",
-    "createApiToken",
-    "revokeApiToken",
-    "listCiTrusts",
-    "createCiTrust",
-    "revokeCiTrust",
-    "listCliSessions",
-    "revokeCliSession",
-    "exchangeGitHubOidc",
-    "createOneTimeSecret",
-    "redeemOneTimeSecret",
-    "renameWorkspace",
-    "createBillingCheckout",
-    "createBillingPortal",
-    "getBilling",
-    "createStorageCheckout",
-    "createStorageUpdate",
-    "createBillingSubscriptionUpdate",
-    "requestAccountExport",
-    "getAccountExport",
-    "downloadAccountExport",
-    "prepareAccountDeletion",
-    "completeAccountDeletion",
-    "getAccountDeletion",
-    "retryAccountDeletion",
-    "getRetentionOverview",
-    "stripeWebhook",
-];
 
 #[cfg(test)]
 #[path = "endpoint_tests.rs"]

@@ -8,6 +8,10 @@ pub const MAXIMUM_YARD_PATH_BYTES: usize = 1_024;
 #[must_use]
 pub fn is_valid_yard_path(value: &str) -> bool {
     crate::is_valid_relative_path(value, MAXIMUM_YARD_PATH_BYTES)
+        && value
+            .split('/')
+            .next()
+            .is_some_and(|segment| segment != ".blobyard")
 }
 
 /// Returns whether a normalized public request path is safe to resolve.

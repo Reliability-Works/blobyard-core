@@ -119,10 +119,7 @@ pub(super) fn snapshot_manifest(
 }
 
 pub(super) fn public_host_label(origin: &str, authority: &str) -> Option<String> {
-    let origin = WebYardOrigin::new(origin).ok()?;
-    let suffix = format!(".{}", origin.authority());
-    let label = authority.strip_suffix(&suffix)?;
-    valid_host_label(label).then(|| label.to_owned())
+    site_contracts::public_host_label(origin, authority, valid_host_label)
 }
 
 fn valid_host_label(value: &str) -> bool {

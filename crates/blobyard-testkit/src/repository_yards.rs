@@ -1,20 +1,59 @@
 use blobyard_contract::{
-    NewAuditEvent, NewYardFile, RepositoryError, TransferRepository, WebYardRepository,
-    WebYardStatus, YardDeployStatus,
+    LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, NewYardFile,
+    RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
+    WorkspaceGroupRepository, YardDeployStatus, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
+#[path = "repository_yards_access.rs"]
+mod access;
+#[path = "repository_yards_delivery.rs"]
+mod delivery;
 #[cfg(test)]
 #[path = "repository_yards_fixture_tests.rs"]
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+#[path = "repository_yards_session_direct.rs"]
+mod session_direct;
+#[path = "repository_yards_session_fixtures.rs"]
+mod session_fixtures;
+#[path = "repository_yards_session_grants.rs"]
+mod session_grants;
+#[path = "repository_yards_session_groups.rs"]
+mod session_groups;
+#[path = "repository_yards_session_revocation.rs"]
+mod session_revocation;
+#[path = "repository_yards_sessions.rs"]
+mod sessions;
+
+use crate::FixtureExecutionTracker;
 use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
+pub use fixtures::{granted_event, new_grant, revoked_event, visibility_event};
 
 /// Combined repository surface needed by Web Yard conformance.
-pub trait YardConformanceRepository: WebYardRepository + TransferRepository {}
+pub trait YardConformanceRepository:
+    WebYardRepository
+    + MetadataRepository
+    + TransferRepository
+    + LocalUserRepository
+    + WorkspaceGroupRepository
+    + YardSessionRepository
+    + LifecycleRepository
+{
+}
 
-impl<T: WebYardRepository + TransferRepository> YardConformanceRepository for T {}
+impl<
+    T: WebYardRepository
+        + MetadataRepository
+        + TransferRepository
+        + LocalUserRepository
+        + WorkspaceGroupRepository
+        + YardSessionRepository
+        + LifecycleRepository,
+> YardConformanceRepository for T
+{
+}
 
 /// Validated names used to exercise distinct Web Yard lifecycles.
 pub struct YardConformanceFixture {
@@ -76,9 +115,21 @@ pub fn yard_conformance(
         .version
         .id;
     let first = assert_initial_deployment(repository, fixture, &version_id)?;
+    session_fixtures::assert_production_environment(repository, &first.yard.id)?;
+    if !repository
+        .list_yard_environments("yard_unknown")?
+        .is_empty()
+    {
+        return Err(RepositoryError::Unavailable);
+    }
+    sessions::create_session_user(repository)?;
+    access::assert_access_controls(repository, &first, &version_id)?;
+    let mut tracker = FixtureExecutionTracker::new("testkit", "yard-sessions");
+    sessions::assert_session_controls(repository, &first, &version_id, &mut tracker)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
-    assert_yard_deletion(repository, &first)
+    assert_yard_deletion(repository, &first)?;
+    tracker.finish()
 }
 
 fn assert_initial_deployment(
@@ -96,8 +147,8 @@ fn assert_initial_deployment(
         return Err(RepositoryError::Unavailable);
     }
     let first_live = finalise(repository, &first.deploy.id, version_id, 5, 10)?;
-    assert_delivery(repository, &first_live.yard.host_label, version_id)?;
-    assert_delivery(
+    delivery::assert_delivery(repository, &first_live.yard.host_label, version_id)?;
+    delivery::assert_delivery(
         repository,
         &first_live.deploy.deployment_host_label,
         version_id,
@@ -167,8 +218,8 @@ fn assert_failure_and_history(
     {
         return Err(RepositoryError::Unavailable);
     }
-    prune_history(repository, &fixture.history_name, version_id)?;
-    assert_deleted_yard_cannot_finalise(repository, &fixture.inactive_name, version_id)
+    delivery::prune_history(repository, &fixture.history_name, version_id)?;
+    delivery::assert_deleted_yard_cannot_finalise(repository, &fixture.inactive_name, version_id)
 }
 
 fn assert_yard_deletion(
@@ -191,7 +242,7 @@ fn assert_yard_deletion(
             &event("yard.deleted", "web_yard", "yardId", &first.yard.id, 101),
         )?
         || repository.web_yard_by_id(&first.yard.id)?.status != WebYardStatus::Deleted
-        || repository.yard_file_by_host(&first.yard.host_label, "")
+        || repository.yard_file_by_host(&first.yard.host_label, "", None, 100)
             != Err(RepositoryError::NotFound)
     {
         return Err(RepositoryError::Unavailable);
@@ -262,72 +313,4 @@ fn finalise_as(
         at,
         &deployed_event(deploy_id, 5, byte_size * 5, status, at),
     )
-}
-
-fn assert_delivery(
-    repository: &dyn YardConformanceRepository,
-    host: &str,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let index = repository.yard_file_by_host(host, "")?;
-    let exact = repository.yard_file_by_host(host, "asset.js")?;
-    let directory = repository.yard_file_by_host(host, "docs/")?;
-    let clean = repository.yard_file_by_host(host, "guide")?;
-    let spa = repository.yard_file_by_host(host, "missing")?;
-    let missing = repository.yard_file_by_host(host, "missing.txt")?;
-    if index.object.version.id == version_id
-        && !index.not_found_document
-        && exact.object.version.id == version_id
-        && !exact.not_found_document
-        && directory.object.version.id == version_id
-        && !directory.not_found_document
-        && clean.object.version.id == version_id
-        && !clean.not_found_document
-        && spa.object.version.id == version_id
-        && !spa.not_found_document
-        && missing.object.version.id == version_id
-        && missing.not_found_document
-    {
-        Ok(())
-    } else {
-        Err(RepositoryError::Unavailable)
-    }
-}
-
-fn assert_deleted_yard_cannot_finalise(
-    repository: &dyn YardConformanceRepository,
-    name: &Slug,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let started = start(repository, name, 50)?;
-    repository.delete_web_yard(
-        &started.yard.id,
-        51,
-        &event("yard.deleted", "web_yard", "yardId", &started.yard.id, 51),
-    )?;
-    if finalise(repository, &started.deploy.id, version_id, 5, 52) != Err(RepositoryError::Conflict)
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
-}
-
-fn prune_history(
-    repository: &dyn YardConformanceRepository,
-    name: &Slug,
-    version_id: &str,
-) -> Result<(), RepositoryError> {
-    let oldest = start(repository, name, 10)?.deploy;
-    finalise(repository, &oldest.id, version_id, 5, 110)?;
-    for number in 11..=20 {
-        let started = start(repository, name, number)?;
-        finalise(repository, &started.deploy.id, version_id, 5, number + 100)?;
-    }
-    if repository.yard_deploy_by_id(&oldest.id)?.status != YardDeployStatus::Pruned
-        || repository.yard_file_by_host(&oldest.deployment_host_label, "")
-            != Err(RepositoryError::NotFound)
-    {
-        return Err(RepositoryError::Unavailable);
-    }
-    Ok(())
 }

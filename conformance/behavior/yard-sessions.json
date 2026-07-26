@@ -1,0 +1,440 @@
+{
+  "cases": [
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "active-grant-with-revocation-timestamp-is-inert",
+      "input": { "grantStatus": "active", "principalKind": "group", "revokedAtPresent": true }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": {
+        "admitted": true,
+        "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
+      },
+      "id": "active-group-grant-admits-current-member",
+      "input": {
+        "grantStatus": "active",
+        "groupStatus": "active",
+        "membershipStatus": "active",
+        "principalKind": "group",
+        "surface": "selected-yard"
+      }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-limits",
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-group-grant-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-grants-per-group-principal", "limit": 500 }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-limits",
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-group-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-groups-per-workspace", "limit": 500 }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "active-group-with-deactivation-timestamp-is-inert",
+      "input": { "deactivatedAtPresent": true, "groupStatus": "active", "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-limits",
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-member-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-members-per-group", "limit": 500 }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-limits",
+      "expected": {
+        "auditEventsForOverflow": 0,
+        "lastWrite": "accepted",
+        "overflowCode": "CONFLICT"
+      },
+      "id": "active-membership-limit-accepts-last-and-rejects-next",
+      "input": { "boundary": "active-memberships-per-user", "limit": 100 }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": true, "propagationMilliseconds": 0 },
+      "id": "alternate-direct-or-group-grant-preserves-admission",
+      "input": {
+        "change": "one-group-membership-removed",
+        "otherGrantStatus": "active",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "session-contracts",
+      "expected": { "lifetimeMilliseconds": 600000 },
+      "id": "continuation-lifetime-is-ten-minutes",
+      "input": { "surface": "continuation" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-group-membership-cardinality-is-inert",
+      "input": { "memberCountMatchesMembershipRows": false, "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "cross-workspace-group-id-never-admits",
+      "input": {
+        "grantWorkspace": "default",
+        "groupWorkspace": "other",
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": {
+        "admitted": true,
+        "reevaluatedAt": ["code-issue", "code-exchange", "private-delivery"]
+      },
+      "id": "direct-user-grant-admits",
+      "input": { "grantStatus": "active", "principalKind": "user" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": true, "appRoles": [] },
+      "id": "empty-app-roles-still-admit",
+      "input": {
+        "appRoles": [],
+        "grantStatus": "active",
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-drift",
+      "expected": { "admitted": false, "repositoryError": "NOT_FOUND" },
+      "id": "environment-replacement-between-issue-and-exchange-denies",
+      "input": {
+        "change": "environment-replaced",
+        "driftPoint": "after-code-issue",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "lifetimeMilliseconds": 60000 },
+      "id": "exchange-code-lifetime-is-sixty-seconds",
+      "input": { "surface": "exchange-code" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "expired-group-grant-denies",
+      "input": { "grantExpiry": "elapsed", "grantStatus": "active", "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": { "auditEventCount": 0, "stateChanged": false },
+      "id": "failed-group-mutations-emit-no-audit",
+      "input": { "mutationResult": ["invalid", "conflict", "concealed-not-found"] }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.created",
+        "metadataKeys": ["groupId", "workspaceId", "name"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-create-emits-exact-audit",
+      "input": { "mutation": "group-create" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.deactivated",
+        "metadataKeys": ["groupId", "workspaceId", "revokedGrantCount"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-deactivate-emits-exact-audit",
+      "input": { "mutation": "group-deactivate" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "group-deactivation-denies-on-next-private-request",
+      "input": {
+        "change": "group-deactivated",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.member_added",
+        "metadataKeys": ["groupId", "workspaceId", "userId"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-member-add-emits-exact-audit",
+      "input": { "mutation": "group-member-add" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.member_removed",
+        "metadataKeys": ["groupId", "workspaceId", "userId"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-member-remove-emits-exact-audit",
+      "input": { "mutation": "group-member-remove" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-pagination",
+      "expected": {
+        "duplicates": 0,
+        "omissionsWithinSnapshot": 0,
+        "ordering": ["createdAt-desc", "id-desc"]
+      },
+      "id": "group-pagination-is-deterministic-and-cursor-safe",
+      "input": { "concurrentInsertAfterCursor": true, "pageSize": 50, "resource": "groups" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "groups",
+      "expected": {
+        "eventCount": 1,
+        "eventType": "group.renamed",
+        "metadataKeys": ["groupId", "workspaceId", "from", "to"],
+        "targetType": "workspace_group"
+      },
+      "id": "group-rename-emits-exact-audit",
+      "input": { "mutation": "group-rename" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "group-machine",
+      "expected": { "allowed": false, "code": "FORBIDDEN", "deniedOperationCount": 7 },
+      "id": "machine-principal-is-denied-each-group-operation",
+      "input": {
+        "operations": [
+          "list-groups",
+          "create-group",
+          "rename-group",
+          "list-group-members",
+          "add-group-member",
+          "remove-group-member",
+          "deactivate-group"
+        ],
+        "principalKind": "machine"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": true },
+      "id": "matching-environment-group-grant-admits",
+      "input": {
+        "grantEnvironment": "production",
+        "principalKind": "group",
+        "selectedEnvironment": "production"
+      }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "group-pagination",
+      "expected": {
+        "duplicates": 0,
+        "omissionsWithinSnapshot": 0,
+        "ordering": ["addedAt-desc", "userId-desc"]
+      },
+      "id": "member-pagination-is-deterministic-and-cursor-safe",
+      "input": { "concurrentInsertAfterCursor": true, "pageSize": 50, "resource": "group-members" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "membership-removal-denies-on-next-private-request",
+      "input": {
+        "change": "membership-removed",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": true, "duplicateAdmission": false },
+      "id": "multiple-matching-group-grants-admit-once",
+      "input": {
+        "matchingActiveGrantCount": 2,
+        "membershipStatus": "active",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "responseClass": "concealed-not-found" },
+      "id": "non-public-non-navigation-matches-unknown-host",
+      "input": { "surface": "yard-delivery" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "nonmatching-environment-group-grant-denies",
+      "input": {
+        "grantEnvironment": "staging",
+        "principalKind": "group",
+        "selectedEnvironment": "production"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "repositoryError": "NOT_FOUND" },
+      "id": "replay-is-indistinguishable-from-expiry",
+      "input": { "surface": "code-exchange" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "propagationMilliseconds": 0 },
+      "id": "revocation-bound-is-zero-ms",
+      "input": { "surface": "session-revocation" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "revoked-group-grant-denies",
+      "input": { "grantExpiry": "none", "grantStatus": "revoked", "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "same-name-foreign-group-never-admits",
+      "input": {
+        "membershipGroupName": "Readers",
+        "principalKind": "group",
+        "sameGroupId": false,
+        "selectedGroupName": "Readers"
+      }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-admission",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "same-user-in-two-workspaces-does-not-bridge-authority",
+      "input": {
+        "membershipWorkspace": "other",
+        "principalKind": "group",
+        "sameUserIdentity": true,
+        "selectedWorkspace": "default"
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "session-cookie",
+      "expected": {
+        "attributes": ["Secure", "HttpOnly", "SameSite=Lax", "Path=/", "Max-Age=43200"],
+        "name": "__Host-blobyard-yard-session"
+      },
+      "id": "session-cookie-name-is-host-scoped",
+      "input": { "surface": "session-cookie" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "lifetimeMilliseconds": 43200000 },
+      "id": "session-lifetime-is-twelve-hours",
+      "input": { "surface": "session" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "admission-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "unresolved-legacy-group-grant-remains-inert",
+      "input": {
+        "grantStatus": "active",
+        "groupStatus": "unresolved",
+        "membershipStatus": "absent",
+        "principalKind": "group",
+        "surface": "selected-yard"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "user-deactivation-denies-on-next-private-request",
+      "input": {
+        "change": "user-deactivated",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-sessions",
+      "expected": { "admitted": false, "repositoryError": "NOT_FOUND" },
+      "id": "visibility-drift-between-issue-and-exchange-denies",
+      "input": {
+        "change": "selected-to-owner",
+        "driftPoint": "after-code-issue",
+        "principalKind": "group"
+      }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-admission",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "workspace-membership-removal-denies-on-next-private-request",
+      "input": {
+        "change": "current-workspace-membership-removed",
+        "principalKind": "group",
+        "surface": "private-delivery"
+      }
+    }
+  ],
+  "schemaVersion": 1
+}

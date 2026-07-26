@@ -34,6 +34,8 @@ mod lifecycle_operation;
 mod lifecycle_retention;
 #[path = "lifecycle_retention_plan.rs"]
 mod lifecycle_retention_plan;
+#[path = "local_users.rs"]
+mod local_users;
 #[path = "metadata.rs"]
 mod metadata;
 #[path = "migration.rs"]
@@ -62,6 +64,26 @@ mod transfer_reservations;
 mod transfer_validation;
 #[path = "transfers.rs"]
 mod transfers;
+#[path = "workspace_group_audit.rs"]
+mod workspace_group_audit;
+#[path = "workspace_group_members.rs"]
+mod workspace_group_members;
+#[path = "workspace_group_mutations.rs"]
+mod workspace_group_mutations;
+#[path = "workspace_group_queries.rs"]
+mod workspace_group_queries;
+#[path = "workspace_group_rows.rs"]
+mod workspace_group_rows;
+#[path = "workspace_group_validation.rs"]
+mod workspace_group_validation;
+#[path = "workspace_groups.rs"]
+mod workspace_groups;
+#[path = "yard_access.rs"]
+mod yard_access;
+#[path = "yard_access_principals.rs"]
+mod yard_access_principals;
+#[path = "yard_access_record_validation.rs"]
+mod yard_access_record_validation;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]
@@ -74,6 +96,16 @@ mod yard_lifecycle;
 mod yard_queries;
 #[path = "yard_rows.rs"]
 mod yard_rows;
+#[path = "yard_session_admission.rs"]
+mod yard_session_admission;
+#[path = "yard_session_rows.rs"]
+mod yard_session_rows;
+#[path = "yard_session_store.rs"]
+mod yard_session_store;
+#[path = "yard_session_validation.rs"]
+mod yard_session_validation;
+#[path = "yard_sessions.rs"]
+mod yard_sessions;
 #[path = "yard_start.rs"]
 mod yard_start;
 #[path = "yard_validation.rs"]
@@ -248,6 +280,10 @@ fn map_error(error: rusqlite::Error) -> RepositoryError {
         }
         _ => RepositoryError::Unavailable,
     }
+}
+
+fn map_query_result<T>(result: rusqlite::Result<T>) -> Result<T, RepositoryError> {
+    result.map_err(map_error)
 }
 
 #[cfg(test)]

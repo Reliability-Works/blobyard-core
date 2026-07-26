@@ -2,9 +2,17 @@ use serde_json::{Map, Value};
 
 use crate::{Scope, optional_string};
 
+#[path = "group_call.rs"]
+mod group_call;
+
+pub use group_call::GroupToolCall;
+use group_call::{is_group_tool, parse_group_call};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 /// A validated administration operation requested through MCP.
 pub enum AdminToolCall {
+    /// Manage workspace groups and memberships.
+    Group(crate::GroupToolCall),
     /// List workspace audit events.
     ListAudit {
         /// Workspace override.
@@ -54,6 +62,20 @@ pub enum AdminToolCall {
     /// Remove a workspace member.
     RemoveMember {
         /// Workspace override.
+        scope: Scope,
+        /// Target user identifier.
+        user_id: String,
+        /// Explicit destructive confirmation.
+        confirmed: bool,
+    },
+    /// List local users with active sign-in key prefixes.
+    ListLocalUsers {
+        /// Workspace override.
+        scope: Scope,
+    },
+    /// Deactivate a local user and revoke every active sign-in key.
+    DeactivateLocalUser {
+        /// Optional scope override retained for a uniform tool contract.
         scope: Scope,
         /// Target user identifier.
         user_id: String,
@@ -126,23 +148,26 @@ pub enum AdminToolCall {
     reason = "sibling modules consume this parser while the module stays crate-internal"
 )]
 pub(crate) fn is_admin_tool(name: &str) -> bool {
-    matches!(
-        name,
-        "list_audit"
-            | "list_members"
-            | "list_invites"
-            | "create_invite"
-            | "revoke_invite"
-            | "update_member_role"
-            | "remove_member"
-            | "list_api_tokens"
-            | "revoke_api_token"
-            | "list_ci_trusts"
-            | "create_ci_trust"
-            | "revoke_ci_trust"
-            | "list_cli_sessions"
-            | "revoke_cli_session"
-    )
+    is_group_tool(name)
+        || matches!(
+            name,
+            "list_audit"
+                | "list_members"
+                | "list_invites"
+                | "create_invite"
+                | "revoke_invite"
+                | "update_member_role"
+                | "remove_member"
+                | "list_local_users"
+                | "deactivate_local_user"
+                | "list_api_tokens"
+                | "revoke_api_token"
+                | "list_ci_trusts"
+                | "create_ci_trust"
+                | "revoke_ci_trust"
+                | "list_cli_sessions"
+                | "revoke_cli_session"
+        )
 }
 
 #[allow(
@@ -154,6 +179,9 @@ pub(crate) fn parse_admin_call(
     arguments: &Map<String, Value>,
     scope: Scope,
 ) -> Result<AdminToolCall, String> {
+    if is_group_tool(name) {
+        return parse_group_call(name, arguments, scope).map(AdminToolCall::Group);
+    }
     reject_unknown(name, arguments)?;
     match name {
         "list_audit" => Ok(AdminToolCall::ListAudit {
@@ -167,14 +195,18 @@ pub(crate) fn parse_admin_call(
             email: required_string(arguments, "email")?,
             role: selected(arguments, "role", &["admin", "member", "owner"])?,
         }),
+        "list_local_users" => Ok(AdminToolCall::ListLocalUsers { scope }),
         "list_api_tokens" => Ok(AdminToolCall::ListApiTokens { scope }),
         "list_ci_trusts" => Ok(AdminToolCall::ListCiTrusts { scope }),
         "create_ci_trust" => parse_ci_trust(arguments, scope),
         "list_cli_sessions" => Ok(AdminToolCall::ListCliSessions { scope }),
-        "revoke_invite" | "update_member_role" | "remove_member" | "revoke_api_token"
-        | "revoke_ci_trust" | "revoke_cli_session" => {
-            parse_confirmed_admin_call(name, arguments, scope)
-        }
+        "revoke_invite"
+        | "update_member_role"
+        | "remove_member"
+        | "deactivate_local_user"
+        | "revoke_api_token"
+        | "revoke_ci_trust"
+        | "revoke_cli_session" => parse_confirmed_admin_call(name, arguments, scope),
         _ => Err(format!("unknown tool: {name}")),
     }
 }
@@ -198,6 +230,11 @@ fn parse_confirmed_admin_call(
             role: selected(arguments, "role", &["admin", "member", "owner"])?,
         }),
         "remove_member" => Ok(AdminToolCall::RemoveMember {
+            scope,
+            user_id: required_string(arguments, "user_id")?,
+            confirmed: true,
+        }),
+        "deactivate_local_user" => Ok(AdminToolCall::DeactivateLocalUser {
             scope,
             user_id: required_string(arguments, "user_id")?,
             confirmed: true,
@@ -243,7 +280,7 @@ fn specific_keys(name: &str) -> &'static [&'static str] {
         "create_invite" => &["email", "role"],
         "revoke_invite" => &["confirm", "invite_id"],
         "update_member_role" => &["confirm", "role", "user_id"],
-        "remove_member" => &["confirm", "user_id"],
+        "remove_member" | "deactivate_local_user" => &["confirm", "user_id"],
         "revoke_api_token" => &["confirm", "token_id"],
         "create_ci_trust" => &[
             "allowed_actions",
@@ -311,3 +348,6 @@ mod confirmation_tests;
 #[cfg(test)]
 #[path = "admin_call_tests.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "admin_call_write_tests.rs"]
+mod write_tests;

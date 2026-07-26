@@ -5,7 +5,12 @@
 use blobyard_cli::{Cli, CompletionShell, generate_completion};
 use clap::{CommandFactory, Parser};
 
+include!("grammar/local_users.rs");
+
 const COMPLETE_COMMANDS: &[&[&str]] = &[
+    &["blobyard", "app", "init"],
+    &["blobyard", "app", "validate"],
+    &["blobyard", "app", "validate", "manifest.toml"],
     &[
         "blobyard",
         "profiles",
@@ -105,6 +110,30 @@ const COMPLETE_COMMANDS: &[&[&str]] = &[
     &["blobyard", "yard", "show"],
     &["blobyard", "yard", "show", "docs"],
     &["blobyard", "yard", "history", "docs"],
+    &["blobyard", "env", "list"],
+    &["blobyard", "env", "list", "docs"],
+    &["blobyard", "access", "list"],
+    &["blobyard", "access", "list", "docs"],
+    &["blobyard", "access", "set-visibility", "docs", "owner"],
+    &[
+        "blobyard",
+        "access",
+        "grant",
+        "docs",
+        "--principal-kind",
+        "user",
+        "--principal-id",
+        "user_reader",
+        "--role",
+        "viewer",
+        "--role",
+        "editor",
+        "--environment",
+        "yardenv_docs",
+        "--expires",
+        "2100-01-01T00:00:00Z",
+    ],
+    &["blobyard", "access", "revoke", "docs", "yardgrant_1"],
     &["blobyard", "yard", "rollback", "docs", "deploy_1"],
     &["blobyard", "yard", "delete", "docs", "--force"],
     &[
@@ -180,7 +209,7 @@ const COMPLETE_COMMANDS: &[&[&str]] = &[
 
 #[test]
 fn accepts_the_complete_command_grammar() {
-    for args in COMPLETE_COMMANDS {
+    for args in COMPLETE_COMMANDS.iter().chain(LOCAL_USER_COMMANDS) {
         assert!(
             Cli::try_parse_from(*args).is_ok(),
             "failed grammar: {args:?}"
@@ -211,43 +240,10 @@ fn accepts_global_flags_after_nested_subcommands() {
 }
 
 #[test]
-fn rejects_invalid_required_values_and_conflicting_output_flags() {
-    let cases: &[&[&str]] = &[
-        &["blobyard", "download", "blobyard://studio/default/app.zip"],
-        &["blobyard", "retention", "set", "--latest", "0"],
-        &["blobyard", "whoami", "--quiet", "--verbose"],
-        &["blobyard", "completion", "powershell"],
-        &["blobyard", "deploy", "./dist", "--all"],
-        &["blobyard", "whoami", "--retry-key", "invalid key"],
-        &[
-            "blobyard",
-            "profiles",
-            "add",
-            "local",
-            "--api-url",
-            "http://localhost:8787",
-        ],
-    ];
-
-    for args in cases {
-        assert!(
-            Cli::try_parse_from(*args).is_err(),
-            "unexpected grammar: {args:?}"
-        );
-    }
-}
-
-#[test]
-fn retry_keys_are_redacted_from_debug_output() {
-    let cli = Cli::try_parse_from(["blobyard", "whoami", "--retry-key", "opaque-retry-key"])
-        .expect("retry key grammar");
-    assert_eq!(format!("{:?}", cli.global.retry_key), "Some([REDACTED])");
-}
-
-#[test]
 fn root_help_names_every_command_and_global_flag() {
     let help = Cli::command().render_long_help().to_string();
     let expected = [
+        "app",
         "profiles",
         "login",
         "logout",
@@ -267,12 +263,15 @@ fn root_help_names_every_command_and_global_flag() {
         "previews",
         "deploy",
         "yard",
+        "env",
+        "access",
         "inbox",
         "retention",
         "audit",
         "members",
         "invites",
         "tokens",
+        "users",
         "trusts",
         "sessions",
         "completion",

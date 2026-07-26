@@ -1,8 +1,9 @@
-use super::{Corrupting, Corruption};
+use super::{Corrupting, Corruption, yard_access};
 use blobyard_contract::{
-    NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRecord,
-    WebYardRepository, WebYardStatus, YardCleanupPlan, YardDeployRecord, YardDeployStatus,
-    YardDeploymentRecord, YardFileTarget, YardStartRecord,
+    NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile, RepositoryError,
+    WebYardRecord, WebYardRepository, WebYardStatus, YardAccessGrantRecord, YardAccessPolicyRecord,
+    YardCleanupPlan, YardDeployRecord, YardDeployStatus, YardDeploymentRecord,
+    YardEnvironmentRecord, YardFileTarget, YardStartRecord, YardVisibility,
 };
 use blobyard_core::Slug;
 
@@ -54,6 +55,90 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
 
     fn yard_deploy_by_id(&self, deploy_id: &str) -> Result<YardDeployRecord, RepositoryError> {
         self.inner.yard_deploy_by_id(deploy_id)
+    }
+
+    fn list_yard_environments(
+        &self,
+        yard_id: &str,
+    ) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+        let mut records = self.inner.list_yard_environments(yard_id)?;
+        let populated_calls = if records.is_empty() {
+            0
+        } else {
+            self.environment_list_calls
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                + 1
+        };
+        match self.corruption {
+            Corruption::YardEnvironmentList if !records.is_empty() => records.clear(),
+            Corruption::YardUnknownEnvironmentList if records.is_empty() => {
+                records.push(unexpected_environment(yard_id)?);
+            }
+            Corruption::YardAccessEnvironmentSeed if populated_calls > 1 => records.clear(),
+            Corruption::YardSessionEnvironmentSeed if populated_calls > 2 => records.clear(),
+            _ => {}
+        }
+        Ok(records)
+    }
+
+    fn get_yard_access_policy(
+        &self,
+        yard_id: &str,
+    ) -> Result<Option<YardAccessPolicyRecord>, RepositoryError> {
+        let record = self.inner.get_yard_access_policy(yard_id)?;
+        Ok(yard_access::corrupt_policy(
+            self.corruption,
+            yard_id,
+            record,
+        ))
+    }
+
+    fn set_yard_visibility(
+        &self,
+        yard_id: &str,
+        visibility: YardVisibility,
+        updated_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessPolicyRecord, RepositoryError> {
+        self.inner
+            .set_yard_visibility(yard_id, visibility, updated_at_ms, event)
+            .map(|record| yard_access::corrupt_visibility(self.corruption, updated_at_ms, record))
+    }
+
+    fn insert_yard_access_grant(
+        &self,
+        grant: &NewYardAccessGrant,
+        event: &NewAuditEvent,
+    ) -> Result<YardAccessGrantRecord, RepositoryError> {
+        let result = self.inner.insert_yard_access_grant(grant, event);
+        yard_access::corrupt_inserted_grant(self.corruption, grant.created_at_ms, result)
+    }
+
+    fn revoke_yard_access_grant(
+        &self,
+        yard_id: &str,
+        grant_id: &str,
+        revoked_at_ms: u64,
+        event: &NewAuditEvent,
+    ) -> Result<bool, RepositoryError> {
+        let result = self
+            .inner
+            .revoke_yard_access_grant(yard_id, grant_id, revoked_at_ms, event);
+        yard_access::corrupt_revocation(self.corruption, grant_id, revoked_at_ms, result)
+    }
+
+    fn list_yard_access_grants(
+        &self,
+        yard_id: &str,
+        now_ms: u64,
+    ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError> {
+        let records = self.inner.list_yard_access_grants(yard_id, now_ms)?;
+        Ok(yard_access::corrupt_grant_list(
+            self.corruption,
+            yard_id,
+            now_ms,
+            records,
+        ))
     }
 
     fn finalise_yard_deploy(
@@ -139,11 +224,28 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
         &self,
         host_label: &str,
         normalized_request_path: &str,
+        session_token_hash: Option<&str>,
+        now_ms: u64,
     ) -> Result<YardFileTarget, RepositoryError> {
-        let result = self
-            .inner
-            .yard_file_by_host(host_label, normalized_request_path);
+        let result = self.inner.yard_file_by_host(
+            host_label,
+            normalized_request_path,
+            session_token_hash,
+            now_ms,
+        );
         match self.corruption {
+            Corruption::YardDirectDeliveryTarget if now_ms == 111 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
+            Corruption::YardSessionLiveTarget if now_ms == 121 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
+            Corruption::YardSessionPublicTarget if now_ms == 136 => result.map(|mut target| {
+                target.object.version.id.push_str("_corrupt");
+                target
+            }),
             Corruption::YardDeliveryTarget if normalized_request_path.is_empty() => {
                 result.map(|mut target| {
                     target.not_found_document = true;
@@ -156,9 +258,27 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
             {
                 Err(RepositoryError::Unavailable)
             }
+            Corruption::YardPrivateDelivery
+                if normalized_request_path == "asset.js"
+                    && result == Err(RepositoryError::NotFound) =>
+            {
+                Err(RepositoryError::Unavailable)
+            }
             _ => result,
         }
     }
+}
+
+fn unexpected_environment(yard_id: &str) -> Result<YardEnvironmentRecord, RepositoryError> {
+    Ok(YardEnvironmentRecord {
+        id: "yardenv_unexpected".to_owned(),
+        yard_id: yard_id.to_owned(),
+        name: Slug::new("production").map_err(|_error| RepositoryError::InvalidInput)?,
+        kind: blobyard_contract::YardEnvironmentKind::Production,
+        status: blobyard_contract::YardEnvironmentStatus::Active,
+        created_at_ms: 0,
+        updated_at_ms: 0,
+    })
 }
 
 fn unexpected_yard(project_id: &str) -> Result<WebYardRecord, RepositoryError> {

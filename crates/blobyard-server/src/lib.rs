@@ -12,6 +12,10 @@ pub mod api_ci_trusts;
 #[doc(hidden)]
 pub mod api_cli_sessions;
 #[doc(hidden)]
+pub mod api_groups;
+#[doc(hidden)]
+pub mod api_local_users;
+#[doc(hidden)]
 pub mod api_tokens;
 #[doc(hidden)]
 pub mod api_workspace_rename;
@@ -92,6 +96,14 @@ pub mod transfers_operations;
 #[doc(hidden)]
 pub mod yard_cleanup;
 #[doc(hidden)]
+pub mod yard_login;
+#[doc(hidden)]
+pub mod yard_session_contracts;
+#[doc(hidden)]
+pub mod yard_session_cookie;
+#[doc(hidden)]
+pub mod yard_session_runtime;
+#[doc(hidden)]
 pub mod yards;
 
 #[cfg(any(test, feature = "test-seams"))]
@@ -131,31 +143,28 @@ impl<T> RuntimeStorage for T where
 {
 }
 
-pub(crate) trait Repository:
-    blobyard_contract::MetadataRepository
-    + blobyard_contract::CredentialRepository
-    + blobyard_contract::CiRepository
-    + blobyard_contract::TransferRepository
-    + blobyard_contract::LifecycleRepository
-    + blobyard_contract::SharingRepository
-    + blobyard_contract::InboxRepository
-    + blobyard_contract::PreviewRepository
-    + blobyard_contract::WebYardRepository
-{
+macro_rules! repository_surface {
+    ($($bound:path),+ $(,)?) => {
+        pub(crate) trait Repository: $($bound +)+ Send + Sync {}
+
+        impl<T> Repository for T where T: $($bound +)+ Send + Sync {}
+    };
 }
 
-impl<T> Repository for T where
-    T: blobyard_contract::MetadataRepository
-        + blobyard_contract::CredentialRepository
-        + blobyard_contract::CiRepository
-        + blobyard_contract::TransferRepository
-        + blobyard_contract::LifecycleRepository
-        + blobyard_contract::SharingRepository
-        + blobyard_contract::InboxRepository
-        + blobyard_contract::PreviewRepository
-        + blobyard_contract::WebYardRepository
-{
-}
+repository_surface!(
+    blobyard_contract::MetadataRepository,
+    blobyard_contract::CredentialRepository,
+    blobyard_contract::LocalUserRepository,
+    blobyard_contract::WorkspaceGroupRepository,
+    blobyard_contract::YardSessionRepository,
+    blobyard_contract::CiRepository,
+    blobyard_contract::TransferRepository,
+    blobyard_contract::LifecycleRepository,
+    blobyard_contract::SharingRepository,
+    blobyard_contract::InboxRepository,
+    blobyard_contract::PreviewRepository,
+    blobyard_contract::WebYardRepository,
+);
 
 fn normalize_origin(value: &str) -> Result<String, ServerError> {
     let parsed = url::Url::parse(value).map_err(|_error| ServerError::PublicOrigin)?;

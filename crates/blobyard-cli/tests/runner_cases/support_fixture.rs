@@ -13,7 +13,36 @@ impl Fixture {
         environment_token: Option<&str>,
         store_token: Option<&str>,
     ) -> Self {
-        Self::new_with_project_config(args, responses, environment_token, store_token, None)
+        Self::new_with_project_config(
+            args,
+            responses,
+            environment_token,
+            store_token,
+            None,
+            blobyard_api_client::ApiDeployment::Cloud,
+        )
+    }
+
+    /// Creates a complete self-hosted fixture.
+    ///
+    /// # Panics
+    ///
+    /// Panics when command or fixture configuration is invalid.
+    #[must_use]
+    pub(in crate::runner_cases_tests) fn self_hosted(
+        args: &[&str],
+        responses: Vec<RawResponse>,
+        environment_token: Option<&str>,
+        store_token: Option<&str>,
+    ) -> Self {
+        Self::new_with_project_config(
+            args,
+            responses,
+            environment_token,
+            store_token,
+            None,
+            blobyard_api_client::ApiDeployment::SelfHosted,
+        )
     }
 
     /// Creates a complete fixture with a nearest project configuration file.
@@ -31,6 +60,7 @@ impl Fixture {
             environment_token,
             store_token,
             Some(project_config),
+            blobyard_api_client::ApiDeployment::Cloud,
         )
     }
 
@@ -40,6 +70,7 @@ impl Fixture {
         environment_token: Option<&str>,
         store_token: Option<&str>,
         project_config: Option<&str>,
+        deployment: blobyard_api_client::ApiDeployment,
     ) -> Self {
         let cli = Cli::try_parse_from(args).expect("command grammar");
         let temp = tempfile::tempdir().expect("tempdir");
@@ -60,8 +91,12 @@ impl Fixture {
         .expect("resolved config");
         let store = Arc::new(store_token.map_or_else(FakeStore::default, FakeStore::with_token));
         let transport = Arc::new(QueueTransport::new(responses));
-        let runner = Runner::new(ApiClient::new(transport.clone()), config, store.clone())
-            .with_retry_key(cli.global.retry_key.clone());
+        let runner = Runner::new(
+            ApiClient::for_deployment(transport.clone(), deployment),
+            config,
+            store.clone(),
+        )
+        .with_retry_key(cli.global.retry_key.clone());
         Self {
             command: cli.command,
             runner,

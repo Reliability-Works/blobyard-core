@@ -48,6 +48,9 @@ fn generated_credentials_have_fixed_valid_shapes() {
         (GeneratedSecretKind::ShareCapability, "bysh"),
         (GeneratedSecretKind::InboxCapability, "byin"),
         (GeneratedSecretKind::UploadCapability, "byu"),
+        (GeneratedSecretKind::UserLoginKey, "byuk"),
+        (GeneratedSecretKind::YardExchangeCode, "byx"),
+        (GeneratedSecretKind::YardSession, "byys"),
     ] {
         let secret = SecretString::from_generated_entropy(kind, [0xab; 32]);
         assert_eq!(

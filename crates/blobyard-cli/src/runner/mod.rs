@@ -1,3 +1,4 @@
+mod access;
 mod admin;
 mod confirmation;
 mod dashboard;
@@ -5,7 +6,11 @@ mod deploy;
 mod deploy_output;
 mod deploy_selection;
 mod dispatch;
+mod environments;
+mod groups;
+mod identity;
 mod local;
+mod local_users;
 mod login;
 mod mcp;
 mod mcp_admin;
@@ -18,6 +23,7 @@ mod retry;
 mod sharing;
 mod transfers;
 mod workspaces;
+mod yard_sessions;
 mod yards;
 
 use crate::commands::Command;
@@ -102,8 +108,11 @@ impl Runner {
             Command::Rm(arguments) => self.remove_object(arguments).await,
             Command::Share(_) | Command::Preview(_) => self.execute_capability(command).await,
             Command::Deploy(arguments) => self.deploy(arguments).await,
-            Command::Yard { command } => self.execute_yard(command).await,
-            Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
+            Command::Yard { .. }
+            | Command::Env { .. }
+            | Command::Access { .. }
+            | Command::YardSessions { .. } => self.execute_yard_family(command).await,
+            Command::App { .. } | Command::Init | Command::Completion(_) | Command::Mcp { .. } => {
                 self.execute_local(command)
             }
             _ => self.execute_headless(command).await,
@@ -180,16 +189,6 @@ impl Runner {
         }
         command_result(success.data(), "Signed out.", success.request_id())
     }
-
-    async fn whoami(&self) -> Result<CommandResult, BlobyardError> {
-        let success = self
-            .execute_authed::<blobyard_api_client::WhoAmIResponse>(ApiRequest::new(
-                Endpoint::WhoAmI,
-            ))
-            .await?;
-        let human = whoami_human(success.data());
-        command_result(success.data(), human, success.request_id())
-    }
 }
 
 fn validate_resource_name(name: &str, resource: &str) -> Result<(), BlobyardError> {
@@ -202,24 +201,6 @@ fn validate_resource_name(name: &str, resource: &str) -> Result<(), BlobyardErro
     } else {
         Ok(())
     }
-}
-
-fn whoami_human(identity: &blobyard_api_client::WhoAmIResponse) -> String {
-    let principal = identity.email.as_ref().map_or_else(
-        || format!("{} ({})", identity.display_name, identity.principal_id),
-        |email| {
-            format!(
-                "{} <{email}> ({})",
-                identity.display_name, identity.principal_id
-            )
-        },
-    );
-    format!(
-        "{principal}\nWorkspace: {} ({})\nScopes: {}",
-        identity.default_workspace.name,
-        identity.default_workspace.slug,
-        identity.scopes.join(", ")
-    )
 }
 
 impl std::fmt::Debug for Runner {
@@ -253,9 +234,8 @@ fn api_error(error: blobyard_api_client::ApiCallError) -> BlobyardError {
 
 #[cfg(test)]
 mod tests {
-    use super::{to_json, whoami_human};
+    use super::to_json;
     use crate::Command;
-    use blobyard_api_client::{PrincipalType, WhoAmIDefaultWorkspace, WhoAmIResponse};
     use serde::Serialize;
 
     struct FailingSerialize;
@@ -298,34 +278,5 @@ mod tests {
                 .await
                 .is_err()
         );
-    }
-
-    #[test]
-    fn identity_copy_omits_email_punctuation_for_ci() {
-        let workspace = WhoAmIDefaultWorkspace {
-            id: "workspace_1".into(),
-            name: "Builds".into(),
-            slug: "builds".into(),
-        };
-        let cli = WhoAmIResponse {
-            default_workspace: workspace.clone(),
-            display_name: "Developer".into(),
-            email: Some("developer@example.com".into()),
-            principal_id: "user_1".into(),
-            principal_type: PrincipalType::Cli,
-            scopes: vec!["object:read".into()],
-        };
-        assert!(whoami_human(&cli).contains("Developer <developer@example.com> (user_1)"));
-        let ci = WhoAmIResponse {
-            default_workspace: workspace,
-            display_name: "GitHub acme/artifacts".into(),
-            email: None,
-            principal_id: "machine_1".into(),
-            principal_type: PrincipalType::Ci,
-            scopes: vec!["upload".into()],
-        };
-        let output = whoami_human(&ci);
-        assert!(output.starts_with("GitHub acme/artifacts (machine_1)"));
-        assert!(!output.contains('<'));
     }
 }

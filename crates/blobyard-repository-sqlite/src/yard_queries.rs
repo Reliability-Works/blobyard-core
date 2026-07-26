@@ -1,6 +1,8 @@
-use super::{collect, map_error, rows, yard_rows};
-use blobyard_contract::{RepositoryError, WebYardRecord, YardDeployRecord, YardFileTarget};
-use rusqlite::{Connection, OptionalExtension, Statement, params};
+use super::{collect, map_error, rows, yard_rows, yard_session_admission};
+use blobyard_contract::{
+    RepositoryError, WebYardRecord, YardDeployRecord, YardEnvironmentRecord, YardFileTarget,
+};
+use rusqlite::{Connection, OptionalExtension, Statement, Transaction, params};
 
 pub(super) fn yard_by_id(
     connection: &Connection,
@@ -91,21 +93,83 @@ pub(super) fn list_deploys(
     )
 }
 
-pub(super) fn public_file(
-    connection: &Connection,
+pub(super) fn list_environments(
+    statement: &mut Statement<'_>,
+    yard_id: &str,
+) -> Result<Vec<YardEnvironmentRecord>, RepositoryError> {
+    collect(
+        statement
+            .query_map([yard_id], yard_rows::environment)
+            .map_err(map_error)?,
+    )
+}
+
+pub(super) fn authorized_file(
+    transaction: &Transaction<'_>,
     host_label: &str,
     normalized_request_path: &str,
+    session_token_hash: Option<&str>,
+    now_ms: i64,
 ) -> Result<YardFileTarget, RepositoryError> {
-    let deploy = serving_deploy(connection, host_label)?;
+    let deploy = serving_deploy(transaction, host_label)?;
+    let visibility = effective_visibility(transaction, &deploy.yard_id)?;
+    let session_id = if visibility == "public" {
+        None
+    } else {
+        let hash = required_session_hash(session_token_hash)?;
+        super::auth_validation::validate_hash(hash)?;
+        yard_session_admission::session_id(
+            transaction,
+            hash,
+            host_label,
+            &deploy.yard_id,
+            &visibility,
+            now_ms,
+        )?
+        .ok_or(RepositoryError::NotFound)
+        .map(Some)?
+    };
     for (path, not_found_document) in resolution_candidates(normalized_request_path, &deploy) {
-        if let Some(object) = file_by_path(connection, &deploy.id, &path)? {
-            return Ok(YardFileTarget {
+        if let Some(object) = file_by_path(transaction, &deploy.id, &path)? {
+            let target = YardFileTarget {
                 object,
                 not_found_document,
-            });
+            };
+            if let Some(session_id) = session_id.as_deref() {
+                touch_session(transaction, session_id, now_ms)?;
+            }
+            return Ok(target);
         }
     }
     Err(RepositoryError::NotFound)
+}
+
+fn required_session_hash(value: Option<&str>) -> Result<&str, RepositoryError> {
+    value.ok_or(RepositoryError::NotFound)
+}
+
+fn effective_visibility(connection: &Connection, yard_id: &str) -> Result<String, RepositoryError> {
+    connection
+        .query_row(
+            "SELECT COALESCE((SELECT visibility FROM yard_access_policies WHERE yard_id = ?1), 'public')",
+            [yard_id],
+            |row| row.get(0),
+        )
+        .map_err(map_error)
+}
+
+fn touch_session(
+    transaction: &Transaction<'_>,
+    session_id: &str,
+    now_ms: i64,
+) -> Result<(), RepositoryError> {
+    let changed = transaction
+        .execute(
+            "UPDATE yard_sessions SET last_used_at_ms = CASE WHEN last_used_at_ms IS NULL OR last_used_at_ms < ?2 THEN ?2 ELSE last_used_at_ms END WHERE id = ?1",
+            params![session_id, now_ms],
+        )
+        .map_err(map_error)?;
+    super::changed_once(changed)
 }
 
 fn serving_deploy(
@@ -202,3 +266,7 @@ fn file_by_path(
         .optional()
         .map_err(map_error)
 }
+
+#[cfg(test)]
+#[path = "yard_queries_tests.rs"]
+mod tests;

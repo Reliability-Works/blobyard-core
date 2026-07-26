@@ -1,6 +1,8 @@
-use super::{deploy, yard};
+use super::{deploy, environment, yard};
 use crate::adapter::rows::tests::{assert_each_column_rejects_blob, assert_replacements_fail};
-use blobyard_contract::{WebYardStatus, YardDeployStatus};
+use blobyard_contract::{
+    WebYardStatus, YardDeployStatus, YardEnvironmentKind, YardEnvironmentStatus,
+};
 use rusqlite::Connection;
 
 const YARD_VALUES: [&str; 10] = [
@@ -32,6 +34,50 @@ const DEPLOY_VALUES: [&str; 14] = [
     "3",
     "4",
 ];
+
+const ENVIRONMENT_VALUES: [&str; 7] = [
+    "'yardenv_yard_1'",
+    "'yard_1'",
+    "'production'",
+    "'production'",
+    "'active'",
+    "1",
+    "2",
+];
+
+#[test]
+fn environment_rows_decode_complete_records() -> rusqlite::Result<()> {
+    let connection = Connection::open_in_memory()?;
+    let record = connection.query_row(
+        "SELECT 'yardenv_yard_1', 'yard_1', 'production', 'production', 'active', 1, 2",
+        [],
+        environment,
+    )?;
+    assert_eq!(record.id, "yardenv_yard_1");
+    assert_eq!(record.yard_id, "yard_1");
+    assert_eq!(record.name.as_str(), "production");
+    assert_eq!(record.kind, YardEnvironmentKind::Production);
+    assert_eq!(record.status, YardEnvironmentStatus::Active);
+    assert_eq!(record.created_at_ms, 1);
+    assert_eq!(record.updated_at_ms, 2);
+    Ok(())
+}
+
+#[test]
+fn environment_rows_reject_every_malformed_column_and_timestamp() {
+    assert_each_column_rejects_blob(&ENVIRONMENT_VALUES, environment);
+    assert_replacements_fail(
+        &ENVIRONMENT_VALUES,
+        [
+            (2, "'invalid slug'"),
+            (3, "'invalid'"),
+            (4, "'invalid'"),
+            (5, "-1"),
+            (6, "-1"),
+        ],
+        environment,
+    );
+}
 
 #[test]
 fn yard_and_deploy_rows_decode_complete_records() -> rusqlite::Result<()> {

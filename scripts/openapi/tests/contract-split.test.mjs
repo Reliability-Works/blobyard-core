@@ -12,6 +12,7 @@ import {
 import { loadComposedContract } from "../contract-files.mjs";
 import { operationMetadata } from "../operation-metadata.mjs";
 import { operationOwnership } from "../operation-ownership.mjs";
+import { CLOUD_YARD_OPERATIONS, LOCAL_USER_OPERATIONS } from "./deployment-fixtures.mjs";
 
 async function sources() {
   const names = ["core", "hosted-extension", "shared"];
@@ -44,7 +45,7 @@ test("canonical split composes to the checked-in hosted contract", async () => {
   );
   assert.equal(expected.paths["/bootstrap/exchange"], undefined);
   assert.notEqual(actual.paths["/bootstrap/exchange"], undefined);
-  assert.equal(contractOperationIds(split.core).length, 49);
+  assert.equal(contractOperationIds(split.core).length, 67);
   assert.equal(contractOperationIds(split.hosted).length, 25);
   assert.deepEqual(split.shared.paths, {});
 });
@@ -82,6 +83,31 @@ test("GitHub OIDC uses one bearer-token request contract for hosted and self-hos
   ]);
 });
 
+test("deployment projection separates local users from Cloud Yard identity operations", async () => {
+  const document = await loadComposedContract(process.cwd());
+  const cloud = new Set(contractOperationIds(projectContractForDeployment(document, "cloud")));
+  const selfHosted = new Set(
+    contractOperationIds(projectContractForDeployment(document, "self-hosted")),
+  );
+  const selfHostedOnly = Object.values(document.paths)
+    .flatMap((item) => Object.values(item))
+    .filter(
+      (operation) => JSON.stringify(operation?.["x-blobyard-deployments"]) === '["self-hosted"]',
+    )
+    .map((operation) => operation.operationId)
+    .toSorted();
+
+  assert.deepEqual(selfHostedOnly, ["exchangeBootstrapToken", ...LOCAL_USER_OPERATIONS].toSorted());
+  for (const operation of LOCAL_USER_OPERATIONS) {
+    assert.equal(cloud.has(operation), false);
+    assert.equal(selfHosted.has(operation), true);
+  }
+  for (const operation of CLOUD_YARD_OPERATIONS) {
+    assert.equal(cloud.has(operation), true);
+    assert.equal(selfHosted.has(operation), true);
+  }
+});
+
 test("operation metadata covers every contract operation and rejects drift", async () => {
   const [document, source, generated] = await Promise.all([
     loadComposedContract(process.cwd()),
@@ -90,7 +116,7 @@ test("operation metadata covers every contract operation and rejects drift", asy
   ]);
   const identifiers = contractOperationIds(document).toSorted();
   const metadata = operationMetadata(identifiers, source);
-  assert.equal(metadata.size, 74);
+  assert.equal(metadata.size, 92);
   assert.deepEqual(metadata.get("requestUpload"), {
     requiredCiActions: ["upload"],
     requiredUserScopes: ["object:write"],

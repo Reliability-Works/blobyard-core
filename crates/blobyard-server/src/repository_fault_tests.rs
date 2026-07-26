@@ -1,21 +1,30 @@
 #![allow(clippy::expect_used, reason = "test synchronization must fail loudly")]
 
 use crate::Repository;
-use blobyard_contract::{LifecycleRepository, MetadataRepository, RepositoryError};
+use blobyard_contract::{
+    LifecycleRepository, MetadataRepository, NewAuditEvent, NewYardContinuation, NewYardSession,
+    RepositoryError, YardSessionAuditContext, YardSessionRepository,
+};
 use std::sync::Arc;
 
 #[path = "repository_fault_ci.rs"]
 mod ci;
 #[path = "repository_fault_credentials.rs"]
 mod credentials;
+#[path = "repository_fault_groups.rs"]
+mod groups;
 #[path = "repository_fault_inboxes.rs"]
 mod inboxes;
+#[path = "repository_fault_local_users.rs"]
+mod local_users;
 #[path = "repository_fault_previews.rs"]
 mod previews;
 #[path = "repository_fault_sharing.rs"]
 mod sharing;
 #[path = "repository_fault_transfers.rs"]
 mod transfers;
+#[path = "repository_fault_yard_sessions.rs"]
+mod yard_sessions;
 #[path = "repository_fault_yards.rs"]
 mod yards;
 
@@ -31,6 +40,7 @@ pub(crate) enum Corruption {
     InboxExpiry,
     PreviewCreatedAt,
     PreviewExpiresAt,
+    YardSessionCreatedAt,
 }
 
 pub(crate) struct FaultingRepository {
@@ -94,7 +104,7 @@ fn faulting_repository_forwards_before_its_exact_failure_index() {
         FaultingRepository::new(Arc::clone(&inner), 0).schema_version(),
         Err(RepositoryError::Unavailable)
     );
-    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(16));
+    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(21));
 }
 
 #[test]
@@ -136,6 +146,94 @@ fn faulting_repository_forwards_the_remaining_lifecycle_operations() {
     );
     assert_eq!(
         FaultingRepository::new(inner, 0).fail_retention("missing", 1),
+        Err(RepositoryError::Unavailable)
+    );
+}
+
+#[test]
+fn every_yard_session_operation_fails_at_its_repository_seam() {
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let inner: Arc<dyn Repository> = Arc::new(
+        blobyard_repository_sqlite::SqliteRepository::open(
+            &temporary.path().join("metadata.sqlite3"),
+        )
+        .expect("repository"),
+    );
+    let continuation = NewYardContinuation {
+        id: "yardcont_fixture".to_owned(),
+        continuation_hash: "a".repeat(64),
+        code_hash: "b".repeat(64),
+        yard_id: "yard_fixture".to_owned(),
+        environment_id: "environment_fixture".to_owned(),
+        host_label: "docs-fixture".to_owned(),
+        user_id: "user_fixture".to_owned(),
+        return_path: "/".to_owned(),
+        created_at_ms: 1,
+        expires_at_ms: 2,
+    };
+    let session = NewYardSession {
+        id: "yardsession_fixture".to_owned(),
+        token_hash: "c".repeat(64),
+        created_at_ms: 1,
+        expires_at_ms: 2,
+    };
+    let audit = YardSessionAuditContext {
+        id: "audit_fixture".to_owned(),
+        request_id: "request_fixture".to_owned(),
+    };
+    let event = NewAuditEvent {
+        id: "audit_revoke_fixture".to_owned(),
+        workspace_id: "workspace_fixture".to_owned(),
+        actor: "user_fixture".to_owned(),
+        action: "yard.session_revoked".to_owned(),
+        request_id: "request_revoke_fixture".to_owned(),
+        target_type: "yard_session".to_owned(),
+        metadata: Vec::new(),
+        created_at_ms: 1,
+    };
+    assert_yard_session_operation_failures(&inner, &continuation, &session, &audit, &event);
+}
+
+fn assert_yard_session_operation_failures(
+    inner: &Arc<dyn Repository>,
+    continuation: &NewYardContinuation,
+    session: &NewYardSession,
+    audit: &YardSessionAuditContext,
+    event: &NewAuditEvent,
+) {
+    let faulted = || FaultingRepository::new(Arc::clone(inner), 0);
+    assert_eq!(
+        faulted().evaluate_yard_admission("docs-fixture", "user_fixture", 1),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().issue_yard_exchange_code(continuation),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().exchange_yard_session_code(
+            &continuation.code_hash,
+            &continuation.host_label,
+            session,
+            audit,
+            1,
+        ),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().list_yard_sessions(&continuation.yard_id),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().revoke_yard_session(&continuation.yard_id, &session.id, 1, event,),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().revoke_yard_session_by_token(&session.token_hash, &continuation.host_label, 1,),
+        Err(RepositoryError::Unavailable)
+    );
+    assert_eq!(
+        faulted().purge_yard_session_history(1),
         Err(RepositoryError::Unavailable)
     );
 }

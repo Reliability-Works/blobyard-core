@@ -1,9 +1,14 @@
 use super::rows;
-use blobyard_contract::{WebYardRecord, WebYardStatus, YardDeployRecord, YardDeployStatus};
+use blobyard_contract::{
+    WebYardRecord, WebYardStatus, YardDeployRecord, YardDeployStatus, YardEnvironmentKind,
+    YardEnvironmentRecord, YardEnvironmentStatus,
+};
 use blobyard_core::Slug;
 use rusqlite::Row;
 
 pub(super) const YARD_COLUMNS: &str = "id, workspace_id, project_id, name, host_label, current_deploy_id, status, created_at_ms, updated_at_ms, deleted_at_ms";
+pub(super) const ENVIRONMENT_COLUMNS: &str =
+    "id, yard_id, name, kind, status, created_at_ms, updated_at_ms";
 pub(super) const DEPLOY_COLUMNS: &str = "id, yard_id, workspace_id, project_id, client_deploy_id, manifest_root, deployment_host_label, spa, clean_urls, status, created_at_ms, finalised_at_ms, file_count, total_bytes";
 pub(super) const QUALIFIED_DEPLOY_COLUMNS: &str = "d.id, d.yard_id, d.workspace_id, d.project_id, d.client_deploy_id, d.manifest_root, d.deployment_host_label, d.spa, d.clean_urls, d.status, d.created_at_ms, d.finalised_at_ms, d.file_count, d.total_bytes";
 
@@ -44,11 +49,27 @@ pub(super) fn deploy(row: &Row<'_>) -> rusqlite::Result<YardDeployRecord> {
     })
 }
 
-fn required_u64(value: i64) -> rusqlite::Result<u64> {
+pub(super) fn environment(row: &Row<'_>) -> rusqlite::Result<YardEnvironmentRecord> {
+    let name: String = row.get(2)?;
+    let kind: String = row.get(3)?;
+    let status: String = row.get(4)?;
+    Ok(YardEnvironmentRecord {
+        id: row.get(0)?,
+        yard_id: row.get(1)?,
+        name: Slug::new(name.clone()).map_err(|_error| rows::conversion_error(name))?,
+        kind: YardEnvironmentKind::parse(&kind).ok_or_else(|| rows::conversion_error(kind))?,
+        status: YardEnvironmentStatus::parse(&status)
+            .ok_or_else(|| rows::conversion_error(status))?,
+        created_at_ms: required_u64(row.get(5)?)?,
+        updated_at_ms: required_u64(row.get(6)?)?,
+    })
+}
+
+pub(super) fn required_u64(value: i64) -> rusqlite::Result<u64> {
     u64::try_from(value).map_err(rows::conversion_error)
 }
 
-fn optional_u64(value: Option<i64>) -> rusqlite::Result<Option<u64>> {
+pub(super) fn optional_u64(value: Option<i64>) -> rusqlite::Result<Option<u64>> {
     value
         .map(|number| u64::try_from(number).map_err(rows::conversion_error))
         .transpose()

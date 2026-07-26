@@ -14,6 +14,7 @@ const USER_SCOPES = new Set([
   "sessions:manage",
   "share:manage",
   "tokens:manage",
+  "users:manage",
   "workspace:read",
   "yard:manage",
   "yard:read",

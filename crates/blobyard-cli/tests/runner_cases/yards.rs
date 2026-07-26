@@ -48,6 +48,10 @@ async fn failed_deploy_requests(
     requests
 }
 
+#[path = "yards/access_failure_tests.rs"]
+mod access_failure_tests;
+#[path = "yards/access_tests.rs"]
+mod access_tests;
 #[path = "yards/deploy_completion_tests.rs"]
 mod deploy_completion_tests;
 #[path = "yards/deploy_confirmation_tests.rs"]
@@ -56,10 +60,14 @@ mod deploy_confirmation_tests;
 mod deploy_failure_paths;
 #[path = "yards/deploy_tests.rs"]
 mod deploy_tests;
+#[path = "yards/environment_tests.rs"]
+mod environment_tests;
 #[path = "yards/management_failure_tests.rs"]
 mod management_failure_tests;
 #[path = "yards/management_tests.rs"]
 mod management_tests;
+#[path = "yards/session_tests.rs"]
+mod session_tests;
 
 fn start_response(
     name: &str,

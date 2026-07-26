@@ -654,6 +654,188 @@ paths:
           required: true
           schema:
             $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+  /yards/environments:
+    get:
+      operationId: listYardEnvironments
+      description: Lists active environments for one Yard.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListYardEnvironmentsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - env
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_environments
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/access:
+    get:
+      operationId: getYardAccess
+      description: Reads one Yard's effective visibility and active access grants.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_get_yard_access
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/access/visibility:
+    post:
+      operationId: setYardVisibility
+      description: Sets one Yard's visibility policy. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardVisibilitySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - set-visibility
+      x-blobyard-mcp:
+        tool: blobyard_set_yard_visibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardVisibilityRequest
+  /yards/access/grant:
+    post:
+      operationId: grantYardAccess
+      description: Grants one principal scoped access to a Yard. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GrantYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - grant
+      x-blobyard-mcp:
+        tool: blobyard_grant_yard_access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GrantYardAccessRequest
+  /yards/access/revoke:
+    post:
+      operationId: revokeYardAccess
+      description: Revokes one Yard access grant. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_yard_access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessRequest
+  /yards/sessions:
+    get:
+      operationId: listYardSessions
+      description: Lists browser sessions for one Yard without exposing token material.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListYardSessionsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard-sessions
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_sessions
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/sessions/revoke:
+    post:
+      operationId: revokeYardSession
+      description: Revokes one Yard browser session. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardSessionSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - yard-sessions
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_yard_session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardSessionRequest
   /yards/deploys:
     get:
       operationId: listWebYardDeploys
@@ -1129,6 +1311,311 @@ paths:
           application/json:
             schema:
               $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeApiTokenRequest
+  /groups:
+    get:
+      operationId: listGroups
+      description: Lists active and deactivated groups in one workspace. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListGroupsSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_groups
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+    post:
+      operationId: createGroup
+      description: Creates one empty workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - create
+      x-blobyard-mcp:
+        tool: blobyard_create_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateGroupRequest
+  /groups/rename:
+    post:
+      operationId: renameGroup
+      description: Renames one active workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - rename
+      x-blobyard-mcp:
+        tool: blobyard_rename_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RenameGroupRequest
+  /groups/members:
+    get:
+      operationId: listGroupMembers
+      description: Lists current members of one active workspace group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListGroupMembersSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - members
+      x-blobyard-mcp:
+        tool: blobyard_list_group_members
+      parameters:
+        - in: query
+          name: groupId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+    post:
+      operationId: addGroupMember
+      description: Adds one active same-workspace user to a group. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AddGroupMemberSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - add-member
+      x-blobyard-mcp:
+        tool: blobyard_add_group_member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/AddGroupMemberRequest
+  /groups/members/remove:
+    post:
+      operationId: removeGroupMember
+      description: Removes one current group membership. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveGroupMemberSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - remove-member
+      x-blobyard-mcp:
+        tool: blobyard_remove_group_member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RemoveGroupMemberRequest
+  /groups/deactivate:
+    post:
+      operationId: deactivateGroup
+      description: Tombstones one group and revokes its active Yard grants. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateGroupSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - groups
+          - deactivate
+      x-blobyard-mcp:
+        tool: blobyard_deactivate_group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateGroupRequest
+  /users:
+    get:
+      operationId: listLocalUsers
+      x-blobyard-deployments:
+        - self-hosted
+      description:
+        Lists local users in one workspace with active sign-in key prefixes. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListLocalUsersSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - users
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_local_users
+      parameters:
+        - in: query
+          name: workspace
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Slug
+    post:
+      operationId: createLocalUser
+      x-blobyard-deployments:
+        - self-hosted
+      description: Creates one local user and returns the raw sign-in key once. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateLocalUserSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - users
+          - create
+      x-blobyard-mcp:
+        excluded: Raw sign-in keys stay outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/CreateLocalUserRequest
+  /users/reset-key:
+    post:
+      operationId: resetLocalUserLoginKey
+      x-blobyard-deployments:
+        - self-hosted
+      description:
+        Revokes every active sign-in key for one user and returns the replacement key once. Human
+        sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ResetLocalUserLoginKeySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - users
+          - reset-key
+      x-blobyard-mcp:
+        excluded: Raw sign-in keys stay outside model context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ResetLocalUserLoginKeyRequest
+  /users/deactivate:
+    post:
+      operationId: deactivateLocalUser
+      x-blobyard-deployments:
+        - self-hosted
+      description:
+        Deactivates one local user and revokes every active sign-in key. Human sessions only.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateLocalUserSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - users
+          - deactivate
+      x-blobyard-mcp:
+        tool: blobyard_deactivate_local_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/DeactivateLocalUserRequest
   /ci/trusts:
     get:
       operationId: listCiTrusts

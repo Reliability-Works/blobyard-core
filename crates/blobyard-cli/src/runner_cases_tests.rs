@@ -20,6 +20,8 @@ mod headless_empty_contract;
 mod headless_failure_contract;
 #[path = "../tests/runner_cases/inbox.rs"]
 mod inbox;
+#[path = "../tests/runner_cases/local_users.rs"]
+mod local_users;
 #[path = "../tests/runner_cases/mcp.rs"]
 mod mcp;
 #[path = "../tests/runner_cases/mcp_capabilities.rs"]

@@ -20,6 +20,18 @@ async fn runner_generates_completion_and_redacts_debug_state() {
 }
 
 #[tokio::test]
+async fn runner_executes_local_application_manifest_commands() {
+    let fixture = Fixture::new(&["blobyard", "app", "init"], Vec::new(), None, None);
+    fixture
+        .runner
+        .execute(&fixture.command)
+        .await
+        .expect("manifest scaffold");
+    assert!(fixture.temp.path().join("blobyard.toml").is_file());
+    assert!(fixture.transport.requests().is_empty());
+}
+
+#[tokio::test]
 async fn whoami_uses_environment_token_without_touching_saved_credentials() {
     let fixture = Fixture::new(
         &["blobyard", "whoami"],

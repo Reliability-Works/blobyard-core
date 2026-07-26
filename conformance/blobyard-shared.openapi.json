@@ -101,6 +101,26 @@
         "required": ["artifactCount", "errorCode", "expiresAt", "id", "status"],
         "type": "object"
       },
+      "AddGroupMemberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "userId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId", "userId"],
+        "type": "object"
+      },
+      "AddGroupMemberResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "AddGroupMemberSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AddGroupMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "ApiError": {
         "additionalProperties": false,
         "properties": {
@@ -648,6 +668,31 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "CreateGroupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": { "description": "Human-readable group name.", "type": "string" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace", "name"],
+        "type": "object"
+      },
+      "CreateGroupResult": {
+        "additionalProperties": false,
+        "properties": { "group": { "$ref": "#/components/schemas/GroupSummary" } },
+        "required": ["group"],
+        "type": "object"
+      },
+      "CreateGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateGroupResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "CreateInboxRequest": {
         "additionalProperties": false,
         "properties": {
@@ -712,6 +757,43 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/CreateInviteResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "CreateLocalUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": { "maxLength": 80, "minLength": 2, "type": "string" },
+          "email": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["displayName", "workspace"],
+        "type": "object"
+      },
+      "CreateLocalUserResult": {
+        "additionalProperties": false,
+        "properties": {
+          "loginKey": {
+            "description": "Raw sign-in key returned once.",
+            "pattern": "^byuk_",
+            "type": "string"
+          },
+          "loginKeyPrefix": {
+            "description": "Non-secret prefix shown in listings.",
+            "type": "string"
+          },
+          "user": { "$ref": "#/components/schemas/LocalUserSummary" }
+        },
+        "required": ["loginKey", "loginKeyPrefix", "user"],
+        "type": "object"
+      },
+      "CreateLocalUserSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateLocalUserResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -942,6 +1024,40 @@
         "maxLength": 1024,
         "minLength": 1,
         "type": "string"
+      },
+      "DeactivateGroupRequest": {
+        "additionalProperties": false,
+        "properties": { "groupId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["groupId"],
+        "type": "object"
+      },
+      "DeactivateGroupResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "DeactivateGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeactivateGroupResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "DeactivateLocalUserRequest": {
+        "additionalProperties": false,
+        "properties": { "userId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["userId"],
+        "type": "object"
+      },
+      "DeactivateLocalUserResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "DeactivateLocalUserSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/DeactivateLocalUserResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
       },
       "DeleteObjectRequest": {
         "additionalProperties": false,
@@ -1306,6 +1422,124 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "GetYardAccessQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "GetYardAccessResult": {
+        "additionalProperties": false,
+        "properties": {
+          "grants": {
+            "items": { "$ref": "#/components/schemas/YardAccessGrantSummary" },
+            "type": "array"
+          },
+          "visibility": { "$ref": "#/components/schemas/YardVisibility" }
+        },
+        "required": ["grants", "visibility"],
+        "type": "object"
+      },
+      "GetYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GetYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GrantYardAccessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "items": { "maxLength": 64, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "environmentId": { "$ref": "#/components/schemas/Identifier" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
+          "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["appRoles", "principalId", "principalKind", "yardId"],
+        "type": "object"
+      },
+      "GrantYardAccessResult": {
+        "additionalProperties": false,
+        "properties": { "grant": { "$ref": "#/components/schemas/YardAccessGrantSummary" } },
+        "required": ["grant"],
+        "type": "object"
+      },
+      "GrantYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/GrantYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "GroupMemberPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/Identifier" }, "type": "array" },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "GroupPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/GroupSummary" }, "type": "array" },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "GroupStatus": {
+        "description": "Persisted workspace-group lifecycle state.",
+        "enum": ["active", "deactivated"],
+        "type": "string"
+      },
+      "GroupSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "deactivatedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "memberCount": {
+            "description": "Current active membership count.",
+            "maximum": 500,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "description": "NFC-normalized human-readable group name.",
+            "maxLength": 80,
+            "minLength": 2,
+            "type": "string"
+          },
+          "status": { "$ref": "#/components/schemas/GroupStatus" },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "status",
+          "createdAt",
+          "deactivatedAt",
+          "memberCount"
+        ],
+        "type": "object"
+      },
       "HealthResult": {
         "additionalProperties": false,
         "properties": {
@@ -1456,6 +1690,46 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "ListGroupMembersQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "groupId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId"],
+        "type": "object"
+      },
+      "ListGroupMembersResult": { "$ref": "#/components/schemas/GroupMemberPage" },
+      "ListGroupMembersSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListGroupMembersResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListGroupsQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "workspace": { "$ref": "#/components/schemas/Slug" }
+        },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListGroupsResult": { "$ref": "#/components/schemas/GroupPage" },
+      "ListGroupsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListGroupsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "ListInboxesQuery": {
         "additionalProperties": false,
         "properties": {
@@ -1488,6 +1762,30 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/ListInvitesResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListLocalUsersQuery": {
+        "additionalProperties": false,
+        "properties": { "workspace": { "$ref": "#/components/schemas/Slug" } },
+        "required": ["workspace"],
+        "type": "object"
+      },
+      "ListLocalUsersResult": {
+        "additionalProperties": false,
+        "properties": {
+          "users": { "items": { "$ref": "#/components/schemas/LocalUserSummary" }, "type": "array" }
+        },
+        "required": ["users"],
+        "type": "object"
+      },
+      "ListLocalUsersSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListLocalUsersResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -1647,6 +1945,90 @@
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
         "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListYardEnvironmentsQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListYardEnvironmentsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "environments": {
+            "items": { "$ref": "#/components/schemas/YardEnvironmentSummary" },
+            "type": "array"
+          }
+        },
+        "required": ["environments"],
+        "type": "object"
+      },
+      "ListYardEnvironmentsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListYardEnvironmentsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListYardSessionsQuery": {
+        "additionalProperties": false,
+        "properties": { "yardId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListYardSessionsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "sessions": {
+            "items": { "$ref": "#/components/schemas/YardSessionSummary" },
+            "type": "array"
+          }
+        },
+        "required": ["sessions"],
+        "type": "object"
+      },
+      "ListYardSessionsSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListYardSessionsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "LocalUserStatus": {
+        "description": "Lifecycle state of one local user.",
+        "enum": ["active", "deactivated"],
+        "type": "string"
+      },
+      "LocalUserSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "displayName": { "maxLength": 80, "minLength": 2, "type": "string" },
+          "email": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "loginKeyPrefix": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "description": "Non-secret prefix of the active sign-in key when one exists."
+          },
+          "status": { "$ref": "#/components/schemas/LocalUserStatus" },
+          "workspaceId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "createdAt",
+          "displayName",
+          "email",
+          "id",
+          "loginKeyPrefix",
+          "status",
+          "workspaceId"
+        ],
         "type": "object"
       },
       "LogoutCliSessionRequest": {
@@ -1905,6 +2287,26 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RemoveGroupMemberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "userId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["groupId", "userId"],
+        "type": "object"
+      },
+      "RemoveGroupMemberResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RemoveGroupMemberSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RemoveGroupMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RemoveMemberRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1919,6 +2321,31 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/RemoveMemberResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RenameGroupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "groupId": { "$ref": "#/components/schemas/Identifier" },
+          "name": { "description": "Replacement human-readable group name.", "type": "string" }
+        },
+        "required": ["groupId", "name"],
+        "type": "object"
+      },
+      "RenameGroupResult": {
+        "additionalProperties": false,
+        "properties": { "group": { "$ref": "#/components/schemas/GroupSummary" } },
+        "required": ["group"],
+        "type": "object"
+      },
+      "RenameGroupSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RenameGroupResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2081,6 +2508,38 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/RequestUploadResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeyRequest": {
+        "additionalProperties": false,
+        "properties": { "userId": { "$ref": "#/components/schemas/Identifier" } },
+        "required": ["userId"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "loginKey": {
+            "description": "Raw sign-in key returned once.",
+            "pattern": "^byuk_",
+            "type": "string"
+          },
+          "loginKeyPrefix": {
+            "description": "Non-secret prefix shown in listings.",
+            "type": "string"
+          }
+        },
+        "required": ["loginKey", "loginKeyPrefix"],
+        "type": "object"
+      },
+      "ResetLocalUserLoginKeySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ResetLocalUserLoginKeyResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2343,6 +2802,46 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RevokeYardAccessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "grantId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["grantId", "yardId"],
+        "type": "object"
+      },
+      "RevokeYardAccessResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeYardAccessSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeYardAccessResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "RevokeYardSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["sessionId", "yardId"],
+        "type": "object"
+      },
+      "RevokeYardSessionResult": { "$ref": "#/components/schemas/EmptyResult" },
+      "RevokeYardSessionSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeYardSessionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RollbackWebYardRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2405,6 +2904,31 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/SetRetentionResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "SetYardVisibilityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "visibility": { "$ref": "#/components/schemas/YardVisibility" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["visibility", "yardId"],
+        "type": "object"
+      },
+      "SetYardVisibilityResult": {
+        "additionalProperties": false,
+        "properties": { "visibility": { "$ref": "#/components/schemas/YardVisibility" } },
+        "required": ["visibility"],
+        "type": "object"
+      },
+      "SetYardVisibilitySuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SetYardVisibilityResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2769,6 +3293,41 @@
         "required": ["id", "name", "slug"],
         "type": "object"
       },
+      "YardAccessGrantSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "items": { "maxLength": 64, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "environmentId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }]
+          },
+          "expiresAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
+          "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" }
+        },
+        "required": [
+          "appRoles",
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "id",
+          "principalId",
+          "principalKind"
+        ],
+        "type": "object"
+      },
+      "YardAccessPrincipalKind": {
+        "description": "Kind of principal one access grant covers.",
+        "enum": ["user", "group", "guest-invite", "link"],
+        "type": "string"
+      },
       "YardDeploymentResult": {
         "additionalProperties": false,
         "properties": {
@@ -2847,6 +3406,65 @@
           "totalBytes"
         ],
         "type": "object"
+      },
+      "YardEnvironmentSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "kind": { "enum": ["production", "staging", "preview"], "type": "string" },
+          "name": { "$ref": "#/components/schemas/Slug" },
+          "updatedAt": { "$ref": "#/components/schemas/IsoTimestamp" }
+        },
+        "required": ["createdAt", "id", "kind", "name", "updatedAt"],
+        "type": "object"
+      },
+      "YardSessionStatus": {
+        "description": "Effective lifecycle state of one Yard browser session.",
+        "enum": ["active", "expired", "revoked"],
+        "type": "string"
+      },
+      "YardSessionSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "environmentId": { "$ref": "#/components/schemas/Identifier" },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "hostLabel": { "maxLength": 253, "minLength": 1, "type": "string" },
+          "id": { "$ref": "#/components/schemas/Identifier" },
+          "lastUsedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "status": { "$ref": "#/components/schemas/YardSessionStatus" },
+          "userDisplayName": { "maxLength": 120, "minLength": 1, "type": "string" },
+          "userId": { "$ref": "#/components/schemas/Identifier" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "createdAt",
+          "environmentId",
+          "expiresAt",
+          "hostLabel",
+          "id",
+          "lastUsedAt",
+          "status",
+          "userDisplayName",
+          "userId",
+          "yardId"
+        ],
+        "type": "object"
+      },
+      "YardVisibility": {
+        "description": "Audience allowed to open one Yard.",
+        "enum": [
+          "public",
+          "owner",
+          "selected",
+          "workspace",
+          "authenticated-link",
+          "any-authenticated"
+        ],
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -2897,6 +3515,13 @@
     "/previews",
     "/previews/revoke",
     "/yards",
+    "/yards/environments",
+    "/yards/access",
+    "/yards/access/visibility",
+    "/yards/access/grant",
+    "/yards/access/revoke",
+    "/yards/sessions",
+    "/yards/sessions/revoke",
     "/yards/deploys",
     "/yards/deploys/start",
     "/yards/deploys/finalise",
@@ -2916,6 +3541,14 @@
     "/members/remove",
     "/api-tokens",
     "/api-tokens/revoke",
+    "/groups",
+    "/groups/rename",
+    "/groups/members",
+    "/groups/members/remove",
+    "/groups/deactivate",
+    "/users",
+    "/users/reset-key",
+    "/users/deactivate",
     "/ci/trusts",
     "/ci/trusts/revoke",
     "/cli/sessions",

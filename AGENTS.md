@@ -1,15 +1,15 @@
 # Blob Yard Core
 
 Blob Yard Core is the self-hostable Blob Yard runtime and the canonical home of the `blobyard` CLI,
-MCP server, API client, GitHub Action, storage adapters, OpenAPI contract, conformance bundle, and
-release tooling. It is public source under Apache License 2.0.
+MCP server, API client, GitHub Action, storage adapters, application runtime, OpenAPI contract,
+conformance bundle, and release tooling. It is public source under Apache License 2.0.
 
 ## A letter to the agent working here
 
 You are working on the part of Blob Yard that anyone can run. The goal is not a demo server or a
-thin wrapper around a bucket. The goal is a dependable file layer that one developer can operate on
-a single machine, and that a developer, a CI job, or an agent can drive from the CLI, the API, MCP,
-or a GitHub Action without learning cloud IAM first.
+thin wrapper around a bucket. The goal is a dependable file and application layer that one developer
+can operate on a single machine, and that a developer, a CI job, or an agent can drive from the CLI,
+the API, MCP, or a GitHub Action without learning cloud IAM first.
 
 Treat agents as first-class users. A capable agent should be able to discover a stable contract,
 authenticate with narrowly scoped authority, complete the same workflows as a person, and inspect
@@ -24,7 +24,9 @@ internal machinery.
 Security is part of that obviousness. Users, CLIs, CI jobs, and agents never receive permanent
 storage credentials. Capabilities are scoped, short-lived, revocable, and auditable. Raw tokens are
 returned once, stored only as hashes, and never appear in logs, screenshots, tests, list APIs, or
-command output.
+command output. Yard application code is untrusted tenant code: it executes only behind the isolated
+runner boundary with declared, per-invocation capability handles, and authentication never makes it
+trusted.
 
 ## The working agreement
 
@@ -42,8 +44,9 @@ infrastructure belong in the private `Reliability-Works/blobyard` repository, no
 this repository may require a Blob Yard Cloud account to operate.
 
 Keep business logic in the Rust domain and service crates. Adapters stay thin. The default operator
-path is a single Rust server with SQLite and filesystem storage; S3-compatible storage is optional.
-Use pnpm for JavaScript and TypeScript dependencies. Do not use npm, npx, Yarn, or Bun.
+path is one command on a single machine: the Rust server with SQLite and filesystem storage plus the
+isolated function runner boundary. S3-compatible storage, OIDC, and SMTP are optional configured
+adapters. Use pnpm for JavaScript and TypeScript dependencies. Do not use npm, npx, Yarn, or Bun.
 
 Keep contract, implementation, tests, documentation, and conformance evidence aligned. When the
 contract changes, the OpenAPI documents, the conformance bundle, and the operator documentation

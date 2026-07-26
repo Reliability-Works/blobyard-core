@@ -1,6 +1,7 @@
 use super::super::support::{Fixture, api_failure, ok};
 use super::yard;
-use crate::commands::{Command, RollbackYardArgs, YardCommand};
+use crate::commands::Command;
+use crate::yard_commands::{RollbackYardArgs, YardCommand};
 use blobyard_core::ErrorCode;
 
 fn fixture(args: &[&str], responses: Vec<blobyard_api_client::RawResponse>) -> Fixture {

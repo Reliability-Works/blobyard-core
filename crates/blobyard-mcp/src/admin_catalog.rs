@@ -11,6 +11,8 @@ enum Kind {
     RevokeInvite,
     UpdateMemberRole,
     RemoveMember,
+    ListLocalUsers,
+    DeactivateLocalUser,
     ListApiTokens,
     RevokeApiToken,
     ListCiTrusts,
@@ -26,13 +28,14 @@ enum WriteKind {
     RevokeInvite,
     UpdateMemberRole,
     RemoveMember,
+    DeactivateLocalUser,
     RevokeApiToken,
     CreateCiTrust,
     RevokeCiTrust,
     RevokeCliSession,
 }
 
-const KINDS: [Kind; 14] = [
+const KINDS: [Kind; 16] = [
     Kind::ListAudit,
     Kind::ListMembers,
     Kind::ListInvites,
@@ -40,6 +43,8 @@ const KINDS: [Kind; 14] = [
     Kind::RevokeInvite,
     Kind::UpdateMemberRole,
     Kind::RemoveMember,
+    Kind::ListLocalUsers,
+    Kind::DeactivateLocalUser,
     Kind::ListApiTokens,
     Kind::RevokeApiToken,
     Kind::ListCiTrusts,
@@ -90,6 +95,10 @@ fn contract(kind: Kind, properties: &mut Map<String, Value>) -> (&'static str, V
         }
         Kind::ListMembers => ("List workspace members and seat state.", vec!["workspace"]),
         Kind::ListInvites => ("List redacted workspace invitations.", vec!["workspace"]),
+        Kind::ListLocalUsers => (
+            "List local users with active sign-in key prefixes.",
+            vec!["workspace"],
+        ),
         Kind::ListApiTokens => ("List redacted API token metadata.", vec![]),
         Kind::ListCiTrusts => ("List redacted GitHub OIDC trusts.", vec!["workspace"]),
         Kind::ListCliSessions => ("List active browser-approved CLI sessions.", vec![]),
@@ -97,6 +106,7 @@ fn contract(kind: Kind, properties: &mut Map<String, Value>) -> (&'static str, V
         Kind::RevokeInvite => write_contract(WriteKind::RevokeInvite, properties),
         Kind::UpdateMemberRole => write_contract(WriteKind::UpdateMemberRole, properties),
         Kind::RemoveMember => write_contract(WriteKind::RemoveMember, properties),
+        Kind::DeactivateLocalUser => write_contract(WriteKind::DeactivateLocalUser, properties),
         Kind::RevokeApiToken => write_contract(WriteKind::RevokeApiToken, properties),
         Kind::CreateCiTrust => write_contract(WriteKind::CreateCiTrust, properties),
         Kind::RevokeCiTrust => write_contract(WriteKind::RevokeCiTrust, properties),
@@ -152,6 +162,11 @@ fn write_contract(
             );
             ("Remove a workspace member.", vec!["workspace", "user_id"])
         }
+        WriteKind::DeactivateLocalUser => id_contract(
+            properties,
+            "user_id",
+            "Deactivate a local user and revoke every active sign-in key.",
+        ),
         WriteKind::RevokeApiToken => id_contract(properties, "token_id", "Revoke an API token."),
         WriteKind::CreateCiTrust => create_trust_contract(properties),
         WriteKind::RevokeCiTrust => {
@@ -234,6 +249,7 @@ fn annotations(kind: Kind) -> Value {
         Kind::ListAudit
             | Kind::ListMembers
             | Kind::ListInvites
+            | Kind::ListLocalUsers
             | Kind::ListApiTokens
             | Kind::ListCiTrusts
             | Kind::ListCliSessions
@@ -254,6 +270,7 @@ const fn is_destructive(kind: Kind) -> bool {
         Kind::RevokeInvite
             | Kind::UpdateMemberRole
             | Kind::RemoveMember
+            | Kind::DeactivateLocalUser
             | Kind::RevokeApiToken
             | Kind::RevokeCiTrust
             | Kind::RevokeCliSession
@@ -270,6 +287,8 @@ impl Kind {
             Self::RevokeInvite => "revoke_invite",
             Self::UpdateMemberRole => "update_member_role",
             Self::RemoveMember => "remove_member",
+            Self::ListLocalUsers => "list_local_users",
+            Self::DeactivateLocalUser => "deactivate_local_user",
             Self::ListApiTokens => "list_api_tokens",
             Self::RevokeApiToken => "revoke_api_token",
             Self::ListCiTrusts => "list_ci_trusts",
