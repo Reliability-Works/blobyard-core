@@ -1,5 +1,5 @@
 {
-  "coreVersion": "0.1.12",
+  "coreVersion": "0.1.13",
   "members": [
     {
       "path": "authorization/vectors.json",
