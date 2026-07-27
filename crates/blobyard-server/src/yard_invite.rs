@@ -109,6 +109,9 @@ fn accept_form(input: &str) -> Option<(String, String)> {
 }
 
 #[cfg(test)]
+#[path = "yard_invite_origin_tests.rs"]
+mod origin_tests;
+#[cfg(test)]
 #[path = "yard_invite_test_support.rs"]
 mod test_support;
 #[cfg(test)]

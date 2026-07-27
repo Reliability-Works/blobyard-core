@@ -70,6 +70,16 @@ async fn assert_acceptance_request_failures(state: &crate::api::AppState) {
         error_status(super::acceptance_at(state, "peer", invalid_accept_host, Ok(1)).await),
         StatusCode::NOT_FOUND
     );
+    let invalid_accept_method = request(
+        Method::GET,
+        "/account/yard-invite/accept",
+        Some("127.0.0.1:8787"),
+        Some(""),
+    );
+    assert_eq!(
+        error_status(super::acceptance_at(state, "peer", invalid_accept_method, Ok(1)).await),
+        StatusCode::NOT_FOUND
+    );
     assert_eq!(
         error_status(
             super::parse_request(request(
@@ -195,7 +205,9 @@ fn request(method: Method, uri: &str, host: Option<&str>, form: Option<&str>) ->
         builder = builder.header(header::HOST, host);
     }
     if form.is_some() {
-        builder = builder.header(header::CONTENT_TYPE, "application/x-www-form-urlencoded");
+        builder = builder
+            .header(header::ORIGIN, "http://127.0.0.1:8787")
+            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded");
     }
     builder
         .body(Body::from(form.unwrap_or_default().to_owned()))

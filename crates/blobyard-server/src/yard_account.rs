@@ -25,7 +25,14 @@ pub(crate) fn require_identity_request(
     state: &AppState,
     request: &Request<Body>,
 ) -> Result<(), ApiError> {
-    require_identity_host(state, request.headers())
+    require_identity_host(state, request.headers())?;
+    let mut origins = request.headers().get_all(header::ORIGIN).iter();
+    let supplied = origins.next().and_then(|value| value.to_str().ok());
+    if supplied == Some(state.public_origin.as_str()) && origins.next().is_none() {
+        Ok(())
+    } else {
+        Err(ApiError::not_found())
+    }
 }
 
 pub(crate) async fn form_body(request: Request<Body>) -> Result<Option<String>, ApiError> {

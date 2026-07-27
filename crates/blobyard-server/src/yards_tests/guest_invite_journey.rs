@@ -101,7 +101,10 @@ async fn accept_invitation(
         "POST",
         "/account/yard-invite/accept",
         "127.0.0.1:8787",
-        &[("content-type", "application/x-www-form-urlencoded")],
+        &[
+            ("content-type", "application/x-www-form-urlencoded"),
+            (header::ORIGIN.as_str(), "http://127.0.0.1:8787"),
+        ],
         form,
         None,
     )
@@ -149,7 +152,10 @@ async fn assert_replay_is_concealed(session: &super::session_support::SessionFix
         "POST",
         "/account/yard-invite/accept",
         "127.0.0.1:8787",
-        &[("content-type", "application/x-www-form-urlencoded")],
+        &[
+            ("content-type", "application/x-www-form-urlencoded"),
+            (header::ORIGIN.as_str(), "http://127.0.0.1:8787"),
+        ],
         form,
         None,
     )

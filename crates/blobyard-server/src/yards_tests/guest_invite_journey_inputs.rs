@@ -8,7 +8,7 @@ use super::{
     guest_invite_management_journey::guest_invitation_items,
     session_support::{body, browser_request, challenge_continuation, submit_login},
 };
-use axum::http::StatusCode;
+use axum::http::{StatusCode, header};
 use blobyard_testkit::FixtureExecutionTracker;
 
 pub(super) async fn assert_rejections(
@@ -48,7 +48,10 @@ pub(super) async fn assert_rejections(
         "POST",
         "/account/yard-invite/accept",
         "127.0.0.1:8787",
-        &[("content-type", "application/x-www-form-urlencoded")],
+        &[
+            ("content-type", "application/x-www-form-urlencoded"),
+            (header::ORIGIN.as_str(), "http://127.0.0.1:8787"),
+        ],
         "token=one&token=two&continuation=three",
         None,
     )
@@ -72,7 +75,10 @@ pub(super) async fn assert_rejections(
         "POST",
         "/account/yard-invite/accept",
         "127.0.0.1:8787",
-        &[("content-type", "application/x-www-form-urlencoded")],
+        &[
+            ("content-type", "application/x-www-form-urlencoded"),
+            (header::ORIGIN.as_str(), "http://127.0.0.1:8787"),
+        ],
         &oversized_body,
         None,
     )
@@ -147,7 +153,10 @@ pub(super) async fn assert_token_state_rejections(
             "POST",
             "/account/yard-invite/accept",
             "127.0.0.1:8787",
-            &[("content-type", "application/x-www-form-urlencoded")],
+            &[
+                ("content-type", "application/x-www-form-urlencoded"),
+                (header::ORIGIN.as_str(), "http://127.0.0.1:8787"),
+            ],
             &form,
             None,
         )
