@@ -23,6 +23,8 @@ mod previews;
 mod sharing;
 #[path = "repository_fault_transfers.rs"]
 mod transfers;
+#[path = "repository_fault_yard_identity.rs"]
+mod yard_identity;
 #[path = "repository_fault_yard_sessions.rs"]
 mod yard_sessions;
 #[path = "repository_fault_yards.rs"]
@@ -41,6 +43,10 @@ pub(crate) enum Corruption {
     PreviewCreatedAt,
     PreviewExpiresAt,
     YardSessionCreatedAt,
+    YardManagementRoleTimestamp,
+    YardPolicyTimestamp,
+    YardPolicyRevision,
+    YardAccessGrantTimestamp,
 }
 
 pub(crate) struct FaultingRepository {
@@ -104,7 +110,10 @@ fn faulting_repository_forwards_before_its_exact_failure_index() {
         FaultingRepository::new(Arc::clone(&inner), 0).schema_version(),
         Err(RepositoryError::Unavailable)
     );
-    assert_eq!(FaultingRepository::new(inner, 1).schema_version(), Ok(21));
+    assert_eq!(
+        FaultingRepository::new(inner, 1).schema_version(),
+        Ok(blobyard_repository_sqlite::current_schema_version())
+    );
 }
 
 #[test]
@@ -258,3 +267,6 @@ mod preview_tests;
 
 #[path = "repository_fault_tests/yard_tests.rs"]
 mod yard_tests;
+
+#[path = "repository_fault_tests/yard_identity_tests.rs"]
+mod yard_identity_tests;

@@ -8,6 +8,9 @@ use blobyard_core::{BlobyardError, ErrorCode};
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
 use std::path::PathBuf;
 
+#[path = "mcp_yard_identity.rs"]
+mod identity;
+
 pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), BlobyardError> {
     let ToolCall::WebYard(call) = call else {
         return Err(BlobyardError::from_code(ErrorCode::InternalError));
@@ -30,6 +33,12 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
         | WebYardToolCall::SetYardVisibility { .. }
         | WebYardToolCall::GrantYardAccess { .. }
         | WebYardToolCall::RevokeYardAccess { .. }
+        | WebYardToolCall::ListYardManagementRoles { .. }
+        | WebYardToolCall::SetYardManagementRole { .. }
+        | WebYardToolCall::RevokeYardManagementRole { .. }
+        | WebYardToolCall::GetYardApplicationPolicy { .. }
+        | WebYardToolCall::SetYardApplicationPolicy { .. }
+        | WebYardToolCall::SetYardAccessRoles { .. }
         | WebYardToolCall::ListYardSessions { .. }
         | WebYardToolCall::RevokeYardSession { .. }) => return yard_policy_command(call),
         WebYardToolCall::RollbackWebYard {
@@ -43,6 +52,9 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
 }
 
 fn yard_policy_command(call: WebYardToolCall) -> Result<(Scope, Command), BlobyardError> {
+    if identity::is_tool(&call) {
+        return identity::command(call);
+    }
     let mapped = match call {
         WebYardToolCall::GetYardAccess { scope, yard } => (scope, access_list_command(yard)),
         WebYardToolCall::SetYardVisibility {

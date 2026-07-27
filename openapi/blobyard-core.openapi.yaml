@@ -680,6 +680,139 @@ paths:
           required: true
           schema:
             $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+  /yards/management-roles:
+    get:
+      operationId: listYardManagementRoles
+      description: Lists one deterministic page of Yard management-role assignments.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/ListYardManagementRolesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - management-roles
+          - list
+      x-blobyard-mcp:
+        tool: blobyard_list_yard_management_roles
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+        - in: query
+          name: cursor
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Cursor
+  /yards/management-roles/set:
+    post:
+      operationId: setYardManagementRole
+      description: Creates or changes one Yard management-role assignment.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardManagementRoleSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - management-roles
+          - set
+      x-blobyard-mcp:
+        tool: blobyard_set_yard_management_role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardManagementRoleRequest
+  /yards/management-roles/revoke:
+    post:
+      operationId: revokeYardManagementRole
+      description: Revokes one Yard management-role assignment.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardManagementRoleSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - management-roles
+          - revoke
+      x-blobyard-mcp:
+        tool: blobyard_revoke_yard_management_role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardManagementRoleRequest
+  /yards/application-policy:
+    get:
+      operationId: getYardApplicationPolicy
+      description: Reads one Yard's current approved application policy.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/GetYardApplicationPolicySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - application-policy
+          - get
+      x-blobyard-mcp:
+        tool: blobyard_get_yard_application_policy
+      parameters:
+        - in: query
+          name: yardId
+          required: true
+          schema:
+            $ref: ./blobyard-shared.openapi.yaml#/components/schemas/Identifier
+    post:
+      operationId: setYardApplicationPolicy
+      description: Approves and activates one canonical Yard application policy.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardApplicationPolicySuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - application-policy
+          - set
+      x-blobyard-mcp:
+        tool: blobyard_set_yard_application_policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardApplicationPolicyRequest
   /yards/access:
     get:
       operationId: getYardAccess
@@ -784,6 +917,32 @@ paths:
           application/json:
             schema:
               $ref: ./blobyard-shared.openapi.yaml#/components/schemas/RevokeYardAccessRequest
+  /yards/access/roles:
+    post:
+      operationId: setYardAccessRoles
+      description: Replaces one active Yard access grant's declared application roles.
+      responses:
+        "200":
+          description: Operation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardAccessRolesSuccessEnvelope
+        default:
+          $ref: ./blobyard-shared.openapi.yaml#/components/responses/ApiError
+      x-blobyard-sdk: true
+      x-blobyard-cli:
+        command:
+          - access
+          - set-roles
+      x-blobyard-mcp:
+        tool: blobyard_set_yard_access_roles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./blobyard-shared.openapi.yaml#/components/schemas/SetYardAccessRolesRequest
   /yards/sessions:
     get:
       operationId: listYardSessions

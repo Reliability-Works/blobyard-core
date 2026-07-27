@@ -24,7 +24,7 @@ fn environment_migration_backfills_one_production_environment_per_active_yard() 
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(repository.schema_version().expect("schema version"), 22);
     let environments = repository
         .list_yard_environments("yard_live")
         .expect("environments");
@@ -58,7 +58,7 @@ fn access_migration_adds_empty_policy_and_grant_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(repository.schema_version().expect("schema version"), 22);
     assert!(
         repository
             .get_yard_access_policy("yard_live")
@@ -90,7 +90,7 @@ fn local_user_migration_adds_empty_user_and_key_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(repository.schema_version().expect("schema version"), 22);
     assert!(
         repository
             .list_local_users("workspace")
@@ -115,7 +115,7 @@ fn yard_session_migration_adds_empty_continuation_and_session_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(repository.schema_version().expect("schema version"), 22);
     let connection = repository.test_connection().expect("connection");
     for table in ["yard_continuations", "yard_sessions"] {
         let count: i64 = connection
@@ -139,7 +139,7 @@ fn group_migration_preserves_unresolved_grants_and_adds_empty_group_tables() {
     let path = temporary.path().join("metadata.sqlite3");
     seed_version_twenty_legacy_group_grant(&path);
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 21);
+    assert_eq!(repository.schema_version().expect("schema version"), 22);
     assert!(
         repository
             .list_workspace_groups("workspace", None, 50)

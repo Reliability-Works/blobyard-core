@@ -79,6 +79,119 @@ pub(crate) fn revoke_yard_access_contract(
     )
 }
 
+pub(crate) fn set_yard_access_roles_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(properties, "grant_id", string("Stable grant identifier."));
+    add(
+        properties,
+        "roles",
+        string_array("Replacement application roles; an empty array clears roles."),
+    );
+    (
+        "Replace one active Yard access grant's application roles.",
+        vec!["yard", "grant_id", "roles"],
+    )
+}
+
+pub(crate) fn list_yard_management_roles_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "cursor",
+        string("Optional opaque continuation cursor."),
+    );
+    ("List Yard management-role assignments.", vec!["yard"])
+}
+
+pub(crate) fn set_yard_management_role_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "user_id",
+        string("Stable active local-user identifier."),
+    );
+    add(
+        properties,
+        "role",
+        string("Management role: owner, admin, developer, or auditor."),
+    );
+    (
+        "Create or change one Yard management-role assignment.",
+        vec!["yard", "user_id", "role"],
+    )
+}
+
+pub(crate) fn revoke_yard_management_role_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "user_id",
+        string("Stable active local-user identifier."),
+    );
+    (
+        "Revoke one Yard management-role assignment.",
+        vec!["yard", "user_id"],
+    )
+}
+
+pub(crate) fn get_yard_application_policy_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    (
+        "Read the current approved Yard application policy.",
+        vec!["yard"],
+    )
+}
+
+pub(crate) fn set_yard_application_policy_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "source_manifest_digest",
+        string("SHA-256 digest of the canonical source manifest."),
+    );
+    add(
+        properties,
+        "default_role",
+        json!({
+            "type": ["string", "null"],
+            "description": "Optional declared default application role."
+        }),
+    );
+    add(
+        properties,
+        "roles",
+        json!({
+            "type": "object",
+            "description": "Role-definition map keyed by application role name.",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "inherits": string_array("Direct inherited roles."),
+                    "permissions": string_array("Direct application permissions.")
+                },
+                "required": ["inherits", "permissions"],
+                "additionalProperties": false
+            }
+        }),
+    );
+    (
+        "Approve and activate one canonical Yard application policy.",
+        vec!["yard", "source_manifest_digest", "default_role", "roles"],
+    )
+}
+
 pub(crate) fn list_yard_sessions_contract(
     properties: &mut Map<String, Value>,
 ) -> (&'static str, Vec<&'static str>) {

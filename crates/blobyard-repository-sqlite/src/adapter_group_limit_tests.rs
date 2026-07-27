@@ -269,5 +269,6 @@ fn seed_yard(repository: &super::SqliteRepository) -> blobyard_contract::NewWebY
             &blobyard_testkit::yard_event("yard.created", "web_yard", "yardId", &yard.id, 1_001),
         )
         .expect("yard");
+    super::approve_access_policy(repository, &yard.id, "user_limit", 1_002);
     yard
 }

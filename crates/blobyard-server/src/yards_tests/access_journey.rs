@@ -103,6 +103,7 @@ async fn grant_lifecycle_lists_scopes_and_revokes_idempotently() {
     seed_reader(&fixture);
     let first = publish(&fixture, "deploy-access-001", b"first index").await;
     let yard_id = first["data"]["yardId"].as_str().expect("yard ID");
+    approve_access_roles(&fixture, yard_id).await;
     let open = mutate(
         &fixture,
         "/v1/yards/access/grant",
@@ -148,6 +149,33 @@ async fn grant_lifecycle_lists_scopes_and_revokes_idempotently() {
     assert_eq!(grants.len(), 2);
     let open_id = open["data"]["grant"]["id"].as_str().expect("grant ID");
     assert_revocation(&fixture, yard_id, open_id, &scoped["data"]["grant"]["id"]).await;
+}
+
+async fn approve_access_roles(fixture: &test_seams::TransferFixture, yard_id: &str) {
+    mutate(
+        fixture,
+        "/v1/yards/management-roles/set",
+        serde_json::json!({
+            "yardId": yard_id,
+            "userId": "user_reader",
+            "role": "owner"
+        }),
+    )
+    .await;
+    mutate(
+        fixture,
+        "/v1/yards/application-policy",
+        serde_json::json!({
+            "yardId": yard_id,
+            "sourceManifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "defaultRole": null,
+            "roles": {
+                "editor": { "inherits": ["viewer"], "permissions": ["yard.write"] },
+                "viewer": { "inherits": [], "permissions": ["yard.read"] }
+            }
+        }),
+    )
+    .await;
 }
 
 async fn assert_revocation(

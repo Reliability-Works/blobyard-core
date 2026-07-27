@@ -23,6 +23,10 @@ mod access;
 mod contracts;
 #[path = "yards_deploy.rs"]
 mod deploy;
+#[path = "yards_identity.rs"]
+mod identity;
+#[path = "yards_identity_routes.rs"]
+mod identity_routes;
 #[path = "yards_lifecycle.rs"]
 mod lifecycle;
 #[path = "yards_presentation.rs"]
@@ -50,13 +54,34 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/yards/access", get(get_yard_access))
         .route("/v1/yards/access/grant", post(grant_yard_access))
         .route("/v1/yards/access/revoke", post(revoke_yard_access))
+        .route(
+            "/v1/yards/access/roles",
+            post(identity_routes::set_yard_access_roles),
+        )
         .route("/v1/yards/access/visibility", post(set_yard_visibility))
+        .route(
+            "/v1/yards/application-policy",
+            get(identity_routes::get_yard_application_policy)
+                .post(identity_routes::set_yard_application_policy),
+        )
         .route("/v1/yards/delete", post(delete_yard))
         .route("/v1/yards/deploys", get(list_yard_deploys))
         .route("/v1/yards/deploys/fail", post(fail_yard_deploy))
         .route("/v1/yards/deploys/finalise", post(finalise_yard_deploy))
         .route("/v1/yards/deploys/start", post(start_yard_deploy))
         .route("/v1/yards/environments", get(list_yard_environments))
+        .route(
+            "/v1/yards/management-roles",
+            get(identity_routes::list_yard_management_roles),
+        )
+        .route(
+            "/v1/yards/management-roles/revoke",
+            post(identity_routes::revoke_yard_management_role),
+        )
+        .route(
+            "/v1/yards/management-roles/set",
+            post(identity_routes::set_yard_management_role),
+        )
         .route("/v1/yards/sessions", get(list_yard_sessions))
         .route("/v1/yards/sessions/revoke", post(revoke_yard_session))
         .route("/v1/yards/rollback", post(rollback_yard))

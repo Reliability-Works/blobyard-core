@@ -48,6 +48,10 @@ fn yard_fault_wrapper_forwards_every_operation() {
     let (_temporary, inner) = super::conforming_repository();
     let repository = FaultingRepository::new(inner, usize::MAX);
     blobyard_testkit::yard_conformance(&repository, &yard_fixture()).expect("yard conformance");
+    assert_eq!(
+        repository.list_yard_access_grants("", 1),
+        Err(RepositoryError::InvalidInput)
+    );
     assert!(
         !repository
             .list_yard_deploys("yard_docs_1")

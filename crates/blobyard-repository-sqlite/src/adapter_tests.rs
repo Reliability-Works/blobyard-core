@@ -7,7 +7,7 @@ use blobyard_contract::{
     NewInboxUpload, NewObjectDeletion, NewObjectVersion, NewPreview, NewPreviewFile, NewShare,
     NewUploadReservation, ObjectDeletionTarget, PreviewRepository, ProjectRecord, RepositoryError,
     RetentionPolicyRecord, SharingRepository, TransferRepository, WebYardRepository,
-    WorkspaceRecord, YardSessionRepository,
+    WorkspaceRecord, YardIdentityRepository, YardManagementRole, YardSessionRepository,
 };
 use blobyard_core::Slug;
 use rusqlite::{
@@ -27,8 +27,19 @@ mod group_row_tests;
 mod group_validation_tests;
 #[path = "adapter_token_fixtures.rs"]
 mod token_fixtures;
+#[path = "adapter_yard_identity_edge_tests.rs"]
+mod yard_identity_edges;
+#[path = "adapter_yard_identity_fault_tests.rs"]
+mod yard_identity_faults;
+#[path = "adapter_yard_identity_fixtures.rs"]
+mod yard_identity_fixtures;
+#[path = "adapter_yard_identity_resolution_tests.rs"]
+mod yard_identity_resolution;
+#[path = "adapter_yard_identity_test_support.rs"]
+mod yard_identity_test_support;
 
 use token_fixtures::{session, token, token_audit};
+pub(super) use yard_identity_fixtures::approve_access_policy;
 
 fn yard_fixture() -> blobyard_testkit::YardConformanceFixture {
     blobyard_testkit::YardConformanceFixture::new("docs", "inactive", "history")

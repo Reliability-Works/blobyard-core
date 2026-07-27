@@ -2,13 +2,14 @@
 
 use super::{
     exchange_at, exchange_failure, exchanged_redirect, expected_origin, fresh_login_redirect_at,
-    login_redirect_at, logout_result, parsed_origin, require_same_origin, revoke_cookie,
-    session_cookie_result, single_code,
+    identity_error, identity_response, login_redirect_at, logout_result, parsed_origin,
+    require_same_origin, resolve_identity_at, revoke_cookie, session_cookie_result, single_code,
 };
 use crate::test_support::error_status;
 use axum::http::{HeaderMap, StatusCode};
-use blobyard_contract::RepositoryError;
+use blobyard_contract::{RepositoryError, YardIdentity, YardManagementRole};
 use blobyard_core::SecretString;
+use http_body_util::BodyExt;
 
 fn state() -> (tempfile::TempDir, crate::api::AppState) {
     let root = tempfile::tempdir().expect("root");
@@ -82,6 +83,15 @@ fn runtime_clock_and_overflow_failures_are_internal() {
         error_status(revoke_cookie(&state, "docs-fixture", &code, failure(),)),
         StatusCode::INTERNAL_SERVER_ERROR
     );
+    assert_eq!(
+        error_status(resolve_identity_at(
+            &state,
+            "docs-fixture",
+            &code,
+            failure(),
+        )),
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }
 
 #[test]
@@ -152,4 +162,71 @@ fn configured_origins_fail_closed() {
         )),
         StatusCode::INTERNAL_SERVER_ERROR
     );
+}
+
+#[tokio::test]
+async fn identity_response_is_exact_redacted_and_non_cacheable() {
+    for (role, expected) in [
+        (YardManagementRole::Owner, "owner"),
+        (YardManagementRole::Admin, "admin"),
+        (YardManagementRole::Developer, "developer"),
+        (YardManagementRole::Auditor, "auditor"),
+    ] {
+        let response = identity_response(&YardIdentity {
+            user_id: "user_fixture".to_owned(),
+            workspace_id: "workspace_fixture".to_owned(),
+            project_id: "project_fixture".to_owned(),
+            yard_id: "yard_fixture".to_owned(),
+            environment_id: "yardenv_fixture".to_owned(),
+            display_name: Some("Fixture User".to_owned()),
+            email: None,
+            groups: vec!["group_fixture".to_owned()],
+            management_role: Some(role),
+            app_roles: vec!["viewer".to_owned()],
+            permissions: vec!["content.read".to_owned()],
+            session_id: "yardsession_fixture".to_owned(),
+        })
+        .expect("identity response");
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()["content-type"], "application/json");
+        assert_eq!(response.headers()["cache-control"], "private, no-store");
+        assert!(
+            response
+                .headers()
+                .get("access-control-allow-origin")
+                .is_none()
+        );
+        let value: serde_json::Value = serde_json::from_slice(
+            &response
+                .into_body()
+                .collect()
+                .await
+                .expect("body")
+                .to_bytes(),
+        )
+        .expect("identity JSON");
+        assert_eq!(value["managementRole"], expected);
+        assert_eq!(value["displayName"], "Fixture User");
+        assert_eq!(value["email"], serde_json::Value::Null);
+        assert!(value.get("cookie").is_none());
+    }
+}
+
+#[test]
+fn identity_repository_errors_preserve_only_concealment() {
+    assert_eq!(
+        error_status::<()>(Err(identity_error(RepositoryError::NotFound))),
+        StatusCode::NOT_FOUND
+    );
+    for error in [
+        RepositoryError::Conflict,
+        RepositoryError::InvalidInput,
+        RepositoryError::SchemaTooNew,
+        RepositoryError::Unavailable,
+    ] {
+        assert_eq!(
+            error_status::<()>(Err(identity_error(error))),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
 }

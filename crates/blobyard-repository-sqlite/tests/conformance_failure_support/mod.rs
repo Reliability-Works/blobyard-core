@@ -17,6 +17,7 @@ mod faulting_lifecycle;
 mod faulting_local_users;
 mod faulting_previews;
 mod faulting_sharing;
+mod faulting_yard_identity;
 mod faulting_yard_sessions;
 mod faulting_yards;
 

@@ -19,7 +19,7 @@ pub(super) fn grant_request(yard_id: &str) -> GrantYardAccessRequest {
         yard_id: yard_id.to_owned(),
         principal_kind: YardAccessPrincipalKind::User,
         principal_id: "user_reader".to_owned(),
-        app_roles: vec!["viewer".to_owned()],
+        app_roles: Vec::new(),
         environment_id: None,
         expires_at: None,
     }
@@ -99,6 +99,10 @@ fn grant_validation_rejects_unbounded_principals_roles_and_expiries() {
     oversized.principal_id = "p".repeat(257);
     let mut crowded = grant_request(&yard_id);
     crowded.app_roles = (0..17).map(|index| format!("role{index}")).collect();
+    assert_eq!(
+        error_status(access::grant(&fixture.state, &principal, &crowded, Ok(1))),
+        StatusCode::CONFLICT
+    );
     let mut duplicated = grant_request(&yard_id);
     duplicated.app_roles = vec!["viewer".to_owned(), "viewer".to_owned()];
     let mut unbounded_role = grant_request(&yard_id);
@@ -113,7 +117,6 @@ fn grant_validation_rejects_unbounded_principals_roles_and_expiries() {
     negative_expiry.expires_at = Some("1969-12-31T23:59:59Z".to_owned());
     for invalid in [
         oversized,
-        crowded,
         duplicated,
         unbounded_role,
         foreign_environment,

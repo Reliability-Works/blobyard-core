@@ -7,6 +7,9 @@ use super::parse;
 use crate::{Scope, ToolCall, WebYardToolCall};
 use serde_json::json;
 
+#[path = "tool_call_yard_identity_tests.rs"]
+mod identity_tests;
+
 #[test]
 fn parses_yard_environment_list_calls() {
     assert_eq!(

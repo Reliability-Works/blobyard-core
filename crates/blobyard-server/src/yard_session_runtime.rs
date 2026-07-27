@@ -7,24 +7,51 @@ use axum::{
     routing::any,
 };
 use blobyard_contract::{
-    NewYardSession, RepositoryError, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
+    NewYardSession, RepositoryError, YARD_SESSION_LIFETIME_MS, YardIdentity,
+    YardSessionAuditContext,
 };
 use blobyard_core::{GeneratedSecretKind, SecretString};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/.blobyard/session/exchange", any(exchange_dispatch))
+        .route("/.blobyard/session/identity", any(identity_dispatch))
         .route("/.blobyard/session/logout", any(logout_dispatch))
+}
+
+async fn identity_dispatch(
+    State(state): State<AppState>,
+    request: Request<Body>,
+) -> Result<Response<Body>, ApiError> {
+    let host_label = get_host(&state, &request)?;
+    require_same_origin(&state, &host_label, request.headers())?;
+    let token = yard_session_cookie::read(request.headers()).ok_or_else(ApiError::not_found)?;
+    resolve_identity_at(
+        &state,
+        &host_label,
+        &token,
+        crate::transfer_grants::now_ms(),
+    )
+}
+
+fn resolve_identity_at(
+    state: &AppState,
+    host_label: &str,
+    token: &SecretString,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
+    let identity = state
+        .repository
+        .resolve_yard_identity(host_label, &crate::auth::hash(token.expose_secret()), now?)
+        .map_err(identity_error)?;
+    identity_response(&identity)
 }
 
 async fn exchange_dispatch(
     State(state): State<AppState>,
     request: Request<Body>,
 ) -> Result<Response<Body>, ApiError> {
-    if request.method() != Method::GET {
-        return Err(ApiError::not_found());
-    }
-    let host_label = yard_host(&state, request.headers())?;
+    let host_label = get_host(&state, &request)?;
     let code = request.uri().query().and_then(single_code).and_then(|raw| {
         yard_session_contracts::has_token_shape(&raw, "byx_")
             .then(|| SecretString::new(raw).ok())
@@ -34,6 +61,13 @@ async fn exchange_dispatch(
         return fresh_login_redirect(&state, &host_label);
     };
     exchange(&state, &host_label, &code)
+}
+
+fn get_host(state: &AppState, request: &Request<Body>) -> Result<String, ApiError> {
+    if request.method() != Method::GET {
+        return Err(ApiError::not_found());
+    }
+    yard_host(state, request.headers())
 }
 
 fn exchange(
@@ -240,6 +274,45 @@ fn logout_result(result: Result<bool, RepositoryError>) -> Result<(), ApiError> 
     result
         .map(|_revoked| ())
         .map_err(|_error| ApiError::internal())
+}
+
+fn identity_response(identity: &YardIdentity) -> Result<Response<Body>, ApiError> {
+    let management_role = identity
+        .management_role
+        .map_or(serde_json::Value::Null, |role| {
+            serde_json::Value::String(role.as_str().to_owned())
+        });
+    let body = serde_json::json!({
+        "userId": identity.user_id,
+        "workspaceId": identity.workspace_id,
+        "projectId": identity.project_id,
+        "yardId": identity.yard_id,
+        "environmentId": identity.environment_id,
+        "displayName": identity.display_name,
+        "email": identity.email,
+        "groups": identity.groups,
+        "managementRole": management_role,
+        "appRoles": identity.app_roles,
+        "permissions": identity.permissions,
+        "sessionId": identity.session_id,
+    });
+    ApiError::internal_result(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::CACHE_CONTROL, "private, no-store")
+            .body(Body::from(body.to_string())),
+    )
+}
+
+const fn identity_error(error: RepositoryError) -> ApiError {
+    match error {
+        RepositoryError::NotFound => ApiError::not_found(),
+        RepositoryError::Conflict
+        | RepositoryError::InvalidInput
+        | RepositoryError::SchemaTooNew
+        | RepositoryError::Unavailable => ApiError::internal(),
+    }
 }
 
 #[cfg(test)]

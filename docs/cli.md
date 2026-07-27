@@ -337,7 +337,23 @@ blobyard access list marketing
 blobyard access set-visibility marketing owner
 blobyard access grant marketing --principal-kind user --principal-id user_123 \
   --role editor --role viewer --expires 2027-01-01T00:00:00Z
+blobyard access set-roles marketing <grant-id> --role viewer
 blobyard access revoke marketing <grant-id>
+```
+
+Manage the independent human control-plane roles and the owner-approved application role graph. Core
+permits a `yard:manage` non-machine operator to bootstrap the first owner assignment because
+existing self-hosted Yards do not persist a creator. After bootstrap, the last owner cannot be
+changed or revoked. Policy input contains `defaultRole` and `roles`, while the digest identifies the
+canonical source manifest:
+
+```bash
+blobyard management-roles list marketing
+blobyard management-roles set marketing user_123 owner
+blobyard management-roles revoke marketing user_456
+blobyard application-policy get marketing
+blobyard application-policy set marketing --policy policy.json \
+  --source-manifest-digest <sha256>
 ```
 
 Opening a non-public Yard with `GET` plus `Accept: text/html` redirects to the Core sign-in page.
@@ -345,6 +361,11 @@ Enter the local user's `byuk_` sign-in key. Core returns through a one-time exch
 Yard host and sets a host-only HttpOnly cookie. The identity origin does not retain a login cookie,
 so signing into another Yard requires the key again. Missing, revoked, expired, wrong-host, or
 no-longer-authorized sessions are rejected on the next request.
+
+Application code can read the live, sanitised user, group, management-role, application-role, and
+permission view from `GET /.blobyard/session/identity` on the private Yard origin. The endpoint is
+same-origin, never redirects, exposes no credential material, and returns concealed not-found for
+public, invalid, expired, revoked, or no-longer-admitted sessions.
 
 List retained browser sessions for one Yard or revoke a session by its stable identifier. The Yard
 name may be omitted from `list` when the project contains exactly one Yard. Listings contain

@@ -80,6 +80,37 @@ impl TransferFixture {
             .expect("corrupt future grant inserts");
     }
 
+    /// Adds enough valid management-role assignments to require a second repository page.
+    #[must_use]
+    pub fn seed_yard_management_role_page(&self, yard_id: &str) -> String {
+        let connection = self
+            .repository
+            .test_connection()
+            .expect("repository connection");
+        for index in 0..51 {
+            let user_id = format!("user_role_page_{index:03}");
+            connection
+                .execute(
+                    "INSERT INTO local_users
+                       (id, workspace_id, display_name, email, status, created_at_ms,
+                        deactivated_at_ms)
+                     VALUES (?1, ?2, ?1, NULL, 'active', 1, NULL)",
+                    (&user_id, &self.principal.workspace_id),
+                )
+                .expect("management role page user");
+            connection
+                .execute(
+                    "INSERT INTO yard_management_role_assignments
+                       (yard_id, user_id, workspace_id, role, created_at_ms, updated_at_ms)
+                     VALUES (?1, ?2, ?3, 'auditor', 1, 1)",
+                    (yard_id, &user_id, &self.principal.workspace_id),
+                )
+                .expect("management role page assignment");
+        }
+        drop(connection);
+        "user_role_page_050".to_owned()
+    }
+
     /// Removes CI trust storage to force a trust provider failure.
     /// Corrupts persisted environment timestamps to force a presentation failure.
     pub fn corrupt_environment_timestamps(&self) {

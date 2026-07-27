@@ -6,7 +6,8 @@ use crate::headless_commands::{
     SharesCommand, TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
 };
 use crate::yard_commands::{
-    AccessCommand, DeployArgs, EnvCommand, YardCommand, YardSessionsCommand,
+    AccessCommand, ApplicationPolicyCommand, DeployArgs, EnvCommand, ManagementRolesCommand,
+    YardCommand, YardSessionsCommand,
 };
 use clap::{Args, Subcommand, ValueEnum};
 use std::num::NonZeroU32;
@@ -97,6 +98,18 @@ pub enum Command {
         /// The access operation.
         #[command(subcommand)]
         command: AccessCommand,
+    },
+    /// Inspect or manage Yard-scoped human roles.
+    ManagementRoles {
+        /// The management-role operation.
+        #[command(subcommand)]
+        command: ManagementRolesCommand,
+    },
+    /// Inspect or approve a Yard application policy.
+    ApplicationPolicy {
+        /// The application-policy operation.
+        #[command(subcommand)]
+        command: ApplicationPolicyCommand,
     },
     /// Inspect or revoke Web Yard browser sessions.
     YardSessions {

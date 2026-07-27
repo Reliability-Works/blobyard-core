@@ -7,6 +7,7 @@ mod previews;
 mod sharing;
 mod transfer;
 mod yard_access;
+mod yard_identity;
 mod yard_sessions;
 mod yards;
 

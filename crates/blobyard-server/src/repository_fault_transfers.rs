@@ -106,7 +106,11 @@ impl TransferRepository for FaultingRepository {
                 | Corruption::InboxExpiry
                 | Corruption::PreviewCreatedAt
                 | Corruption::PreviewExpiresAt
-                | Corruption::YardSessionCreatedAt,
+                | Corruption::YardSessionCreatedAt
+                | Corruption::YardManagementRoleTimestamp
+                | Corruption::YardPolicyTimestamp
+                | Corruption::YardPolicyRevision
+                | Corruption::YardAccessGrantTimestamp,
             )
             | None => {}
         }

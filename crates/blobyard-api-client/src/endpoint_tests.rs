@@ -3,12 +3,18 @@ use crate::OperationAvailability;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-const CLOUD_YARD_ENDPOINTS: [Endpoint; 7] = [
+const CLOUD_YARD_ENDPOINTS: [Endpoint; 13] = [
     Endpoint::ListYardEnvironments,
     Endpoint::GetYardAccess,
     Endpoint::SetYardVisibility,
     Endpoint::GrantYardAccess,
     Endpoint::RevokeYardAccess,
+    Endpoint::ListYardManagementRoles,
+    Endpoint::SetYardManagementRole,
+    Endpoint::RevokeYardManagementRole,
+    Endpoint::GetYardApplicationPolicy,
+    Endpoint::SetYardApplicationPolicy,
+    Endpoint::SetYardAccessRoles,
     Endpoint::ListYardSessions,
     Endpoint::RevokeYardSession,
 ];

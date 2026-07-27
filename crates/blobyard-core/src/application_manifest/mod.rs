@@ -1,8 +1,13 @@
+#![allow(
+    clippy::redundant_pub_crate,
+    reason = "the private manifest module shares validators with sibling domain modules"
+)]
+
 mod cron;
 mod cross;
 mod cross_roles;
 mod error;
-mod patterns;
+pub(crate) mod patterns;
 mod resources;
 mod schema;
 mod schema_execution;

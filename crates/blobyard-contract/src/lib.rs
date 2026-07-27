@@ -14,6 +14,7 @@ mod transfers;
 mod workspace_groups;
 mod yard_access;
 mod yard_environments;
+mod yard_identity;
 mod yard_repository;
 mod yard_sessions;
 mod yards;
@@ -82,6 +83,11 @@ pub use yard_access::{
     YardVisibility,
 };
 pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
+pub use yard_identity::{
+    MAXIMUM_YARD_ACCESS_ROLES, MAXIMUM_YARD_MANAGEMENT_ROLES, YardApplicationPolicyRecord,
+    YardIdentity, YardIdentityRepository, YardManagementRole, YardManagementRoleAssignment,
+    YardManagementRoleCursor, YardManagementRolePage,
+};
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};
 pub use yard_sessions::{
     NewYardContinuation, NewYardSession, YARD_CONTINUATION_LIFETIME_MS,

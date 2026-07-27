@@ -4,10 +4,15 @@ use super::{
     access_lines, grant_line, parse_principal_kind, parse_visibility, principal_kind_label,
     visibility_label,
 };
-use blobyard_api_client::{
-    YardAccessGrantSummary, YardAccessPrincipalKind, YardAccessResponse, YardVisibility,
+use crate::TokenStore;
+use crate::runner::login::tests::support::{
+    Fixture, api_failure, fixture_tokens, fixture_yards, ok,
 };
-use blobyard_core::ErrorCode;
+use blobyard_api_client::{
+    Endpoint, YardAccessGrantSummary, YardAccessPrincipalKind, YardAccessResponse, YardVisibility,
+};
+use blobyard_core::{ErrorCode, SecretString};
+use serde_json::json;
 
 fn grant(id: &str, environment_id: Option<&str>, roles: &[&str]) -> YardAccessGrantSummary {
     serde_json::from_value(serde_json::json!({
@@ -99,4 +104,119 @@ fn principal_kind_parsing_round_trips_and_rejects_unknown_values() {
             .code(),
         ErrorCode::InvalidRequest
     );
+}
+
+#[tokio::test]
+async fn set_access_roles_executes_the_typed_api_contract() {
+    let fixture = Fixture::new(
+        &[
+            "blobyard",
+            "--workspace",
+            "main",
+            "--project",
+            "artifacts",
+            "access",
+            "set-roles",
+            "documentation",
+            "yardgrant_reader",
+            "--role",
+            "viewer",
+            "--role",
+            "editor",
+        ],
+        vec![
+            fixture_tokens(),
+            fixture_yards(),
+            fixture_tokens(),
+            ok(
+                &json!({
+                    "grant": {
+                        "appRoles": ["viewer", "editor"],
+                        "createdAt": "2026-07-24T09:00:00Z",
+                        "environmentId": null,
+                        "expiresAt": null,
+                        "id": "yardgrant_reader",
+                        "principalId": "user_reader",
+                        "principalKind": "user"
+                    }
+                }),
+                "request_set_roles",
+            ),
+        ],
+    );
+    fixture
+        .store
+        .save(&SecretString::new("local-api-token").expect("token"))
+        .expect("store token");
+    let result = fixture
+        .runner
+        .execute(&fixture.command)
+        .await
+        .expect("set Yard application roles");
+    assert_eq!(
+        result.into_data()["grant"]["appRoles"],
+        json!(["viewer", "editor"])
+    );
+    let requests = fixture.transport.requests();
+    assert_eq!(requests.len(), 4);
+    assert_eq!(requests[3].endpoint(), Endpoint::SetYardAccessRoles);
+    assert_eq!(
+        requests[3].body(),
+        Some(&json!({
+            "yardId": "yard_documentation",
+            "grantId": "yardgrant_reader",
+            "appRoles": ["viewer", "editor"]
+        }))
+    );
+}
+
+#[tokio::test]
+async fn set_access_roles_propagates_selection_and_api_failures() {
+    for (name, responses, expected) in [
+        (
+            "missing-yard",
+            vec![fixture_tokens(), fixture_yards()],
+            ErrorCode::NotFound,
+        ),
+        (
+            "documentation",
+            vec![
+                fixture_tokens(),
+                fixture_yards(),
+                fixture_tokens(),
+                api_failure(ErrorCode::Conflict, 409, "request_set_roles_failed"),
+            ],
+            ErrorCode::Conflict,
+        ),
+    ] {
+        let fixture = Fixture::new(
+            &[
+                "blobyard",
+                "--workspace",
+                "main",
+                "--project",
+                "artifacts",
+                "access",
+                "set-roles",
+                name,
+                "yardgrant_reader",
+                "--role",
+                "viewer",
+            ],
+            responses,
+        );
+        fixture
+            .store
+            .save(&SecretString::new("local-api-token").expect("token"))
+            .expect("store token");
+        assert_eq!(
+            fixture
+                .runner
+                .execute(&fixture.command)
+                .await
+                .expect_err("set roles failure")
+                .code(),
+            expected
+        );
+    }
 }

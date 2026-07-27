@@ -1,12 +1,14 @@
 use super::yards::select_yard;
 use super::{Runner, command_result};
 use crate::config::validate_yard_name;
-use crate::yard_commands::{AccessListArgs, GrantAccessArgs, RevokeAccessArgs, SetVisibilityArgs};
+use crate::yard_commands::{
+    AccessListArgs, GrantAccessArgs, RevokeAccessArgs, SetAccessRolesArgs, SetVisibilityArgs,
+};
 use blobyard_api_client::{
     ApiRequest, EmptyResponse, Endpoint, GetYardAccessQuery, GrantYardAccessRequest,
-    RevokeYardAccessRequest, SetYardVisibilityRequest, YardAccessGrantResponse,
-    YardAccessGrantSummary, YardAccessPrincipalKind, YardAccessResponse, YardVisibility,
-    YardVisibilityResponse,
+    RevokeYardAccessRequest, SetYardAccessRolesRequest, SetYardAccessRolesResponse,
+    SetYardVisibilityRequest, YardAccessGrantResponse, YardAccessGrantSummary,
+    YardAccessPrincipalKind, YardAccessResponse, YardVisibility, YardVisibilityResponse,
 };
 use blobyard_core::{BlobyardError, ErrorCode, Slug};
 use serde::Serialize;
@@ -133,9 +135,7 @@ impl Runner {
         &self,
         arguments: &RevokeAccessArgs,
     ) -> Result<crate::CommandResult, BlobyardError> {
-        let yard = validate_yard_name(&arguments.name)?;
-        let (yards, _request_id) = self.all_web_yards().await?;
-        let selected = select_yard(&yards, Some(yard.as_str()))?;
+        let (yard, selected) = self.selected_named_yard(&arguments.name).await?;
         let request = self.mutation(Endpoint::RevokeYardAccess).with_json(
             RevokeYardAccessRequest {
                 yard_id: selected.id.clone(),
@@ -152,6 +152,32 @@ impl Runner {
         command_result(
             &output,
             format!("Revoked access grant '{}'.", arguments.grant_id),
+            success.request_id(),
+        )
+    }
+
+    pub(super) async fn access_set_roles(
+        &self,
+        arguments: &SetAccessRolesArgs,
+    ) -> Result<crate::CommandResult, BlobyardError> {
+        let (yard, selected) = self.selected_named_yard(&arguments.name).await?;
+        let request = self.mutation(Endpoint::SetYardAccessRoles).with_json(
+            SetYardAccessRolesRequest {
+                yard_id: selected.id.clone(),
+                grant_id: arguments.grant_id.clone(),
+                app_roles: arguments.roles.clone(),
+            }
+            .into_json(),
+        );
+        let success = self
+            .execute_authed::<SetYardAccessRolesResponse>(request)
+            .await?;
+        command_result(
+            &GrantOutput {
+                yard: &yard,
+                grant: &success.data().grant,
+            },
+            grant_line(&success.data().grant),
             success.request_id(),
         )
     }

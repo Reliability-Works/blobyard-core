@@ -187,6 +187,11 @@
       "requiredCiActions": ["yard:manage"],
       "risk": "read"
     },
+    "getYardApplicationPolicy": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "read"
+    },
     "grantYardAccess": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
@@ -282,6 +287,11 @@
       "requiredUserScopes": ["yard:read"],
       "requiredCiActions": ["yard:manage"],
       "risk": "read"
+    },
+    "listYardManagementRoles": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
     },
     "listYardSessions": {
       "requiredUserScopes": ["yard:read"],
@@ -397,6 +407,11 @@
       "requiredCiActions": [],
       "risk": "destructive"
     },
+    "revokeYardManagementRole": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
     "revokeYardSession": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
@@ -413,6 +428,21 @@
       "risk": "write"
     },
     "setYardVisibility": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "setYardAccessRoles": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "setYardApplicationPolicy": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
+    "setYardManagementRole": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
       "risk": "sensitive"

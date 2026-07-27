@@ -29,6 +29,8 @@ impl Endpoint {
             | Self::ListYardEnvironments
             | Self::ListYardSessions
             | Self::GetYardAccess
+            | Self::ListYardManagementRoles
+            | Self::GetYardApplicationPolicy
             | Self::ListAudit
             | Self::ListMembers
             | Self::ListInvites
@@ -49,7 +51,7 @@ impl Endpoint {
     }
 }
 
-const ENDPOINT_PATHS: [&str; 94] = [
+const ENDPOINT_PATHS: [&str; 100] = [
     "/v1/health",
     "/v1/bootstrap/exchange",
     "/v1/cli/device/start",
@@ -95,6 +97,12 @@ const ENDPOINT_PATHS: [&str; 94] = [
     "/v1/yards/access/visibility",
     "/v1/yards/access/grant",
     "/v1/yards/access/revoke",
+    "/v1/yards/management-roles",
+    "/v1/yards/management-roles/set",
+    "/v1/yards/management-roles/revoke",
+    "/v1/yards/application-policy",
+    "/v1/yards/application-policy",
+    "/v1/yards/access/roles",
     "/v1/yards/sessions",
     "/v1/yards/sessions/revoke",
     "/v1/yards/rollback",

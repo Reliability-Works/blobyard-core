@@ -58,7 +58,10 @@ fn populate_findings(repository: &SqliteRepository, storage: &FilesystemStorage)
 fn assert_report_header(report: &serde_json::Value) {
     assert_eq!(report["reportSchemaVersion"], 1);
     assert_eq!(report["coreVersion"], env!("CARGO_PKG_VERSION"));
-    assert_eq!(report["metadataSchemaVersion"], 21);
+    assert_eq!(
+        report["metadataSchemaVersion"],
+        blobyard_repository_sqlite::current_schema_version()
+    );
     assert_eq!(report["clean"], false);
     assert_eq!(report["counts"]["metadataRecords"], 7);
     assert_eq!(report["counts"]["physicalObjects"], 5);

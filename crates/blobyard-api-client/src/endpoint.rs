@@ -124,6 +124,18 @@ pub enum Endpoint {
     GrantYardAccess,
     /// Revoke one Web Yard access grant.
     RevokeYardAccess,
+    /// List Yard management-role assignments.
+    ListYardManagementRoles,
+    /// Create or change one Yard management-role assignment.
+    SetYardManagementRole,
+    /// Revoke one Yard management-role assignment.
+    RevokeYardManagementRole,
+    /// Read one Yard's approved application policy.
+    GetYardApplicationPolicy,
+    /// Approve one Yard application policy.
+    SetYardApplicationPolicy,
+    /// Replace one Yard access grant's application roles.
+    SetYardAccessRoles,
     /// List retained browser sessions for one Web Yard.
     ListYardSessions,
     /// Revoke one Web Yard browser session.
@@ -226,7 +238,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 94] = [
+    pub const ALL: [Self; 100] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -272,6 +284,12 @@ impl Endpoint {
         Self::SetYardVisibility,
         Self::GrantYardAccess,
         Self::RevokeYardAccess,
+        Self::ListYardManagementRoles,
+        Self::SetYardManagementRole,
+        Self::RevokeYardManagementRole,
+        Self::GetYardApplicationPolicy,
+        Self::SetYardApplicationPolicy,
+        Self::SetYardAccessRoles,
         Self::ListYardSessions,
         Self::RevokeYardSession,
         Self::RollbackWebYard,
@@ -324,7 +342,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 92] = public_endpoints();
+    pub const PUBLIC: [Self; 98] = public_endpoints();
 
     /// Returns whether the endpoint durably replays an `Idempotency-Key` request.
     #[must_use]
@@ -341,8 +359,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 92] {
-    let mut public = [Endpoint::Health; 92];
+const fn public_endpoints() -> [Endpoint; 98] {
+    let mut public = [Endpoint::Health; 98];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {

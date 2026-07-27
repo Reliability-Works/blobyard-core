@@ -66,7 +66,9 @@ pub(super) fn insert_grant(
     event: &NewAuditEvent,
 ) -> Result<YardAccessGrantRecord, RepositoryError> {
     let yard = validated_grant_yard(transaction, grant)?;
-    let app_roles = encode_roles(&grant.app_roles)?;
+    let roles =
+        super::yard_application_policy::validated_roles(transaction, &yard.id, &grant.app_roles)?;
+    let app_roles = serde_json::Value::from(roles).to_string();
     let created_at = yard_validation::action_event(
         event,
         "yard.access_granted",
@@ -161,7 +163,7 @@ pub(super) fn list_grants(
     )
 }
 
-fn grant_by_id(
+pub(super) fn grant_by_id(
     connection: &Connection,
     grant_id: &str,
 ) -> Result<Option<YardAccessGrantRecord>, RepositoryError> {
@@ -202,7 +204,7 @@ fn validated_grant_yard(
     Ok(yard)
 }
 
-fn active_yard(
+pub(super) fn active_yard(
     transaction: &Transaction<'_>,
     yard_id: &str,
 ) -> Result<WebYardRecord, RepositoryError> {
@@ -249,7 +251,7 @@ pub(super) fn encode_roles(roles: &[String]) -> Result<String, RepositoryError> 
     Ok(serde_json::Value::from(roles.to_vec()).to_string())
 }
 
-fn decode_roles(encoded: &str) -> Option<Vec<String>> {
+pub(super) fn decode_roles(encoded: &str) -> Option<Vec<String>> {
     let roles: Vec<String> = serde_json::from_str(encoded).ok()?;
     let canonical = serde_json::Value::from(roles.clone()).to_string();
     (canonical == encoded).then_some(roles)

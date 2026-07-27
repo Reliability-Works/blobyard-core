@@ -27,6 +27,16 @@ mod contract_tests;
 mod deploy_edge_tests;
 #[path = "yards_tests/failures.rs"]
 mod failure_tests;
+#[path = "yards_tests/identity_handler_edges.rs"]
+mod identity_handler_edge_tests;
+#[path = "yards_tests/identity_handler_support.rs"]
+mod identity_handler_support;
+#[path = "yards_tests/identity_journey.rs"]
+mod identity_journey_tests;
+#[path = "yards_tests/identity_pagination.rs"]
+mod identity_pagination_tests;
+#[path = "yards_tests/identity_route_edges.rs"]
+mod identity_route_edge_tests;
 #[path = "yards_tests/journey.rs"]
 mod journey_tests;
 #[path = "yards_tests/lifecycle_edges.rs"]

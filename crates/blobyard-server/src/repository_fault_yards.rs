@@ -1,4 +1,4 @@
-use super::FaultingRepository;
+use super::{Corruption, FaultingRepository};
 use blobyard_contract::{
     NewAuditEvent, NewWebYard, NewYardAccessGrant, NewYardDeploy, NewYardFile, RepositoryError,
     WebYardRecord, WebYardRepository, YardAccessGrantRecord, YardAccessPolicyRecord,
@@ -92,7 +92,13 @@ impl WebYardRepository for FaultingRepository {
         now_ms: u64,
     ) -> Result<Vec<YardAccessGrantRecord>, RepositoryError> {
         self.check()?;
-        self.inner.list_yard_access_grants(yard_id, now_ms)
+        let mut grants = self.inner.list_yard_access_grants(yard_id, now_ms)?;
+        if matches!(self.corruption, Some(Corruption::YardAccessGrantTimestamp))
+            && let Some(grant) = grants.first_mut()
+        {
+            grant.created_at_ms = u64::MAX;
+        }
+        Ok(grants)
     }
 
     fn finalise_yard_deploy(

@@ -2,9 +2,13 @@
 
 use super::{mcp_yard_command, yard_policy_command};
 use crate::Command;
-use crate::yard_commands::{AccessCommand, EnvCommand, YardCommand, YardSessionsCommand};
+use crate::yard_commands::{
+    AccessCommand, ApplicationPolicyCommand, EnvCommand, ManagementRolesCommand, YardCommand,
+    YardSessionsCommand,
+};
 use blobyard_core::ErrorCode;
 use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
+use serde_json::json;
 
 #[test]
 fn web_yard_tools_map_to_confirmed_cli_contracts() {
@@ -173,21 +177,116 @@ fn web_yard_session_tools_map_to_cli_contracts() {
 }
 
 #[test]
-fn yard_mapper_rejects_non_yard_calls() {
-    assert_eq!(
-        mcp_yard_command(ToolCall::Whoami {
-            scope: Scope::default(),
-        })
-        .expect_err("wrong call kind")
-        .code(),
-        ErrorCode::InternalError
-    );
-    assert_eq!(
-        yard_policy_command(WebYardToolCall::ListWebYards {
-            scope: Scope::default(),
-        })
-        .expect_err("wrong policy call")
-        .code(),
-        ErrorCode::InternalError
-    );
+fn web_yard_management_role_list_and_set_tools_map_to_cli_contracts() {
+    let scope = Scope::default();
+    let (_, listed) = mcp_yard_command(ToolCall::WebYard(
+        WebYardToolCall::ListYardManagementRoles {
+            scope: scope.clone(),
+            yard: "site".into(),
+            cursor: Some("next".into()),
+        },
+    ))
+    .expect("management-role list mapping");
+    assert!(matches!(
+        listed,
+        Command::ManagementRoles {
+            command: ManagementRolesCommand::List(arguments)
+        } if arguments.name == "site" && arguments.cursor.as_deref() == Some("next")
+    ));
+    let (_, set) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::SetYardManagementRole {
+        scope,
+        yard: "site".into(),
+        user_id: "user_developer".into(),
+        role: "developer".into(),
+    }))
+    .expect("management-role set mapping");
+    assert!(matches!(
+        set,
+        Command::ManagementRoles {
+            command: ManagementRolesCommand::Set(arguments)
+        } if arguments.name == "site"
+            && arguments.user_id == "user_developer"
+            && arguments.role == "developer"
+    ));
 }
+
+#[test]
+fn web_yard_management_role_revoke_tool_maps_to_cli_contract() {
+    let scope = Scope::default();
+    let (_, revoked) = mcp_yard_command(ToolCall::WebYard(
+        WebYardToolCall::RevokeYardManagementRole {
+            scope,
+            yard: "site".into(),
+            user_id: "user_developer".into(),
+        },
+    ))
+    .expect("management-role revoke mapping");
+    assert!(matches!(
+        revoked,
+        Command::ManagementRoles {
+            command: ManagementRolesCommand::Revoke(arguments)
+        } if arguments.name == "site" && arguments.user_id == "user_developer"
+    ));
+}
+
+#[test]
+fn web_yard_policy_and_access_role_tools_map_to_cli_contracts() {
+    let scope = Scope::default();
+    let (_, get_policy) = mcp_yard_command(ToolCall::WebYard(
+        WebYardToolCall::GetYardApplicationPolicy {
+            scope: scope.clone(),
+            yard: "site".into(),
+        },
+    ))
+    .expect("application-policy get mapping");
+    assert!(matches!(
+        get_policy,
+        Command::ApplicationPolicy {
+            command: ApplicationPolicyCommand::Get(arguments)
+        } if arguments.name == "site"
+    ));
+    let (_, set_policy) = mcp_yard_command(ToolCall::WebYard(
+        WebYardToolCall::SetYardApplicationPolicy {
+            scope: scope.clone(),
+            yard: "site".into(),
+            source_manifest_digest: "a".repeat(64),
+            default_role: Some("viewer".into()),
+            roles: json!({
+                "viewer": {
+                    "inherits": [],
+                    "permissions": ["content.read"]
+                }
+            }),
+        },
+    ))
+    .expect("application-policy set mapping");
+    assert!(matches!(
+        set_policy,
+        Command::ApplicationPolicy {
+            command: ApplicationPolicyCommand::Set(arguments)
+        } if arguments.name == "site"
+            && arguments.source_manifest_digest == "a".repeat(64)
+            && arguments.policy.is_none()
+            && arguments.policy_json.as_deref().is_some_and(
+                |value| value.contains("\"defaultRole\":\"viewer\"")
+                    && value.contains("\"content.read\"")
+            )
+    ));
+    let (_, set_roles) = mcp_yard_command(ToolCall::WebYard(WebYardToolCall::SetYardAccessRoles {
+        scope,
+        yard: "site".into(),
+        grant_id: "yardgrant_reader".into(),
+        roles: vec!["viewer".into()],
+    }))
+    .expect("application-role set mapping");
+    assert!(matches!(
+        set_roles,
+        Command::Access {
+            command: AccessCommand::SetRoles(arguments)
+        } if arguments.name == "site"
+            && arguments.grant_id == "yardgrant_reader"
+            && arguments.roles == ["viewer"]
+    ));
+}
+
+include!("mcp_yard_identity_edge_tests.rs");
