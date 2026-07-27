@@ -47,7 +47,16 @@ impl YardSessionRepository for SqliteRepository {
         let connection = self.connection()?;
         let mut statement = connection
             .prepare(&format!(
-                "SELECT {}, u.display_name FROM yard_sessions s JOIN local_users u ON u.id = s.user_id WHERE s.yard_id = ?1 ORDER BY s.created_at_ms DESC, s.id DESC",
+                "SELECT {}, COALESCE(u.display_name, invitation.email)
+                 FROM yard_sessions s
+                 JOIN yard_subjects subject
+                   ON subject.id = s.subject_id
+                 LEFT JOIN local_users u
+                   ON subject.kind = 'member' AND u.id = subject.local_user_id
+                 LEFT JOIN yard_guest_invitations invitation
+                   ON subject.kind = 'guest' AND invitation.id = subject.invitation_id
+                 WHERE s.yard_id = ?1
+                 ORDER BY s.created_at_ms DESC, s.id DESC",
                 qualified_session_columns()
             ))
             .map_err(map_error)?;

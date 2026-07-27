@@ -25,6 +25,29 @@ fn identity_resolution_applies_defaults_and_rechecks_admission() {
 }
 
 #[test]
+fn identity_resolution_rejects_a_session_for_a_different_active_environment() {
+    let (_temporary, repository) = repository();
+    repository
+        .test_connection()
+        .expect("connection")
+        .execute_batch(
+            "INSERT INTO yard_environments
+               (id, yard_id, name, kind, status, created_at_ms, updated_at_ms, deleted_at_ms)
+             VALUES
+               ('yardenv_identity_preview', 'yard_identity_fixture', 'preview',
+                'preview', 'active', 1, 1, NULL);
+             UPDATE yard_sessions
+             SET environment_id = 'yardenv_identity_preview'
+             WHERE id = 'yardsession_identity';",
+        )
+        .expect("different active environment");
+    assert_eq!(
+        repository.resolve_yard_identity(HOST, TOKEN_HASH, 10),
+        Err(RepositoryError::NotFound)
+    );
+}
+
+#[test]
 fn identity_resolution_propagates_admission_storage_failure() {
     let (_temporary, repository) = repository();
     {

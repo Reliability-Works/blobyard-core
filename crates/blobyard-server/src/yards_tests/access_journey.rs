@@ -131,14 +131,15 @@ async fn grant_lifecycle_lists_scopes_and_revokes_idempotently() {
         "/v1/yards/access/grant",
         serde_json::json!({
             "yardId": yard_id,
-            "principalKind": "guest-invite",
-            "principalId": "invite_reviewer",
+            "principalKind": "link",
+            "principalId": "link_reviewer",
             "appRoles": [],
             "environmentId": format!("yardenv_{yard_id}"),
             "expiresAt": "2100-01-01T00:00:00Z"
         }),
     )
     .await;
+    assert_eq!(scoped["data"]["grant"]["principalKind"], "link");
     assert_eq!(
         scoped["data"]["grant"]["environmentId"],
         format!("yardenv_{yard_id}")

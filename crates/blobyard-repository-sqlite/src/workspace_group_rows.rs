@@ -63,14 +63,7 @@ fn validate_stored_group(group: &WorkspaceGroupRecord) -> rusqlite::Result<()> {
 }
 
 pub(super) fn validate_group_id(value: &str) -> Result<(), RepositoryError> {
-    let suffix = value.strip_prefix("group_");
-    let valid = suffix.is_some_and(|suffix| {
-        suffix.len() == 32
-            && suffix
-                .bytes()
-                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-    });
-    if valid {
+    if rows::valid_prefixed_hex_id(value, "group_") {
         Ok(())
     } else {
         Err(RepositoryError::InvalidInput)

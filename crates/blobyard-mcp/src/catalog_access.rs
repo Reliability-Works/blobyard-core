@@ -40,7 +40,7 @@ pub(crate) fn grant_yard_access_contract(
     add(
         properties,
         "principal_kind",
-        string("Principal kind: user, group, guest-invite, or link."),
+        string("Principal kind: user, group, or link. Guest access uses create_yard_guest_invite."),
     );
     add(
         properties,
@@ -76,6 +76,63 @@ pub(crate) fn revoke_yard_access_contract(
     (
         "Revoke one Web Yard access grant.",
         vec!["yard", "grant_id"],
+    )
+}
+
+pub(crate) fn list_yard_guest_invites_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "cursor",
+        string("Optional opaque continuation cursor."),
+    );
+    ("List redacted Web Yard guest invitations.", vec!["yard"])
+}
+
+pub(crate) fn create_yard_guest_invite_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "email",
+        string("Normalized guest email address."),
+    );
+    add(
+        properties,
+        "roles",
+        string_array("Application roles granted to the guest."),
+    );
+    add(
+        properties,
+        "environment_id",
+        string("Optional environment identifier restriction."),
+    );
+    add(
+        properties,
+        "expires_at",
+        string("Optional RFC 3339 expiry timestamp; defaults to seven days."),
+    );
+    (
+        "Create one Web Yard guest invitation and return its URL once.",
+        vec!["yard", "email"],
+    )
+}
+
+pub(crate) fn revoke_yard_guest_invite_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    add(properties, "yard", string("Project-unique Web Yard name."));
+    add(
+        properties,
+        "invitation_id",
+        string("Stable guest-invitation identifier."),
+    );
+    (
+        "Revoke one Web Yard guest invitation.",
+        vec!["yard", "invitation_id"],
     )
 }
 

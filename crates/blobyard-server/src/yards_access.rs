@@ -202,7 +202,7 @@ fn validate_principal_id(value: &str) -> Result<(), ApiError> {
     }
 }
 
-fn parse_future_expiry(value: &str, now: u64) -> Result<u64, ApiError> {
+pub(super) fn parse_future_expiry(value: &str, now: u64) -> Result<u64, ApiError> {
     let parsed =
         OffsetDateTime::parse(value, &Rfc3339).map_err(|_error| ApiError::invalid_request())?;
     let milliseconds = u64::try_from(parsed.unix_timestamp_nanos() / 1_000_000)

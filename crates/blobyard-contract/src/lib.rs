@@ -14,6 +14,8 @@ mod transfers;
 mod workspace_groups;
 mod yard_access;
 mod yard_environments;
+mod yard_guest_audit;
+mod yard_guest_invites;
 mod yard_identity;
 mod yard_repository;
 mod yard_sessions;
@@ -83,6 +85,14 @@ pub use yard_access::{
     YardVisibility,
 };
 pub use yard_environments::{YardEnvironmentKind, YardEnvironmentRecord, YardEnvironmentStatus};
+pub use yard_guest_audit::{YardGuestAuditInvitation, yard_guest_audit_metadata};
+pub use yard_guest_invites::{
+    MAXIMUM_ACTIVE_YARD_GUEST_INVITES, NewYardGuestInvite, YARD_GUEST_INVITE_DEFAULT_LIFETIME_MS,
+    YARD_GUEST_INVITE_MAXIMUM_LIFETIME_MS, YARD_GUEST_INVITE_MINIMUM_LIFETIME_MS,
+    YARD_GUEST_INVITE_PAGE_SIZE, YardGuestAcceptance, YardGuestInviteCursor, YardGuestInvitePage,
+    YardGuestInviteRecord, YardGuestInviteStatus, YardGuestLoginKeyRecord, YardGuestRepository,
+    YardSubjectKind, YardSubjectRecord,
+};
 pub use yard_identity::{
     MAXIMUM_YARD_ACCESS_ROLES, MAXIMUM_YARD_MANAGEMENT_ROLES, YardApplicationPolicyRecord,
     YardIdentity, YardIdentityRepository, YardManagementRole, YardManagementRoleAssignment,

@@ -102,6 +102,44 @@ async fn issuer_results_still_redact_non_url_capability_material() {
     }
 }
 
+#[tokio::test]
+async fn guest_invitation_create_returns_only_its_one_time_url() {
+    let invitation_url = format!(
+        "https://account.example/account/yard-invite?token=bygi_{}&continuation=opaque",
+        "a".repeat(64)
+    );
+    let output = json!({
+        "invitation": { "id": "ygi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+        "invitationUrl": invitation_url,
+        "nested": { "invitationUrl": invitation_url },
+        "otherUrl": invitation_url,
+    });
+    let backend = Backend::success(output.clone());
+    let created = call_tool(
+        &backend,
+        "blobyard_create_yard_guest_invite",
+        json!({ "yard": "documentation", "email": "guest@example.com" }),
+        "guest invitation issuer must respond",
+    )
+    .await;
+    let data = &created["result"]["structuredContent"]["data"];
+    assert_eq!(data["invitationUrl"], invitation_url);
+    assert_eq!(data["nested"]["invitationUrl"], "[REDACTED]");
+    assert_eq!(data["otherUrl"], "[REDACTED]");
+
+    let listed = call_tool(
+        &Backend::success(output),
+        "blobyard_list_yard_guest_invites",
+        json!({ "yard": "documentation" }),
+        "guest invitation list must respond",
+    )
+    .await;
+    assert_eq!(
+        listed["result"]["structuredContent"]["data"]["invitationUrl"],
+        "[REDACTED]"
+    );
+}
+
 fn scoped_arguments() -> Value {
     json!({ "workspace": "team", "project": "mobile" })
 }

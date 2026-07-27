@@ -51,7 +51,16 @@ pub(super) async fn publish(
     client_deploy_id: &str,
     index: &[u8],
 ) -> serde_json::Value {
-    let started = start(fixture, client_deploy_id).await;
+    publish_named(fixture, client_deploy_id, "documentation", index).await
+}
+
+pub(super) async fn publish_named(
+    fixture: &test_seams::TransferFixture,
+    client_deploy_id: &str,
+    yard_name: &str,
+    index: &[u8],
+) -> serde_json::Value {
+    let started = super::start_named(fixture, client_deploy_id, yard_name).await;
     let root = started["data"]["manifestRoot"]
         .as_str()
         .expect("manifest root");

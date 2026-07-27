@@ -9,6 +9,7 @@ pub(super) enum IssuedCapability {
     Share,
     Preview,
     Inbox,
+    GuestInvitation,
 }
 
 impl IssuedCapability {
@@ -17,26 +18,44 @@ impl IssuedCapability {
             ToolCall::CreateShare { .. } => Self::Share,
             ToolCall::CreatePreview { .. } => Self::Preview,
             ToolCall::CreateInbox { .. } => Self::Inbox,
+            ToolCall::WebYard(crate::WebYardToolCall::GuestInvite(
+                crate::YardGuestInviteToolCall::Create { .. },
+            )) => Self::GuestInvitation,
             _ => Self::None,
         }
     }
 }
 
 pub(super) fn sanitize(value: &mut Value, issued: IssuedCapability) {
+    sanitize_value(value, issued, true);
+}
+
+fn sanitize_value(value: &mut Value, issued: IssuedCapability, root: bool) {
     match value {
-        Value::Array(items) => items.iter_mut().for_each(|item| sanitize(item, issued)),
+        Value::Array(items) => items
+            .iter_mut()
+            .for_each(|item| sanitize_value(item, issued, false)),
         Value::Object(fields) => {
             for (key, item) in fields {
+                if root && issued_guest_invitation_url(key, item, issued) {
+                    continue;
+                }
                 if sensitive_key(key, issued) {
                     *item = Value::String(REDACTED.to_owned());
                 } else {
-                    sanitize(item, issued);
+                    sanitize_value(item, issued, false);
                 }
             }
         }
         Value::String(text) if sensitive_url(text) => REDACTED.clone_into(text),
         _ => {}
     }
+}
+
+fn issued_guest_invitation_url(key: &str, value: &Value, issued: IssuedCapability) -> bool {
+    issued == IssuedCapability::GuestInvitation
+        && matches!(key, "invitationUrl" | "invitation_url")
+        && value.is_string()
 }
 
 fn sensitive_key(key: &str, issued: IssuedCapability) -> bool {

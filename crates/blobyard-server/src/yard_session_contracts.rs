@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 const CONTINUATION_PREFIX: &str = "byc_";
+const INVITATION_CONTINUATION_PREFIX: &str = "byi_";
 const DOMAIN: &[u8] = b"yard-continuation-v1";
+const INVITATION_DOMAIN: &[u8] = b"yard-invitation-continuation-v1";
 const VERSION: u8 = 1;
 const MAXIMUM_RETURN_PATH_BYTES: usize = 2_048;
 
@@ -47,13 +49,50 @@ pub(crate) fn issue(
     return_path: &str,
     now_ms: u64,
 ) -> Result<SecretString, ApiError> {
+    let expires_at_ms = now_ms
+        .checked_add(YARD_CONTINUATION_LIFETIME_MS)
+        .ok_or_else(ApiError::internal)?;
+    issue_until(
+        key,
+        CONTINUATION_PREFIX,
+        host_label,
+        return_path,
+        expires_at_ms,
+    )
+}
+
+pub(crate) fn issue_invitation(
+    key: &[u8; 32],
+    host_label: &str,
+    return_path: &str,
+    now_ms: u64,
+    expires_at_ms: u64,
+) -> Result<SecretString, ApiError> {
+    if expires_at_ms <= now_ms {
+        return Err(ApiError::internal());
+    }
+    let key = invitation_key(key);
+    issue_until(
+        &key,
+        INVITATION_CONTINUATION_PREFIX,
+        host_label,
+        return_path,
+        expires_at_ms,
+    )
+}
+
+fn issue_until(
+    key: &[u8; 32],
+    prefix: &str,
+    host_label: &str,
+    return_path: &str,
+    expires_at_ms: u64,
+) -> Result<SecretString, ApiError> {
     if !valid_host_label(host_label) {
         return Err(ApiError::internal());
     }
     let claims = ContinuationClaims {
-        e: now_ms
-            .checked_add(YARD_CONTINUATION_LIFETIME_MS)
-            .ok_or_else(ApiError::internal)?,
+        e: expires_at_ms,
         h: host_label.to_owned(),
         n: uuid::Uuid::new_v4().simple().to_string(),
         p: normalize_return_path(return_path).to_owned(),
@@ -62,7 +101,7 @@ pub(crate) fn issue(
     let payload = internal_result(serialize_claims(&claims))?;
     let signature = signature(key, &payload)?;
     internal_result(SecretString::new(format!(
-        "{CONTINUATION_PREFIX}{}.{}",
+        "{prefix}{}.{}",
         URL_SAFE_NO_PAD.encode(payload),
         hex::encode(signature)
     )))
@@ -73,9 +112,27 @@ pub(crate) fn verify(
     continuation: &SecretString,
     now_ms: u64,
 ) -> Result<ContinuationClaims, ()> {
+    verify_with(key, CONTINUATION_PREFIX, continuation, now_ms)
+}
+
+pub(crate) fn verify_invitation(
+    key: &[u8; 32],
+    continuation: &SecretString,
+    now_ms: u64,
+) -> Result<ContinuationClaims, ()> {
+    let key = invitation_key(key);
+    verify_with(&key, INVITATION_CONTINUATION_PREFIX, continuation, now_ms)
+}
+
+fn verify_with(
+    key: &[u8; 32],
+    prefix: &str,
+    continuation: &SecretString,
+    now_ms: u64,
+) -> Result<ContinuationClaims, ()> {
     let raw = continuation
         .expose_secret()
-        .strip_prefix(CONTINUATION_PREFIX)
+        .strip_prefix(prefix)
         .ok_or(())?;
     let (encoded, signature_hex) = raw.split_once('.').ok_or(())?;
     if encoded.is_empty()
@@ -97,6 +154,14 @@ pub(crate) fn verify(
     let claims: ContinuationClaims = serde_json::from_slice(&payload).map_err(|_error| ())?;
     let canonical = invalid_result(serialize_claims(&claims))?;
     validate_claims(claims, &payload, now_ms, &canonical)
+}
+
+fn invitation_key(key: &[u8; 32]) -> [u8; 32] {
+    let mut digest = Sha256::new();
+    digest.update(key);
+    digest.update([0]);
+    digest.update(INVITATION_DOMAIN);
+    digest.finalize().into()
 }
 
 fn validate_claims(

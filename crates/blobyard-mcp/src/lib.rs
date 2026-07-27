@@ -18,7 +18,7 @@ pub use dashboard_call::DashboardToolCall;
 pub use protocol::{BackendError, BackendFuture, ToolBackend};
 pub use server::{McpServer, serve, serve_stdio};
 pub use tool_call::{Scope, ToolCall};
-pub use yard_call::WebYardToolCall;
+pub use yard_call::{WebYardToolCall, YardGuestInviteToolCall};
 
 fn optional_string(arguments: &Map<String, Value>, key: &str) -> Result<Option<String>, String> {
     arguments
@@ -43,6 +43,10 @@ fn reject_unknown_arguments(
         return Err(format!("unexpected argument: {key}"));
     }
     Ok(())
+}
+
+fn unknown_tool<T>(name: &str) -> Result<T, String> {
+    Err(format!("unknown tool: {name}"))
 }
 
 #[cfg(test)]

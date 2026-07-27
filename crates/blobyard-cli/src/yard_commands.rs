@@ -85,7 +85,7 @@ pub struct GrantAccessArgs {
     /// Project-unique Web Yard name.
     #[arg(value_name = "NAME")]
     pub name: String,
-    /// Principal kind: user, group, guest-invite, or link.
+    /// Principal kind: user, group, or link.
     #[arg(long, value_name = "KIND")]
     pub principal_kind: String,
     /// Stable principal identifier.
@@ -125,6 +125,59 @@ pub struct SetAccessRolesArgs {
     /// Replacement application role. Repeatable; omit all roles to clear.
     #[arg(long = "role", value_name = "ROLE")]
     pub roles: Vec<String>,
+}
+
+/// Yard guest-invitation operations.
+#[derive(Clone, Debug, Subcommand)]
+pub enum GuestInvitesCommand {
+    /// List retained guest invitations for a Web Yard.
+    List(GuestInvitesListArgs),
+    /// Create one expiring guest invitation.
+    Create(CreateGuestInviteArgs),
+    /// Revoke one guest invitation.
+    Revoke(RevokeGuestInviteArgs),
+}
+
+/// Arguments for `blobyard guest-invites list`.
+#[derive(Clone, Debug, Args)]
+pub struct GuestInvitesListArgs {
+    /// Project-unique Web Yard name, selected automatically when only one exists.
+    #[arg(value_name = "NAME")]
+    pub name: Option<String>,
+    /// Opaque continuation cursor returned by the previous page.
+    #[arg(long, value_name = "CURSOR")]
+    pub cursor: Option<String>,
+}
+
+/// Arguments for `blobyard guest-invites create`.
+#[derive(Clone, Debug, Args)]
+pub struct CreateGuestInviteArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Normalized guest email address.
+    #[arg(value_name = "EMAIL")]
+    pub email: String,
+    /// Application role granted to the guest. Repeatable.
+    #[arg(long = "role", value_name = "ROLE")]
+    pub roles: Vec<String>,
+    /// Restrict the invitation to one environment identifier.
+    #[arg(long, value_name = "ENVIRONMENT_ID")]
+    pub environment: Option<String>,
+    /// RFC 3339 expiry timestamp; defaults to seven days.
+    #[arg(long, value_name = "TIMESTAMP")]
+    pub expires: Option<String>,
+}
+
+/// Arguments for `blobyard guest-invites revoke`.
+#[derive(Clone, Debug, Args)]
+pub struct RevokeGuestInviteArgs {
+    /// Project-unique Web Yard name.
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    /// Stable guest-invitation identifier.
+    #[arg(value_name = "INVITATION_ID")]
+    pub invitation_id: String,
 }
 
 /// Yard management-role operations.

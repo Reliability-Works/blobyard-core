@@ -411,3 +411,121 @@ vectors:
     principalKind: machine
     principalScopes: [users:manage]
     resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: true }
+    id: yard-manager-can-list-guest-invitations
+    operationId: listYardGuestInvites
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: true }
+    id: yard-manager-can-create-guest-invitation
+    operationId: createYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: true }
+    id: yard-manager-can-revoke-guest-invitation
+    operationId: revokeYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: yard-reader-cannot-list-guest-invitations
+    operationId: listYardGuestInvites
+    principalKind: human
+    principalScopes: [yard:read]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: yard-reader-cannot-create-guest-invitation
+    operationId: createYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:read]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: yard-reader-cannot-revoke-guest-invitation
+    operationId: revokeYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:read]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: machine-cannot-list-guest-invitations
+    operationId: listYardGuestInvites
+    principalKind: machine
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: machine-cannot-create-guest-invitation
+    operationId: createYardGuestInvite
+    principalKind: machine
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: machine-cannot-revoke-guest-invitation
+    operationId: revokeYardGuestInvite
+    principalKind: machine
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: NOT_FOUND }
+    id: cross-workspace-guest-invitation-list-is-concealed
+    operationId: listYardGuestInvites
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: other }
+  - action: yard:manage
+    expected: { allowed: false, code: NOT_FOUND }
+    id: cross-workspace-guest-invitation-create-is-concealed
+    operationId: createYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: other }
+  - action: yard:manage
+    expected: { allowed: false, code: NOT_FOUND }
+    id: cross-workspace-guest-invitation-revocation-is-concealed
+    operationId: revokeYardGuestInvite
+    principalKind: human
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: other }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: guest-cannot-manage-guest-invitations
+    principalKind: guest
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: true }
+    id: cloud-owner-can-manage-guest-invitations
+    principalKind: human
+    principalRole: owner
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: true }
+    id: cloud-admin-can-manage-guest-invitations
+    principalKind: human
+    principalRole: admin
+    principalScopes: [yard:manage]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: cloud-developer-cannot-manage-guest-invitations
+    principalKind: human
+    principalRole: developer
+    principalScopes: [yard:read]
+    resource: { project: demo, workspace: default }
+  - action: yard:manage
+    expected: { allowed: false, code: FORBIDDEN }
+    id: cloud-auditor-cannot-manage-guest-invitations
+    principalKind: human
+    principalRole: auditor
+    principalScopes: [yard:read]
+    resource: { project: demo, workspace: default }

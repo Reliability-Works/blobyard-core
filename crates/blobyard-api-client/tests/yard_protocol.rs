@@ -3,7 +3,8 @@
 #![allow(clippy::expect_used, reason = "test fixture setup must fail loudly")]
 
 use blobyard_api_client::{
-    DeleteWebYardRequest, FailYardDeployRequest, ListWebYardsQuery, ListYardDeploysQuery,
+    CreateYardGuestInviteRequest, DeleteWebYardRequest, FailYardDeployRequest,
+    GrantYardAccessPrincipalKind, GrantYardAccessRequest, ListWebYardsQuery, ListYardDeploysQuery,
     ListYardSessionsQuery, ListYardSessionsResponse, RevokeYardSessionRequest,
     RollbackWebYardRequest, StartYardDeployRequest, StartYardDeployResponse, WebYardPage,
     YardDeployMutationRequest, YardDeployPage, YardDeploymentResponse, YardSessionStatus,
@@ -106,6 +107,47 @@ fn web_yard_management_requests_encode_exactly() {
         }
         .into_json(),
         serde_json::json!({ "yardId": "yard_1" })
+    );
+}
+
+#[test]
+fn web_yard_guest_and_access_requests_encode_exactly() {
+    assert_eq!(
+        CreateYardGuestInviteRequest {
+            yard_id: "yard_1".into(),
+            environment_id: None,
+            email: "guest@example.test".into(),
+            app_roles: vec!["viewer".into()],
+            expires_at: None,
+        }
+        .into_json(),
+        serde_json::json!({
+            "yardId": "yard_1",
+            "environmentId": null,
+            "email": "guest@example.test",
+            "appRoles": ["viewer"]
+        })
+    );
+    assert_eq!(
+        GrantYardAccessRequest {
+            yard_id: "yard_1".into(),
+            principal_kind: GrantYardAccessPrincipalKind::Link,
+            principal_id: "link_1".into(),
+            app_roles: Vec::new(),
+            environment_id: None,
+            expires_at: None,
+        }
+        .into_json()["principalKind"],
+        "link"
+    );
+    assert!(
+        serde_json::from_value::<GrantYardAccessRequest>(serde_json::json!({
+            "yardId": "yard_1",
+            "principalKind": "guest-invite",
+            "principalId": "ygi_1",
+            "appRoles": []
+        }))
+        .is_err()
     );
 }
 

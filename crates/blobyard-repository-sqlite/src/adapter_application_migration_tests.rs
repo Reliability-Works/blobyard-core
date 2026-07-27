@@ -24,7 +24,7 @@ fn environment_migration_backfills_one_production_environment_per_active_yard() 
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     let environments = repository
         .list_yard_environments("yard_live")
         .expect("environments");
@@ -58,7 +58,7 @@ fn access_migration_adds_empty_policy_and_grant_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     assert!(
         repository
             .get_yard_access_policy("yard_live")
@@ -90,7 +90,7 @@ fn local_user_migration_adds_empty_user_and_key_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     assert!(
         repository
             .list_local_users("workspace")
@@ -115,7 +115,7 @@ fn yard_session_migration_adds_empty_continuation_and_session_tables() {
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     let connection = repository.test_connection().expect("connection");
     for table in ["yard_continuations", "yard_sessions"] {
         let count: i64 = connection
@@ -139,7 +139,7 @@ fn group_migration_preserves_unresolved_grants_and_adds_empty_group_tables() {
     let path = temporary.path().join("metadata.sqlite3");
     seed_version_twenty_legacy_group_grant(&path);
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     assert!(
         repository
             .list_workspace_groups("workspace", None, 50)
@@ -187,6 +187,70 @@ fn group_migration_preserves_unresolved_grants_and_adds_empty_group_tables() {
         &repository,
         &["workspace_groups", "workspace_group_members"],
     );
+}
+
+#[test]
+fn guest_migration_backfills_subjects_and_rebuilds_session_references() {
+    use blobyard_contract::MetadataRepository;
+
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let path = temporary.path().join("metadata.sqlite3");
+    let mut connection = Connection::open(&path).expect("version twenty-two connection");
+    super::super::migrations::apply_through(&mut connection, 22)
+        .expect("version twenty-two schema");
+    connection
+        .execute_batch(
+            "INSERT INTO workspaces VALUES ('workspace', 'Workspace', 'workspace');
+             INSERT INTO projects VALUES ('project', 'workspace', 'Project', 'project');
+             INSERT INTO web_yards
+               (id, workspace_id, project_id, name, host_label, status, created_at_ms, updated_at_ms)
+             VALUES ('yard', 'workspace', 'project', 'Yard', 'yard-fixture', 'active', 1, 1);
+             INSERT INTO yard_environments
+               (id, yard_id, name, kind, status, created_at_ms, updated_at_ms)
+             VALUES ('environment', 'yard', 'production', 'production', 'active', 1, 1);
+             INSERT INTO local_users
+               (id, workspace_id, display_name, status, created_at_ms)
+             VALUES ('user', 'workspace', 'User', 'active', 1);
+             INSERT INTO yard_continuations
+               (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id,
+                return_path, created_at_ms, expires_at_ms)
+             VALUES ('continuation', lower(hex(randomblob(32))), lower(hex(randomblob(32))),
+                     'yard', 'environment', 'yard-fixture', 'user', '/', 1, 2);
+             INSERT INTO yard_sessions
+               (id, token_hash, yard_id, environment_id, host_label, user_id,
+                created_at_ms, expires_at_ms)
+             VALUES ('session', lower(hex(randomblob(32))), 'yard', 'environment',
+                     'yard-fixture', 'user', 1, 2);",
+        )
+        .expect("version twenty-two fixture");
+    drop(connection);
+
+    let repository = SqliteRepository::open(&path).expect("migrated repository");
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
+    let connection = repository.test_connection().expect("connection");
+    let kind: String = connection
+        .query_row(
+            "SELECT kind FROM yard_subjects WHERE id = 'user'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("member subject");
+    assert_eq!(kind, "member");
+    for table in ["yard_continuations", "yard_sessions"] {
+        let subject: String = connection
+            .query_row(&format!("SELECT subject_id FROM {table}"), [], |row| {
+                row.get(0)
+            })
+            .expect("subject reference");
+        assert_eq!(subject, "user");
+    }
+    let violations: i64 = connection
+        .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
+            row.get(0)
+        })
+        .expect("foreign key check");
+    drop(connection);
+    assert_eq!(violations, 0);
 }
 
 fn seed_version_twenty_legacy_group_grant(path: &Path) {

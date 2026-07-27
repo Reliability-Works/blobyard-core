@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::{require_admission, require_session_yard, session_times};
+use super::{insert_session, purge, require_admission, require_session_yard};
 use blobyard_contract::{
     AuditValue, NewAuditEvent, RepositoryError, YardAdmission, YardSessionRecord,
 };
@@ -51,23 +51,6 @@ fn persisted_identifiers_must_match_current_admission() {
 }
 
 #[test]
-fn session_times_reject_values_outside_sqlite_range() {
-    assert_eq!(session_times(&session()), Ok((1, 2)));
-    let mut malformed = session();
-    malformed.created_at_ms = (i64::MAX as u64) + 1;
-    assert_eq!(
-        session_times(&malformed),
-        Err(RepositoryError::InvalidInput)
-    );
-    malformed.created_at_ms = 1;
-    malformed.expires_at_ms = (i64::MAX as u64) + 1;
-    assert_eq!(
-        session_times(&malformed),
-        Err(RepositoryError::InvalidInput)
-    );
-}
-
-#[test]
 fn listing_maps_parameter_binding_failures() {
     let connection = Connection::open_in_memory().expect("connection");
     let mut statement = connection.prepare("SELECT 1").expect("statement");
@@ -75,6 +58,66 @@ fn listing_maps_parameter_binding_failures() {
         super::list(&mut statement, "yard"),
         Err(RepositoryError::Unavailable)
     );
+}
+
+#[test]
+fn purge_saturates_history_cutoffs_at_the_epoch() {
+    let mut connection = Connection::open_in_memory().expect("connection");
+    connection
+        .execute_batch(
+            "CREATE TABLE yard_continuations (expires_at_ms INTEGER NOT NULL);
+             CREATE TABLE yard_sessions (
+               expires_at_ms INTEGER NOT NULL,
+               revoked_at_ms INTEGER
+             );",
+        )
+        .expect("schema");
+    let transaction = connection.transaction().expect("transaction");
+    assert_eq!(purge(&transaction, 0), Ok(()));
+}
+
+#[test]
+fn session_insert_maps_statement_failures_and_persists_valid_records() {
+    let mut connection = Connection::open_in_memory().expect("connection");
+    let transaction = connection.transaction().expect("transaction");
+    let mut invalid_time = session();
+    invalid_time.expires_at_ms = u64::MAX;
+    assert_eq!(
+        insert_session(&transaction, &invalid_time, 1),
+        Err(RepositoryError::InvalidInput)
+    );
+    assert_eq!(
+        insert_session(&transaction, &session(), 1),
+        Err(RepositoryError::Unavailable)
+    );
+    transaction
+        .execute_batch(
+            "CREATE TABLE yard_subjects (
+               id TEXT PRIMARY KEY,
+               revoked_at_ms INTEGER
+             );
+             CREATE TABLE yard_sessions (
+               id TEXT PRIMARY KEY,
+               token_hash TEXT NOT NULL,
+               yard_id TEXT NOT NULL,
+               environment_id TEXT NOT NULL,
+               host_label TEXT NOT NULL,
+               subject_id TEXT NOT NULL,
+               created_at_ms INTEGER NOT NULL,
+               expires_at_ms INTEGER NOT NULL,
+               last_used_at_ms INTEGER,
+               revoked_at_ms INTEGER
+             );
+             INSERT INTO yard_subjects (id, revoked_at_ms) VALUES ('user', NULL);",
+        )
+        .expect("schema");
+    let mut missing_subject = session();
+    "missing".clone_into(&mut missing_subject.user_id);
+    assert_eq!(
+        insert_session(&transaction, &missing_subject, 1),
+        Err(RepositoryError::Conflict)
+    );
+    assert_eq!(insert_session(&transaction, &session(), 1), Ok(()));
 }
 
 #[test]
@@ -90,7 +133,14 @@ fn revocation_conceals_missing_and_foreign_sessions_and_rejects_invalid_audit() 
     connection
         .execute_batch(
             "INSERT INTO web_yards (id, workspace_id, project_id, name, host_label, status, created_at_ms, updated_at_ms) VALUES ('yard_fixture', 'workspace_fixture', 'project_fixture', 'docs', 'docs-fixture', 'active', 1, 1);
-             INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms) VALUES ('session_fixture', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', 1, 10);",
+             INSERT INTO yard_sessions
+               (id, token_hash, yard_id, environment_id, host_label, subject_id,
+                created_at_ms, expires_at_ms)
+             VALUES
+               ('session_fixture',
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture',
+                1, 10);",
         )
         .expect("fixture");
     let transaction = connection.transaction().expect("transaction");

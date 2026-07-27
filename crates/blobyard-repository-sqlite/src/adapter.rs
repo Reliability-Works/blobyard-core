@@ -94,6 +94,26 @@ mod yard_application_policy_row;
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]
 mod yard_finalise;
+#[path = "yard_guest_accept.rs"]
+mod yard_guest_accept;
+#[path = "yard_guest_admission.rs"]
+mod yard_guest_admission;
+#[path = "yard_guest_create.rs"]
+mod yard_guest_create;
+#[path = "yard_guest_events.rs"]
+mod yard_guest_events;
+#[path = "yard_guest_identity.rs"]
+mod yard_guest_identity;
+#[path = "yard_guest_invites.rs"]
+mod yard_guest_invites;
+#[path = "yard_guest_keys.rs"]
+mod yard_guest_keys;
+#[path = "yard_guest_queries.rs"]
+mod yard_guest_queries;
+#[path = "yard_guest_revoke.rs"]
+mod yard_guest_revoke;
+#[path = "yard_guest_rows.rs"]
+mod yard_guest_rows;
 #[path = "yard_history.rs"]
 mod yard_history;
 #[path = "yard_identity.rs"]
@@ -296,10 +316,6 @@ fn map_error(error: rusqlite::Error) -> RepositoryError {
         }
         _ => RepositoryError::Unavailable,
     }
-}
-
-fn map_query_result<T>(result: rusqlite::Result<T>) -> Result<T, RepositoryError> {
-    result.map_err(map_error)
 }
 
 #[cfg(test)]

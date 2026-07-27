@@ -324,3 +324,255 @@ cases:
     conformanceSuite: admission-corruption
     input: { principalKind: group, memberCountMatchesMembershipRows: false }
     expected: { admitted: false, responseClass: concealed-not-found }
+  - id: guest-create-atomically-persists-invitation-grant-and-audit
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { mutation: guest-invitation-create }
+    expected: { invitationCount: 1, grantCount: 1, auditEventCount: 1 }
+  - id: guest-list-output-permanently-conceals-authority-material
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { surface: guest-invitation-list }
+    expected: { containsAuthorityMaterial: false, pageSize: 50 }
+  - id: duplicate-active-guest-invitation-conflicts-without-rotation
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { scope: same-email-yard-environment }
+    expected: { repositoryError: CONFLICT, auditEventCount: 0 }
+  - id: guest-acceptance-is-single-use-and-key-is-hash-only
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { surface: account-acceptance }
+    expected: { accepted: true, replayResponse: concealed-not-found }
+  - id: selected-guest-grant-admits-only-matching-environment
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { principalKind: guest-invite, visibility: selected }
+    expected: { admitted: true, environmentScoped: true }
+  - id: guest-identity-expands-application-role-without-management-authority
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { principalKind: guest, applicationRole: editor }
+    expected: { applicationRoles: [editor, viewer], managementRole: null, groups: [] }
+  - id: authenticated-link-admits-a-matching-guest-invitation
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { principalKind: guest, visibility: authenticated-link }
+    expected: { admitted: true, authority: guest-invitation }
+  - id: guest-does-not-inherit-owner-or-workspace-admission
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { principalKind: guest, visibility: [owner, workspace] }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: guest-subject-cannot-inherit-direct-principal-authority
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { guestSubjectId: guest_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, attemptedPrincipalKind: user }
+    expected: { admitted: false, repositoryError: INVALID_INPUT }
+  - id: guest-subject-cannot-inherit-group-principal-authority
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { guestSubjectId: guest_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, attemptedPrincipalKind: group }
+    expected: { admitted: false, repositoryError: INVALID_INPUT }
+  - id: guest-revocation-denies-on-next-private-request
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { change: invitation-revoked, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0 }
+  - id: yard-wide-guest-invitations-accept-exact-lifetime-boundaries
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { environmentId: null, lifetimeMilliseconds: [300000, 2592000000] }
+    expected: { created: true, scope: yard-wide }
+  - id: guest-invitation-lifetimes-outside-five-minutes-and-thirty-days-fail
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { lifetimeMilliseconds: [299999, 2592000001] }
+    expected: { repositoryError: INVALID_INPUT, authorityCreated: false }
+  - id: guest-invitation-capacity-allows-exactly-one-hundred-active-authorities
+    conformanceOwner: testkit
+    conformanceSuite: yard-guests
+    input: { activeInvitations: 100, nextMutation: create }
+    expected: { repositoryError: CONFLICT, activeInvitations: 100 }
+  - id: guest-create-rolls-back-after-every-write-boundary
+    conformanceOwner: sqlite
+    conformanceSuite: guest-atomicity
+    input: { mutation: create, faultPosition: each-write-authorization-boundary }
+    expected: { rolledBack: true, auditEventCreated: false, writeBoundaryCoverage: complete }
+  - id: guest-accept-rolls-back-after-every-write-boundary
+    conformanceOwner: sqlite
+    conformanceSuite: guest-atomicity
+    input: { mutation: accept, faultPosition: each-write-authorization-boundary }
+    expected: { rolledBack: true, auditEventCreated: false, writeBoundaryCoverage: complete }
+  - id: guest-revoke-rolls-back-after-every-write-boundary
+    conformanceOwner: sqlite
+    conformanceSuite: guest-atomicity
+    input: { mutation: revoke, faultPosition: each-write-authorization-boundary }
+    expected: { rolledBack: true, auditEventCreated: false, writeBoundaryCoverage: complete }
+  - id: revoked-guest-grant-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: grant, change: revoked, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: expired-guest-grant-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: grant, change: expired, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: revoked-guest-key-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: key, change: revoked, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: expired-guest-key-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: key, change: expired, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: revoked-guest-subject-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: subject, change: revoked, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: guest-policy-change-denies-the-next-private-request
+    conformanceOwner: sqlite
+    conformanceSuite: guest-authority-propagation
+    input: { authority: policy, change: owner-only, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0, responseClass: concealed-not-found }
+  - id: guest-create-returns-one-time-invitation-url
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { operation: createYardGuestInvite, responseField: invitationUrl }
+    expected: { presentOnCreate: true, presentOnList: false, reusableAuthorityReturned: false }
+  - id: guest-create-accepts-approved-application-roles
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { operation: createYardGuestInvite, applicationRoles: [viewer], policyRoles: [viewer] }
+    expected: { created: true, applicationRoles: [viewer] }
+  - id: guest-create-allows-empty-application-roles
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { operation: createYardGuestInvite, applicationRoles: [] }
+    expected: { created: true, applicationRoles: [] }
+  - id: guest-create-rejects-unknown-application-roles
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { operation: createYardGuestInvite, applicationRoles: [unknown], policyRoles: [viewer] }
+    expected: { responseCode: BAD_REQUEST, authorityCreated: false }
+  - id: guest-create-rejects-duplicate-application-roles
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input:
+      {
+        operation: createYardGuestInvite,
+        applicationRoles: [viewer, viewer],
+        policyRoles: [viewer],
+      }
+    expected: { responseCode: BAD_REQUEST, authorityCreated: false }
+  - id: expired-guest-invitation-token-is-concealed
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, invitationState: expired }
+    expected: { responseClass: concealed-not-found, authorityCreated: false }
+  - id: revoked-guest-invitation-token-is-concealed
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, invitationState: revoked }
+    expected: { responseClass: concealed-not-found, authorityCreated: false }
+  - id: foreign-guest-invitation-token-is-concealed
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, invitationState: foreign }
+    expected: { responseClass: concealed-not-found, authorityCreated: false }
+  - id: unknown-guest-invitation-token-is-concealed
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, invitationState: unknown }
+    expected: { responseClass: concealed-not-found, authorityCreated: false }
+  - id: malformed-and-ambiguous-invitation-input-is-concealed
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, inputClass: [malformed, ambiguous] }
+    expected: { responseClass: concealed-not-found, authorityCreated: false }
+  - id: oversized-invitation-submission-is-rejected-before-resolution
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-acceptance, bodyBytes: 32769 }
+    expected: { responseCode: BAD_REQUEST, repositoryCalls: 0 }
+  - id: invitation-pages-prevent-cache-referrer-and-framing-leaks
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { surface: account-invitation-page }
+    expected: { cacheControl: no-store, referrerPolicy: no-referrer, frameAncestors: none }
+  - id: guest-key-is-rejected-by-management-authentication
+    conformanceOwner: server
+    conformanceSuite: guest-invitation-http
+    input: { principalKind: guest, surface: management-authentication }
+    expected: { allowed: false, code: UNAUTHORIZED }
+  - id: corrupt-guest-subject-kind-is-inert
+    conformanceOwner: sqlite
+    conformanceSuite: guest-corruption
+    input: { principalKind: guest, subjectKind: unknown }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: corrupt-guest-tenant-link-is-inert
+    conformanceOwner: sqlite
+    conformanceSuite: guest-corruption
+    input: { principalKind: guest, invitationWorkspaceMatchesSubject: false }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: corrupt-guest-grant-link-is-inert
+    conformanceOwner: sqlite
+    conformanceSuite: guest-corruption
+    input: { principalKind: guest, grantMatchesInvitation: false }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: corrupt-guest-lifecycle-is-inert
+    conformanceOwner: sqlite
+    conformanceSuite: guest-corruption
+    input: { principalKind: guest, lifecycleConsistent: false }
+    expected: { admitted: false, responseClass: concealed-not-found }
+  - id: guest-invitation-pagination-is-deterministic-and-cursor-safe
+    conformanceOwner: sqlite
+    conformanceSuite: guest-pagination
+    input: { resource: guest-invitations, pageSize: 50, concurrentInsertAfterCursor: true }
+    expected: { ordering: [createdAt-desc, id-desc], duplicates: 0, omissionsWithinSnapshot: 0 }
+  - id: cloud-guest-acceptance-requires-current-verified-normalized-email
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { surface: account-acceptance, emailState: verified-match }
+    expected: { accepted: true, workspaceMembershipCreated: false }
+  - id: cloud-guest-acceptance-rejects-mismatched-email
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { surface: account-acceptance, emailState: verified-mismatch }
+    expected:
+      { accepted: false, responseClass: concealed-not-found, workspaceMembershipCreated: false }
+  - id: cloud-guest-acceptance-rejects-unverified-email
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { surface: account-acceptance, emailState: unverified-match }
+    expected:
+      { accepted: false, responseClass: concealed-not-found, workspaceMembershipCreated: false }
+  - id: cloud-guest-email-drift-denies-on-next-private-request
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { change: verified-email-changed, surface: private-delivery }
+    expected: { admitted: false, propagationMilliseconds: 0 }
+  - id: cloud-guest-account-deletion-revokes-authority
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { change: account-deleted, principalKind: guest }
+    expected: { admitted: false, invitationRevoked: true, grantRevoked: true }
+  - id: cloud-independent-member-grant-preserves-admission
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { principalKind: member-and-guest, change: invitation-revoked }
+    expected: { admitted: true, admittingAuthority: member }
+  - id: cloud-guest-without-workspace-membership-admits-selected
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { principalKind: guest, workspaceMembershipPresent: false, visibility: selected }
+    expected: { admitted: true }
+  - id: cloud-duplicate-guest-identity-rows-fail-closed
+    conformanceOwner: cloud
+    conformanceSuite: hosted-guests
+    input: { principalKind: guest, acceptedIdentityRowCount: 2 }
+    expected: { admitted: false, responseClass: concealed-not-found }

@@ -5,10 +5,11 @@ use crate::yard_commands::{
     AccessListArgs, GrantAccessArgs, RevokeAccessArgs, SetAccessRolesArgs, SetVisibilityArgs,
 };
 use blobyard_api_client::{
-    ApiRequest, EmptyResponse, Endpoint, GetYardAccessQuery, GrantYardAccessRequest,
-    RevokeYardAccessRequest, SetYardAccessRolesRequest, SetYardAccessRolesResponse,
-    SetYardVisibilityRequest, YardAccessGrantResponse, YardAccessGrantSummary,
-    YardAccessPrincipalKind, YardAccessResponse, YardVisibility, YardVisibilityResponse,
+    ApiRequest, EmptyResponse, Endpoint, GetYardAccessQuery, GrantYardAccessPrincipalKind,
+    GrantYardAccessRequest, RevokeYardAccessRequest, SetYardAccessRolesRequest,
+    SetYardAccessRolesResponse, SetYardVisibilityRequest, YardAccessGrantResponse,
+    YardAccessGrantSummary, YardAccessPrincipalKind, YardAccessResponse, YardVisibility,
+    YardVisibilityResponse,
 };
 use blobyard_core::{BlobyardError, ErrorCode, Slug};
 use serde::Serialize;
@@ -230,15 +231,14 @@ fn parse_visibility(value: &str) -> Result<YardVisibility, BlobyardError> {
     }
 }
 
-fn parse_principal_kind(value: &str) -> Result<YardAccessPrincipalKind, BlobyardError> {
+fn parse_principal_kind(value: &str) -> Result<GrantYardAccessPrincipalKind, BlobyardError> {
     match value {
-        "user" => Ok(YardAccessPrincipalKind::User),
-        "group" => Ok(YardAccessPrincipalKind::Group),
-        "guest-invite" => Ok(YardAccessPrincipalKind::GuestInvite),
-        "link" => Ok(YardAccessPrincipalKind::Link),
+        "user" => Ok(GrantYardAccessPrincipalKind::User),
+        "group" => Ok(GrantYardAccessPrincipalKind::Group),
+        "link" => Ok(GrantYardAccessPrincipalKind::Link),
         _ => Err(BlobyardError::new(
             ErrorCode::InvalidRequest,
-            "Principal kind must be user, group, guest-invite, or link.",
+            "Principal kind must be user, group, or link. Use guest-invites create for guest access.",
         )),
     }
 }

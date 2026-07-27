@@ -9,7 +9,8 @@ use crate::runner::login::tests::support::{
     Fixture, api_failure, fixture_tokens, fixture_yards, ok,
 };
 use blobyard_api_client::{
-    Endpoint, YardAccessGrantSummary, YardAccessPrincipalKind, YardAccessResponse, YardVisibility,
+    Endpoint, GrantYardAccessPrincipalKind, YardAccessGrantSummary, YardAccessPrincipalKind,
+    YardAccessResponse, YardVisibility,
 };
 use blobyard_core::{ErrorCode, SecretString};
 use serde_json::json;
@@ -87,20 +88,30 @@ fn visibility_parsing_round_trips_and_rejects_unknown_values() {
 
 #[test]
 fn principal_kind_parsing_round_trips_and_rejects_unknown_values() {
-    for kind in [
-        YardAccessPrincipalKind::User,
-        YardAccessPrincipalKind::Group,
-        YardAccessPrincipalKind::GuestInvite,
-        YardAccessPrincipalKind::Link,
+    for (label, kind) in [
+        ("user", GrantYardAccessPrincipalKind::User),
+        ("group", GrantYardAccessPrincipalKind::Group),
+        ("link", GrantYardAccessPrincipalKind::Link),
     ] {
-        assert_eq!(
-            parse_principal_kind(principal_kind_label(kind)).expect("principal kind"),
-            kind
-        );
+        assert_eq!(parse_principal_kind(label).expect("principal kind"), kind);
+    }
+    for (kind, label) in [
+        (YardAccessPrincipalKind::User, "user"),
+        (YardAccessPrincipalKind::Group, "group"),
+        (YardAccessPrincipalKind::GuestInvite, "guest-invite"),
+        (YardAccessPrincipalKind::Link, "link"),
+    ] {
+        assert_eq!(principal_kind_label(kind), label);
     }
     assert_eq!(
         parse_principal_kind("robot")
             .expect_err("unknown principal kind")
+            .code(),
+        ErrorCode::InvalidRequest
+    );
+    assert_eq!(
+        parse_principal_kind("guest-invite")
+            .expect_err("dedicated guest invitation path")
             .code(),
         ErrorCode::InvalidRequest
     );

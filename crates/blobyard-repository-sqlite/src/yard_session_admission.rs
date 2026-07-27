@@ -1,6 +1,6 @@
-use super::{map_error, rows, yard_session_rows};
+use super::{map_error, rows, yard_guest_admission, yard_session_rows};
 use blobyard_contract::{RepositoryError, YardAdmission};
-use rusqlite::{Connection, OptionalExtension, Row, params};
+use rusqlite::{Connection, OptionalExtension, params};
 
 macro_rules! selected_grant_admission_sql {
     ($now:literal) => {
@@ -122,11 +122,18 @@ macro_rules! selected_grant_admission_sql {
 pub(super) fn evaluate(
     connection: &Connection,
     host_label: &str,
-    user_id: &str,
+    subject_id: &str,
     now_ms: i64,
 ) -> Result<YardAdmission, RepositoryError> {
     yard_session_rows::validate_host_label(host_label)?;
-    rows::validate_text(user_id)?;
+    rows::validate_text(subject_id)?;
+    let kind = subject_kind(connection, subject_id)?;
+    if kind == "guest" {
+        return yard_guest_admission::evaluate(connection, host_label, subject_id, now_ms);
+    }
+    if kind != "member" {
+        return Err(RepositoryError::NotFound);
+    }
     connection
         .query_row(
             concat!(
@@ -138,6 +145,13 @@ pub(super) fn evaluate(
                ON u.id = ?2
               AND u.status = 'active'
               AND u.deactivated_at_ms IS NULL
+             JOIN yard_subjects subject
+               ON subject.id = u.id
+              AND subject.kind = 'member'
+              AND subject.local_user_id = u.id
+              AND subject.invitation_id IS NULL
+              AND subject.workspace_id = u.workspace_id
+              AND subject.revoked_at_ms IS NULL
              LEFT JOIN yard_access_policies p ON p.yard_id = y.id
              WHERE y.status = 'active'
                AND (
@@ -163,18 +177,25 @@ pub(super) fn evaluate(
                )
              LIMIT 1"
             ),
-            params![host_label, user_id, now_ms],
-            admission,
+            params![host_label, subject_id, now_ms],
+            yard_session_rows::admission,
         )
         .map_err(map_error)
 }
 
-fn admission(row: &Row<'_>) -> rusqlite::Result<YardAdmission> {
-    Ok(YardAdmission {
-        yard_id: row.get(0)?,
-        environment_id: row.get(1)?,
-        workspace_id: row.get(2)?,
-    })
+fn subject_kind(connection: &Connection, subject_id: &str) -> Result<String, RepositoryError> {
+    connection
+        .query_row(
+            "SELECT kind FROM yard_subjects WHERE id = ?1 AND revoked_at_ms IS NULL",
+            [subject_id],
+            |row| row.get(0),
+        )
+        .map_err(map_error)
+}
+
+#[cfg(test)]
+fn admission(row: &rusqlite::Row<'_>) -> rusqlite::Result<YardAdmission> {
+    yard_session_rows::admission(row)
 }
 
 pub(super) fn session_id(
@@ -182,47 +203,54 @@ pub(super) fn session_id(
     token_hash: &str,
     host_label: &str,
     yard_id: &str,
-    visibility: &str,
+    _visibility: &str,
     now_ms: i64,
 ) -> Result<Option<String>, RepositoryError> {
-    connection
+    let session = connection
         .query_row(
-            concat!(
-                "SELECT s.id
+            "SELECT s.id, s.subject_id, s.environment_id
              FROM yard_sessions s
-             JOIN local_users u
-               ON u.id = s.user_id
-              AND u.status = 'active'
-              AND u.deactivated_at_ms IS NULL
-             JOIN web_yards y ON y.id = s.yard_id AND y.status = 'active'
-             JOIN yard_environments e
-               ON e.id = s.environment_id
-              AND e.yard_id = s.yard_id
-              AND e.kind = 'production'
-              AND e.status = 'active'
              WHERE s.token_hash = ?1
                AND s.host_label = ?2
                AND s.yard_id = ?3
                AND s.revoked_at_ms IS NULL
-               AND s.expires_at_ms > ?5
-               AND (
-                 ?4 = 'any-authenticated'
-                 OR (?4 = 'workspace' AND u.workspace_id = y.workspace_id)
-                 OR (
-                   ?4 IN ('selected', 'authenticated-link')
-                   AND ",
-                selected_grant_admission_sql!("?5"),
-                "
-                 )
-               )"
-            ),
-            params![token_hash, host_label, yard_id, visibility, now_ms],
-            |row| row.get(0),
+               AND s.expires_at_ms > ?4",
+            params![token_hash, host_label, yard_id, now_ms],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
         )
         .optional()
-        .map_err(map_error)
+        .map_err(map_error)?;
+    let Some((session_id, subject_id, environment_id)) = session else {
+        return Ok(None);
+    };
+    let admission = evaluate(connection, host_label, &subject_id, now_ms)?;
+    Ok(admitted_session_id(
+        session_id,
+        &environment_id,
+        &admission,
+        yard_id,
+    ))
 }
 
+fn admitted_session_id(
+    session_id: String,
+    session_environment_id: &str,
+    admission: &YardAdmission,
+    yard_id: &str,
+) -> Option<String> {
+    (admission.yard_id == yard_id && admission.environment_id == session_environment_id)
+        .then_some(session_id)
+}
+
+#[cfg(test)]
+#[path = "yard_session_admission_row_tests.rs"]
+mod row_tests;
 #[cfg(test)]
 #[path = "yard_session_admission_tests.rs"]
 mod tests;

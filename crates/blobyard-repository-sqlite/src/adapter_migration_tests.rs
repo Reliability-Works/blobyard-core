@@ -123,7 +123,7 @@ fn inbox_migration_preserves_version_eleven_data_and_adds_empty_capability_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     assert!(
         repository
             .list_inboxes("project")
@@ -154,7 +154,7 @@ fn preview_migration_preserves_version_twelve_data_and_adds_empty_manifest_table
     drop(connection);
 
     let repository = SqliteRepository::open(&path).expect("migrated repository");
-    assert_eq!(repository.schema_version().expect("schema version"), 22);
+    assert_eq!(repository.schema_version().expect("schema version"), 23);
     assert_eq!(
         repository.list_inboxes("project").expect("inboxes").len(),
         1

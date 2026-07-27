@@ -1,7 +1,7 @@
 use blobyard_contract::{
-    LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, NewYardFile,
-    RepositoryError, TransferRepository, WebYardRepository, WebYardStatus,
-    WorkspaceGroupRepository, YardDeployStatus, YardIdentityRepository, YardSessionRepository,
+    LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, RepositoryError,
+    TransferRepository, WebYardRepository, WebYardStatus, WorkspaceGroupRepository,
+    YardDeployStatus, YardGuestRepository, YardIdentityRepository, YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -14,6 +14,8 @@ mod delivery;
 mod fixture_tests;
 #[path = "repository_yards_fixtures.rs"]
 mod fixtures;
+#[path = "repository_yards_guests.rs"]
+mod guests;
 #[path = "repository_yards_policy.rs"]
 mod policy;
 #[path = "repository_yards_session_direct.rs"]
@@ -28,13 +30,16 @@ mod session_groups;
 mod session_revocation;
 #[path = "repository_yards_sessions.rs"]
 mod sessions;
+#[path = "repository_yards_lifecycle.rs"]
+mod yard_lifecycle;
 
 use crate::FixtureExecutionTracker;
-use fixtures::{action_event, deployed_event, event, new_deploy, new_yard};
+use fixtures::{action_event, event, new_deploy, new_yard};
 pub use fixtures::{
     granted_event, new_grant, revoked_event, visibility_event, yard_application_policy,
     yard_owner_event, yard_policy_event,
 };
+use yard_lifecycle::{finalise, finalise_as, start};
 
 /// Combined repository surface needed by Web Yard conformance.
 pub trait YardConformanceRepository:
@@ -44,6 +49,7 @@ pub trait YardConformanceRepository:
     + LocalUserRepository
     + WorkspaceGroupRepository
     + YardSessionRepository
+    + YardGuestRepository
     + YardIdentityRepository
     + LifecycleRepository
 {
@@ -56,6 +62,7 @@ impl<
         + LocalUserRepository
         + WorkspaceGroupRepository
         + YardSessionRepository
+        + YardGuestRepository
         + YardIdentityRepository
         + LifecycleRepository,
 > YardConformanceRepository for T
@@ -112,6 +119,31 @@ pub fn yard_conformance(
     repository: &dyn YardConformanceRepository,
     fixture: &YardConformanceFixture,
 ) -> Result<(), RepositoryError> {
+    yard_conformance_with_guest_capacity(repository, fixture, true)
+}
+
+/// Runs the Web Yard operation surface used by exhaustive repository fault injection.
+///
+/// The exact 100-invitation capacity case remains part of [`yard_conformance`].
+/// This variant omits only that repeated create sequence so fault sweeps cover
+/// each distinct operation boundary without replaying an equivalent statement
+/// one hundred times.
+///
+/// # Errors
+///
+/// Returns the first contract failure reported by the adapter.
+pub fn yard_fault_conformance(
+    repository: &dyn YardConformanceRepository,
+    fixture: &YardConformanceFixture,
+) -> Result<(), RepositoryError> {
+    yard_conformance_with_guest_capacity(repository, fixture, false)
+}
+
+fn yard_conformance_with_guest_capacity(
+    repository: &dyn YardConformanceRepository,
+    fixture: &YardConformanceFixture,
+    include_guest_capacity: bool,
+) -> Result<(), RepositoryError> {
     if !repository.list_web_yards("project_fixture")?.is_empty() {
         return Err(RepositoryError::Unavailable);
     }
@@ -134,6 +166,7 @@ pub fn yard_conformance(
     access::assert_access_controls(repository, &first, &version_id)?;
     let mut tracker = FixtureExecutionTracker::new("testkit", "yard-sessions");
     sessions::assert_session_controls(repository, &first, &version_id, &mut tracker)?;
+    guests::assert_guest_controls(repository, &first, include_guest_capacity)?;
     assert_replacement_and_rollback(repository, fixture, &first, &version_id)?;
     assert_failure_and_history(repository, fixture, &version_id)?;
     assert_yard_deletion(repository, &first)?;
@@ -256,69 +289,4 @@ fn assert_yard_deletion(
         return Err(RepositoryError::Unavailable);
     }
     Ok(())
-}
-
-fn start(
-    repository: &dyn YardConformanceRepository,
-    name: &Slug,
-    number: u64,
-) -> Result<blobyard_contract::YardStartRecord, RepositoryError> {
-    let yard = new_yard(name, number);
-    repository.start_yard_deploy(
-        &yard,
-        &new_deploy(name, number, &yard.id),
-        &event("yard.created", "web_yard", "yardId", &yard.id, number),
-    )
-}
-
-fn finalise(
-    repository: &dyn YardConformanceRepository,
-    deploy_id: &str,
-    version_id: &str,
-    byte_size: u64,
-    at: u64,
-) -> Result<blobyard_contract::YardDeploymentRecord, RepositoryError> {
-    finalise_as(repository, deploy_id, version_id, byte_size, at, "live")
-}
-
-fn finalise_as(
-    repository: &dyn YardConformanceRepository,
-    deploy_id: &str,
-    version_id: &str,
-    byte_size: u64,
-    at: u64,
-    status: &str,
-) -> Result<blobyard_contract::YardDeploymentRecord, RepositoryError> {
-    repository.finalise_yard_deploy(
-        deploy_id,
-        &[
-            NewYardFile {
-                normalized_path: "404.html".to_owned(),
-                version_id: version_id.to_owned(),
-                byte_size,
-            },
-            NewYardFile {
-                normalized_path: "asset.js".to_owned(),
-                version_id: version_id.to_owned(),
-                byte_size,
-            },
-            NewYardFile {
-                normalized_path: "docs/index.html".to_owned(),
-                version_id: version_id.to_owned(),
-                byte_size,
-            },
-            NewYardFile {
-                normalized_path: "guide.html".to_owned(),
-                version_id: version_id.to_owned(),
-                byte_size,
-            },
-            NewYardFile {
-                normalized_path: "index.html".to_owned(),
-                version_id: version_id.to_owned(),
-                byte_size,
-            },
-        ],
-        at,
-        &deployed_event(deploy_id, 5, byte_size * 5, status, at),
-    )
 }

@@ -290,3 +290,6 @@ fn web_yard_policy_and_access_role_tools_map_to_cli_contracts() {
 }
 
 include!("mcp_yard_identity_edge_tests.rs");
+
+#[path = "mcp_yard_guest_invite_tests.rs"]
+mod guest_invite_tests;

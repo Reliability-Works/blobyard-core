@@ -2,7 +2,7 @@ use crate::error::{ApiError, request_id};
 use axum::{
     Json,
     body::Body,
-    http::{Response, StatusCode, header},
+    http::{HeaderValue, Response, StatusCode, header},
 };
 use serde::Serialize;
 
@@ -43,17 +43,27 @@ pub(crate) const fn page<T>(items: Vec<T>) -> Page<T> {
     }
 }
 
-pub(crate) fn secure_html(html: String, policy: &'static str) -> Result<Response<Body>, ApiError> {
-    ApiError::internal_result(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-            .header(header::CACHE_CONTROL, "no-store")
-            .header(header::REFERRER_POLICY, "no-referrer")
-            .header("content-security-policy", policy)
-            .header("x-content-type-options", "nosniff")
-            .body(Body::from(html)),
-    )
+pub(crate) fn secure_html_with_policy(html: String, policy: HeaderValue) -> Response<Body> {
+    let mut response = Response::new(Body::from(html));
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/html; charset=utf-8"),
+    );
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response.headers_mut().insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    response
+        .headers_mut()
+        .insert("content-security-policy", policy);
+    response.headers_mut().insert(
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
+    );
+    response
 }
 
 pub(crate) fn redirect(

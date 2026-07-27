@@ -80,7 +80,8 @@ impl YardIdentityRepository for FaultingRepository {
                     | Corruption::PreviewExpiresAt
                     | Corruption::YardSessionCreatedAt
                     | Corruption::YardManagementRoleTimestamp
-                    | Corruption::YardAccessGrantTimestamp,
+                    | Corruption::YardAccessGrantTimestamp
+                    | Corruption::YardGuestInviteTimestamp,
                 )
                 | None => {}
             }

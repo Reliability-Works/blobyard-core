@@ -101,6 +101,11 @@
       "requiredCiActions": [],
       "risk": "sensitive"
     },
+    "createYardGuestInvite": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "createWorkspace": {
       "requiredUserScopes": ["project:write"],
       "requiredCiActions": [],
@@ -288,6 +293,11 @@
       "requiredCiActions": ["yard:manage"],
       "risk": "read"
     },
+    "listYardGuestInvites": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "sensitive"
+    },
     "listYardManagementRoles": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
@@ -403,6 +413,11 @@
       "risk": "destructive"
     },
     "revokeYardAccess": {
+      "requiredUserScopes": ["yard:manage"],
+      "requiredCiActions": [],
+      "risk": "destructive"
+    },
+    "revokeYardGuestInvite": {
       "requiredUserScopes": ["yard:manage"],
       "requiredCiActions": [],
       "risk": "destructive"

@@ -1,11 +1,12 @@
 use crate::Command;
 use crate::yard_commands::{
-    AccessCommand, AccessListArgs, DeleteYardArgs, DeployArgs, EnvCommand, EnvListArgs,
-    GrantAccessArgs, RevokeAccessArgs, RevokeYardSessionArgs, RollbackYardArgs, SetVisibilityArgs,
-    YardCommand, YardNameArgs, YardSessionsCommand, YardSessionsListArgs,
+    AccessCommand, AccessListArgs, CreateGuestInviteArgs, DeleteYardArgs, DeployArgs, EnvCommand,
+    EnvListArgs, GrantAccessArgs, GuestInvitesCommand, GuestInvitesListArgs, RevokeAccessArgs,
+    RevokeGuestInviteArgs, RevokeYardSessionArgs, RollbackYardArgs, SetVisibilityArgs, YardCommand,
+    YardNameArgs, YardSessionsCommand, YardSessionsListArgs,
 };
 use blobyard_core::{BlobyardError, ErrorCode};
-use blobyard_mcp::{Scope, ToolCall, WebYardToolCall};
+use blobyard_mcp::{Scope, ToolCall, WebYardToolCall, YardGuestInviteToolCall};
 use std::path::PathBuf;
 
 #[path = "mcp_yard_identity.rs"]
@@ -29,6 +30,7 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
             yard_command(YardCommand::History(YardNameArgs { name: yard })),
         ),
         WebYardToolCall::ListYardEnvironments { scope, yard } => (scope, env_command(yard)),
+        WebYardToolCall::GuestInvite(call) => return Ok(guest_invite_command(call)),
         call @ (WebYardToolCall::GetYardAccess { .. }
         | WebYardToolCall::SetYardVisibility { .. }
         | WebYardToolCall::GrantYardAccess { .. }
@@ -49,6 +51,56 @@ pub(super) fn mcp_yard_command(call: ToolCall) -> Result<(Scope, Command), Bloby
         WebYardToolCall::DeleteWebYard { scope, yard } => (scope, delete_command(yard)),
     };
     Ok(mapped)
+}
+
+fn guest_invite_command(call: YardGuestInviteToolCall) -> (Scope, Command) {
+    match call {
+        YardGuestInviteToolCall::List {
+            scope,
+            yard,
+            cursor,
+        } => (
+            scope,
+            Command::GuestInvites {
+                command: GuestInvitesCommand::List(GuestInvitesListArgs {
+                    name: Some(yard),
+                    cursor,
+                }),
+            },
+        ),
+        YardGuestInviteToolCall::Create {
+            scope,
+            yard,
+            email,
+            roles,
+            environment_id,
+            expires_at,
+        } => (
+            scope,
+            Command::GuestInvites {
+                command: GuestInvitesCommand::Create(CreateGuestInviteArgs {
+                    name: yard,
+                    email,
+                    roles,
+                    environment: environment_id,
+                    expires: expires_at,
+                }),
+            },
+        ),
+        YardGuestInviteToolCall::Revoke {
+            scope,
+            yard,
+            invitation_id,
+        } => (
+            scope,
+            Command::GuestInvites {
+                command: GuestInvitesCommand::Revoke(RevokeGuestInviteArgs {
+                    name: yard,
+                    invitation_id,
+                }),
+            },
+        ),
+    }
 }
 
 fn yard_policy_command(call: WebYardToolCall) -> Result<(Scope, Command), BlobyardError> {

@@ -97,8 +97,17 @@ fn malformed_persisted_session_rows_fail_closed() {
     let (_temporary, repository) = corrupted_repository(
         "INSERT INTO local_users (id, workspace_id, display_name, status, created_at_ms)
              VALUES ('user_fixture', 'workspace_fixture', 'Fixture user', 'active', 1);
-             INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms)
-             VALUES ('session_corrupt', 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc', 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', -1, 100);",
+             INSERT INTO yard_subjects
+               (id, kind, workspace_id, local_user_id, created_at_ms)
+             VALUES ('user_fixture', 'member', 'workspace_fixture', 'user_fixture', 1);
+             INSERT INTO yard_sessions
+               (id, token_hash, yard_id, environment_id, host_label, subject_id,
+                created_at_ms, expires_at_ms)
+             VALUES
+               ('session_corrupt',
+                'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+                'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture',
+                -1, 100);",
     );
 
     assert_eq!(
@@ -110,8 +119,15 @@ fn malformed_persisted_session_rows_fail_closed() {
 #[test]
 fn malformed_persisted_continuation_rows_fail_closed() {
     let (_temporary, repository) = corrupted_repository(
-        "INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms)
-             VALUES ('continuation_corrupt', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', '/', -1, 100);",
+        "INSERT INTO yard_continuations
+           (id, continuation_hash, code_hash, yard_id, environment_id, host_label, subject_id,
+            return_path, created_at_ms, expires_at_ms)
+         VALUES
+           ('continuation_corrupt',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture',
+            '/', -1, 100);",
     );
 
     assert_eq!(
@@ -227,7 +243,12 @@ fn seed_housekeeping(connection: &Connection) {
 fn insert_continuation(connection: &Connection, id: &str, marker: char, expires_at_ms: u64) {
     connection
         .execute(
-            "INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms) VALUES (?1, ?2, ?3, 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', '/', ?4, ?5)",
+            "INSERT INTO yard_continuations
+             (id, continuation_hash, code_hash, yard_id, environment_id, host_label, subject_id,
+              return_path, created_at_ms, expires_at_ms)
+             VALUES
+             (?1, ?2, ?3, 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture',
+              '/', ?4, ?5)",
             params![
                 id,
                 hash(marker),
@@ -248,7 +269,12 @@ fn insert_session(
 ) {
     connection
         .execute(
-            "INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms, revoked_at_ms) VALUES (?1, ?2, 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture', 1, ?3, ?4)",
+            "INSERT INTO yard_sessions
+             (id, token_hash, yard_id, environment_id, host_label, subject_id,
+              created_at_ms, expires_at_ms, revoked_at_ms)
+             VALUES
+             (?1, ?2, 'yard_fixture', 'environment_fixture', 'docs-fixture', 'user_fixture',
+              1, ?3, ?4)",
             params![
                 id,
                 hash(marker),

@@ -23,6 +23,8 @@ mod previews;
 mod sharing;
 #[path = "repository_fault_transfers.rs"]
 mod transfers;
+#[path = "repository_fault_yard_guests.rs"]
+mod yard_guests;
 #[path = "repository_fault_yard_identity.rs"]
 mod yard_identity;
 #[path = "repository_fault_yard_sessions.rs"]
@@ -47,6 +49,7 @@ pub(crate) enum Corruption {
     YardPolicyTimestamp,
     YardPolicyRevision,
     YardAccessGrantTimestamp,
+    YardGuestInviteTimestamp,
 }
 
 pub(crate) struct FaultingRepository {

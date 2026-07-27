@@ -124,6 +124,12 @@ pub enum Endpoint {
     GrantYardAccess,
     /// Revoke one Web Yard access grant.
     RevokeYardAccess,
+    /// List Yard guest invitations.
+    ListYardGuestInvites,
+    /// Create one Yard guest invitation.
+    CreateYardGuestInvite,
+    /// Revoke one Yard guest invitation.
+    RevokeYardGuestInvite,
     /// List Yard management-role assignments.
     ListYardManagementRoles,
     /// Create or change one Yard management-role assignment.
@@ -238,7 +244,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// All endpoints, for contract validation.
-    pub const ALL: [Self; 100] = [
+    pub const ALL: [Self; 103] = [
         Self::Health,
         Self::ExchangeBootstrapToken,
         Self::DeviceStart,
@@ -284,6 +290,9 @@ impl Endpoint {
         Self::SetYardVisibility,
         Self::GrantYardAccess,
         Self::RevokeYardAccess,
+        Self::ListYardGuestInvites,
+        Self::CreateYardGuestInvite,
+        Self::RevokeYardGuestInvite,
         Self::ListYardManagementRoles,
         Self::SetYardManagementRole,
         Self::RevokeYardManagementRole,
@@ -342,7 +351,7 @@ impl Endpoint {
     ];
 
     /// Customer-facing endpoints in the canonical `OpenAPI` document.
-    pub const PUBLIC: [Self; 98] = public_endpoints();
+    pub const PUBLIC: [Self; 101] = public_endpoints();
 
     /// Returns whether the endpoint durably replays an `Idempotency-Key` request.
     #[must_use]
@@ -359,8 +368,8 @@ impl Endpoint {
     }
 }
 
-const fn public_endpoints() -> [Endpoint; 98] {
-    let mut public = [Endpoint::Health; 98];
+const fn public_endpoints() -> [Endpoint; 101] {
+    let mut public = [Endpoint::Health; 101];
     let mut source_index = 0;
     let mut public_index = 0;
     while source_index < Endpoint::ALL.len() {

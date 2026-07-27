@@ -102,6 +102,8 @@ fn seed_admission(path: &std::path::Path) {
              VALUES ('project_fixture', 'workspace_fixture', 'Fixture', 'fixture');
              INSERT INTO local_users (id, workspace_id, display_name, status, created_at_ms)
              VALUES ('user_fixture', 'workspace_fixture', 'Fixture user', 'active', 1);
+             INSERT INTO yard_subjects (id, kind, workspace_id, local_user_id, created_at_ms)
+             VALUES ('user_fixture', 'member', 'workspace_fixture', 'user_fixture', 1);
              INSERT INTO web_yards (id, workspace_id, project_id, name, host_label, status, created_at_ms, updated_at_ms)
              VALUES ('yard_fixture', 'workspace_fixture', 'project_fixture', 'docs', 'docs-fixture', 'active', 1, 1);
              INSERT INTO yard_environments (id, yard_id, name, kind, status, created_at_ms, updated_at_ms)

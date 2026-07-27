@@ -169,7 +169,7 @@ pub struct GrantYardAccessRequest {
     /// Stable Yard identifier.
     pub yard_id: String,
     /// Kind of admitted principal.
-    pub principal_kind: super::YardAccessPrincipalKind,
+    pub principal_kind: super::GrantYardAccessPrincipalKind,
     /// Stable identifier of the admitted principal.
     pub principal_id: String,
     /// Application roles the manifest declares.

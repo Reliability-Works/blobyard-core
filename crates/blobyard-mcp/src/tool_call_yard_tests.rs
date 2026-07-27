@@ -7,6 +7,8 @@ use super::parse;
 use crate::{Scope, ToolCall, WebYardToolCall};
 use serde_json::json;
 
+#[path = "tool_call_yard_guest_invite_tests.rs"]
+mod guest_invite_tests;
 #[path = "tool_call_yard_identity_tests.rs"]
 mod identity_tests;
 
@@ -102,6 +104,21 @@ fn parses_yard_access_grant_and_revoke_calls() {
             yard: "documentation".into(),
             grant_id: "yardgrant_1".into()
         })
+    );
+}
+
+#[test]
+fn generic_yard_access_rejects_guest_invitation_principals() {
+    assert!(
+        ToolCall::parse(
+            "blobyard_grant_yard_access",
+            &json!({
+                "yard": "documentation",
+                "principal_kind": "guest-invite",
+                "principal_id": "ygi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }),
+        )
+        .is_err()
     );
 }
 

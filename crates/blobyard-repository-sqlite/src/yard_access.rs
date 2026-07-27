@@ -127,6 +127,9 @@ pub(super) fn revoke_grant(
     if grant.yard_id != yard.id {
         return Err(RepositoryError::NotFound);
     }
+    if grant.principal_kind == YardAccessPrincipalKind::GuestInvite {
+        return Err(RepositoryError::InvalidInput);
+    }
     if grant.status == RevocableStatus::Revoked {
         return Ok(false);
     }
@@ -181,6 +184,9 @@ fn validated_grant_yard(
     transaction: &Transaction<'_>,
     grant: &NewYardAccessGrant,
 ) -> Result<WebYardRecord, RepositoryError> {
+    if grant.principal_kind == YardAccessPrincipalKind::GuestInvite {
+        return Err(RepositoryError::InvalidInput);
+    }
     for value in [
         &grant.id,
         &grant.yard_id,

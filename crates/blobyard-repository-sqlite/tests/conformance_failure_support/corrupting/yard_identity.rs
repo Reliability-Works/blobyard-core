@@ -1,4 +1,4 @@
-use super::Corrupting;
+use super::{Corrupting, Corruption};
 
 impl<T: blobyard_contract::YardIdentityRepository> blobyard_contract::YardIdentityRepository
     for Corrupting<'_, T>
@@ -85,5 +85,13 @@ impl<T: blobyard_contract::YardIdentityRepository> blobyard_contract::YardIdenti
     ) -> Result<blobyard_contract::YardIdentity, blobyard_contract::RepositoryError> {
         self.inner
             .resolve_yard_identity(host_label, session_token_hash, now_ms)
+            .map(|mut identity| {
+                if matches!(self.corruption, Corruption::YardGuestIdentityRecord)
+                    && identity.user_id.starts_with("guest_")
+                {
+                    identity.app_roles.clear();
+                }
+                identity
+            })
     }
 }

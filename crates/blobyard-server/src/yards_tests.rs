@@ -27,6 +27,16 @@ mod contract_tests;
 mod deploy_edge_tests;
 #[path = "yards_tests/failures.rs"]
 mod failure_tests;
+#[path = "yards_tests/guest_invite_edges.rs"]
+mod guest_invite_edge_tests;
+#[path = "yards_tests/guest_invite_failures.rs"]
+mod guest_invite_failure_tests;
+#[path = "yards_tests/guest_invite_journey_inputs.rs"]
+mod guest_invite_journey_inputs;
+#[path = "yards_tests/guest_invite_journey.rs"]
+mod guest_invite_journey_tests;
+#[path = "yards_tests/guest_invite_management_journey.rs"]
+mod guest_invite_management_journey;
 #[path = "yards_tests/identity_handler_edges.rs"]
 mod identity_handler_edge_tests;
 #[path = "yards_tests/identity_handler_support.rs"]
@@ -84,10 +94,18 @@ pub(super) async fn start(
     fixture: &test_seams::TransferFixture,
     client_deploy_id: &str,
 ) -> serde_json::Value {
+    start_named(fixture, client_deploy_id, "documentation").await
+}
+
+pub(super) async fn start_named(
+    fixture: &test_seams::TransferFixture,
+    client_deploy_id: &str,
+    yard_name: &str,
+) -> serde_json::Value {
     let body = serde_json::to_vec(&serde_json::json!({
         "workspace": "fixture",
         "project": "project",
-        "name": "documentation",
+        "name": yard_name,
         "clientDeployId": client_deploy_id,
         "spa": true,
         "cleanUrls": true,

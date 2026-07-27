@@ -29,6 +29,7 @@ impl LocalUserRepository for SqliteRepository {
             require_workspace(transaction, &user.workspace_id)?;
             let created_at_ms = sql_time(key.created_at_ms)?;
             insert_user(transaction, user, created_at_ms)?;
+            super::yard_guest_invites::insert_member_subject(transaction, user, created_at_ms)?;
             insert_key(transaction, key, created_at_ms)?;
             lifecycle_audit::insert(transaction, event)
         })
@@ -90,6 +91,7 @@ impl LocalUserRepository for SqliteRepository {
             )
             .map_err(map_error)?;
             revoke_active_keys(transaction, &user.id, now)?;
+            super::yard_guest_invites::revoke_member_subject(transaction, &user.id, now)?;
             super::yard_session_store::revoke_for_user(transaction, &user.id, now)?;
             super::workspace_group_members::remove_user_memberships(
                 transaction,

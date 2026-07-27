@@ -91,6 +91,7 @@ pub(crate) fn router_with_state(state: AppState) -> Router {
         .merge(crate::inboxes::routes())
         .merge(crate::previews::routes())
         .merge(crate::yards::routes())
+        .merge(crate::yard_invite::routes())
         .merge(crate::yard_login::routes())
         .merge(crate::yard_session_runtime::routes())
         .fallback(crate::yards::public_fallback)

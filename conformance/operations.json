@@ -274,6 +274,19 @@
       "risk": "write"
     },
     {
+      "id": "createYardGuestInvite",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/guest-invites",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
+    },
+    {
       "id": "deactivateGroup",
       "idempotency": {
         "required": false,
@@ -768,6 +781,19 @@
       "risk": "read"
     },
     {
+      "id": "listYardGuestInvites",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "GET",
+      "ownership": "core",
+      "path": "/yards/guest-invites",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "sensitive"
+    },
+    {
       "id": "listYardManagementRoles",
       "idempotency": {
         "required": false,
@@ -1114,6 +1140,19 @@
       "method": "POST",
       "ownership": "core",
       "path": "/yards/access/revoke",
+      "requiredCiActions": [],
+      "requiredUserScopes": ["yard:manage"],
+      "risk": "destructive"
+    },
+    {
+      "id": "revokeYardGuestInvite",
+      "idempotency": {
+        "required": false,
+        "supported": false
+      },
+      "method": "POST",
+      "ownership": "core",
+      "path": "/yards/guest-invites/revoke",
       "requiredCiActions": [],
       "requiredUserScopes": ["yard:manage"],
       "risk": "destructive"

@@ -5,8 +5,9 @@ use super::{
 use crate::{error::ApiError, test_support::error_status};
 use axum::http::StatusCode;
 use blobyard_api_client::{
-    GetYardAccessQuery, RevokeYardAccessRequest, SetYardVisibilityRequest,
-    YardAccessPrincipalKind as ApiPrincipalKind, YardVisibility as ApiVisibility,
+    GetYardAccessQuery, GrantYardAccessPrincipalKind as ApiGrantPrincipalKind,
+    RevokeYardAccessRequest, SetYardVisibilityRequest, YardAccessPrincipalKind as ApiPrincipalKind,
+    YardVisibility as ApiVisibility,
 };
 use blobyard_contract::{YardAccessPrincipalKind, YardVisibility};
 
@@ -117,7 +118,6 @@ fn access_presentation_maps_every_visibility_and_principal_kind() {
         ),
         (YardAccessPrincipalKind::Link, ApiPrincipalKind::Link),
     ] {
-        assert_eq!(presentation::domain_principal_kind(api), domain);
         let mut record = super::access_edge_tests::grant_record();
         record.principal_kind = domain;
         assert_eq!(
@@ -126,5 +126,12 @@ fn access_presentation_maps_every_visibility_and_principal_kind() {
                 .principal_kind,
             api
         );
+    }
+    for (api, domain) in [
+        (ApiGrantPrincipalKind::User, YardAccessPrincipalKind::User),
+        (ApiGrantPrincipalKind::Group, YardAccessPrincipalKind::Group),
+        (ApiGrantPrincipalKind::Link, YardAccessPrincipalKind::Link),
+    ] {
+        assert_eq!(presentation::domain_principal_kind(api), domain);
     }
 }

@@ -7,7 +7,8 @@ use blobyard_contract::{
     NewInboxUpload, NewObjectDeletion, NewObjectVersion, NewPreview, NewPreviewFile, NewShare,
     NewUploadReservation, ObjectDeletionTarget, PreviewRepository, ProjectRecord, RepositoryError,
     RetentionPolicyRecord, SharingRepository, TransferRepository, WebYardRepository,
-    WorkspaceRecord, YardIdentityRepository, YardManagementRole, YardSessionRepository,
+    WorkspaceRecord, YardGuestRepository, YardIdentityRepository, YardManagementRole,
+    YardSessionRepository,
 };
 use blobyard_core::Slug;
 use rusqlite::{
@@ -97,7 +98,7 @@ fn run_contract(repository: &SqliteRepository) -> Result<(), RepositoryError> {
     blobyard_testkit::sharing_conformance(repository)?;
     blobyard_testkit::inbox_conformance(repository)?;
     blobyard_testkit::preview_conformance(repository)?;
-    blobyard_testkit::yard_conformance(repository, &yard_fixture())?;
+    blobyard_testkit::yard_fault_conformance(repository, &yard_fixture())?;
     blobyard_testkit::lifecycle_conformance(repository)
 }
 
@@ -251,17 +252,6 @@ fn deletion() -> NewObjectDeletion {
     }
 }
 
-fn policy() -> RetentionPolicyRecord {
-    RetentionPolicyRecord {
-        project_id: "project_fixture".to_owned(),
-        keep_latest: 1,
-        path_glob: None,
-        branch_glob: None,
-        created_at_ms: 1,
-        updated_at_ms: 1,
-    }
-}
-
 pub(super) fn empty_repository() -> (tempfile::TempDir, SqliteRepository) {
     let temporary = tempfile::tempdir().expect("temporary directory");
     let database = temporary.path().join("metadata.sqlite3");
@@ -294,6 +284,10 @@ fn invalid<T>(result: Result<T, RepositoryError>) {
 #[path = "adapter_failure_map_tests.rs"]
 mod failure_mapping;
 
+#[path = "adapter_test_fixtures.rs"]
+mod fixtures;
+use fixtures::policy;
+
 #[path = "adapter_invalid_tests.rs"]
 mod invalid_inputs;
 
@@ -323,6 +317,9 @@ mod group_edges;
 
 #[path = "adapter_group_fault_tests.rs"]
 mod group_faults;
+
+#[path = "adapter_yard_guest_fault_tests.rs"]
+mod yard_guest_faults;
 
 #[path = "adapter_group_limit_tests.rs"]
 mod group_limits;

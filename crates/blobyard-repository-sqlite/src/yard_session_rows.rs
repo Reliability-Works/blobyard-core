@@ -1,11 +1,12 @@
 use super::{rows, yard_rows};
 use blobyard_contract::{
-    NewYardContinuation, YardContinuationRecord, YardSessionListing, YardSessionRecord,
+    NewYardContinuation, YardAdmission, YardContinuationRecord, YardSessionListing,
+    YardSessionRecord,
 };
 use rusqlite::Row;
 
-pub(super) const CONTINUATION_COLUMNS: &str = "id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms, consumed_at_ms";
-pub(super) const SESSION_COLUMNS: &str = "id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms";
+pub(super) const CONTINUATION_COLUMNS: &str = "id, continuation_hash, code_hash, yard_id, environment_id, host_label, subject_id, return_path, created_at_ms, expires_at_ms, consumed_at_ms";
+pub(super) const SESSION_COLUMNS: &str = "id, token_hash, yard_id, environment_id, host_label, subject_id, created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms";
 
 pub(super) fn continuation(row: &Row<'_>) -> rusqlite::Result<YardContinuationRecord> {
     Ok(YardContinuationRecord {
@@ -44,6 +45,14 @@ pub(super) fn listing(row: &Row<'_>) -> rusqlite::Result<YardSessionListing> {
     Ok(YardSessionListing {
         session: session(row)?,
         user_display_name: row.get(10)?,
+    })
+}
+
+pub(super) fn admission(row: &Row<'_>) -> rusqlite::Result<YardAdmission> {
+    Ok(YardAdmission {
+        yard_id: row.get(0)?,
+        environment_id: row.get(1)?,
+        workspace_id: row.get(2)?,
     })
 }
 

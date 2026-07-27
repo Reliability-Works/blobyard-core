@@ -29,6 +29,10 @@ pub enum GeneratedSecretKind {
     UploadCapability,
     /// Local-user sign-in key returned once at creation or reset.
     UserLoginKey,
+    /// One-time Yard guest invitation token.
+    YardGuestInvitation,
+    /// Yard-only guest sign-in key returned once at invitation acceptance.
+    YardGuestLoginKey,
     /// Single-use Yard-origin session exchange code.
     YardExchangeCode,
     /// Yard-origin browser session token.
@@ -48,6 +52,8 @@ impl GeneratedSecretKind {
             Self::InboxCapability => "byin",
             Self::UploadCapability => "byu",
             Self::UserLoginKey => "byuk",
+            Self::YardGuestInvitation => "bygi",
+            Self::YardGuestLoginKey => "byg",
             Self::YardExchangeCode => "byx",
             Self::YardSession => "byys",
         }

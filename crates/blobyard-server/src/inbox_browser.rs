@@ -3,7 +3,7 @@ use crate::{api::AppState, error::ApiError};
 use axum::{
     body::Body,
     extract::{Path, State},
-    http::{Response, StatusCode, header},
+    http::{HeaderValue, Response, StatusCode, header},
 };
 use blobyard_api_client::ResolveInboxQuery;
 use blobyard_core::SecretString;
@@ -22,7 +22,7 @@ pub(super) async fn open(
         crate::transfer_grants::now_ms(),
         &fingerprint,
     )?;
-    page_response(page(&metadata))
+    Ok(page_response(page(&metadata)))
 }
 
 pub(super) async fn script() -> Result<Response<Body>, ApiError> {
@@ -39,10 +39,12 @@ pub(super) async fn script() -> Result<Response<Body>, ApiError> {
     )
 }
 
-fn page_response(html: String) -> Result<Response<Body>, ApiError> {
-    crate::response::secure_html(
+fn page_response(html: String) -> Response<Body> {
+    crate::response::secure_html_with_policy(
         html,
-        "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+        HeaderValue::from_static(
+            "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+        ),
     )
 }
 

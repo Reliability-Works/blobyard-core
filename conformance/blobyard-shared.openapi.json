@@ -1050,6 +1050,53 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "CreateYardGuestInviteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "appRoles": {
+            "items": { "$ref": "#/components/schemas/ApplicationRoleName" },
+            "maxItems": 16,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "email": {
+            "format": "email",
+            "maxLength": 254,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "environmentId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }],
+            "description": "Core accepts null for Yard-wide authority or the active production environment identifier. Other Core environment kinds fail closed."
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/IsoTimestamp",
+            "description": "Optional absolute expiry; omission defaults to seven days."
+          },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["appRoles", "email", "environmentId", "yardId"],
+        "type": "object"
+      },
+      "CreateYardGuestInviteResult": {
+        "additionalProperties": false,
+        "properties": {
+          "invitation": { "$ref": "#/components/schemas/YardGuestInvite" },
+          "invitationUrl": { "$ref": "#/components/schemas/Url" }
+        },
+        "required": ["invitation", "invitationUrl"],
+        "type": "object"
+      },
+      "CreateYardGuestInviteSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CreateYardGuestInviteResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "Cursor": {
         "description": "Opaque continuation cursor.",
         "maxLength": 1024,
@@ -1507,6 +1554,11 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "GrantYardAccessPrincipalKind": {
+        "description": "Principal kind accepted by the generic grant lifecycle. Guest invitations use their dedicated atomic operations.",
+        "enum": ["user", "group", "link"],
+        "type": "string"
+      },
       "GrantYardAccessRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1518,7 +1570,7 @@
           "environmentId": { "$ref": "#/components/schemas/Identifier" },
           "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
           "principalId": { "maxLength": 256, "minLength": 1, "type": "string" },
-          "principalKind": { "$ref": "#/components/schemas/YardAccessPrincipalKind" },
+          "principalKind": { "$ref": "#/components/schemas/GrantYardAccessPrincipalKind" },
           "yardId": { "$ref": "#/components/schemas/Identifier" }
         },
         "required": ["appRoles", "principalId", "principalKind", "yardId"],
@@ -2025,6 +2077,39 @@
         "additionalProperties": false,
         "properties": {
           "data": { "$ref": "#/components/schemas/ListYardEnvironmentsResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
+      "ListYardGuestInvitesQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": { "$ref": "#/components/schemas/Cursor" },
+          "limit": { "default": 50, "maximum": 50, "minimum": 1, "type": "integer" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["yardId"],
+        "type": "object"
+      },
+      "ListYardGuestInvitesResult": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/YardGuestInvite" },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "nextCursor": { "anyOf": [{ "$ref": "#/components/schemas/Cursor" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "type": "object"
+      },
+      "ListYardGuestInvitesSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ListYardGuestInvitesResult" },
           "ok": { "const": true, "type": "boolean" },
           "requestId": { "description": "Request correlation identifier.", "type": "string" }
         },
@@ -2911,6 +2996,31 @@
         "required": ["data", "ok", "requestId"],
         "type": "object"
       },
+      "RevokeYardGuestInviteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "invitationId": { "pattern": "^ygi_[0-9a-f]{32}$", "type": "string" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": ["invitationId", "yardId"],
+        "type": "object"
+      },
+      "RevokeYardGuestInviteResult": {
+        "additionalProperties": false,
+        "properties": { "invitation": { "$ref": "#/components/schemas/YardGuestInvite" } },
+        "required": ["invitation"],
+        "type": "object"
+      },
+      "RevokeYardGuestInviteSuccessEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "data": { "$ref": "#/components/schemas/RevokeYardGuestInviteResult" },
+          "ok": { "const": true, "type": "boolean" },
+          "requestId": { "description": "Request correlation identifier.", "type": "string" }
+        },
+        "required": ["data", "ok", "requestId"],
+        "type": "object"
+      },
       "RevokeYardManagementRoleRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3630,6 +3740,56 @@
         "required": ["createdAt", "id", "kind", "name", "updatedAt"],
         "type": "object"
       },
+      "YardGuestInvite": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "appRoles": {
+            "items": { "$ref": "#/components/schemas/ApplicationRoleName" },
+            "maxItems": 16,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "createdAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "email": {
+            "format": "email",
+            "maxLength": 254,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "type": "string"
+          },
+          "environmentId": {
+            "anyOf": [{ "$ref": "#/components/schemas/Identifier" }, { "type": "null" }],
+            "description": "Core accepts null for Yard-wide authority or the active production environment identifier. Other Core environment kinds fail closed."
+          },
+          "expiresAt": { "$ref": "#/components/schemas/IsoTimestamp" },
+          "id": { "pattern": "^ygi_[0-9a-f]{32}$", "type": "string" },
+          "revokedAt": {
+            "anyOf": [{ "$ref": "#/components/schemas/IsoTimestamp" }, { "type": "null" }]
+          },
+          "status": { "$ref": "#/components/schemas/YardGuestInviteStatus" },
+          "yardId": { "$ref": "#/components/schemas/Identifier" }
+        },
+        "required": [
+          "acceptedAt",
+          "appRoles",
+          "createdAt",
+          "email",
+          "environmentId",
+          "expiresAt",
+          "id",
+          "revokedAt",
+          "status",
+          "yardId"
+        ],
+        "type": "object"
+      },
+      "YardGuestInviteStatus": {
+        "description": "Persisted lifecycle state of one Yard guest invitation.",
+        "enum": ["pending", "accepted", "revoked"],
+        "type": "string"
+      },
       "YardManagementRole": {
         "description": "Yard-scoped human management role.",
         "enum": ["owner", "admin", "developer", "auditor"],
@@ -3743,6 +3903,8 @@
     "/previews/revoke",
     "/yards",
     "/yards/environments",
+    "/yards/guest-invites",
+    "/yards/guest-invites/revoke",
     "/yards/management-roles",
     "/yards/management-roles/set",
     "/yards/management-roles/revoke",
