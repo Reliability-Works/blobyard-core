@@ -81,3 +81,18 @@ fn role_map(arguments: &Map<String, Value>, key: &str) -> Result<Value, String> 
         .cloned()
         .ok_or_else(|| format!("{key} must be an object"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::parse;
+    use crate::Scope;
+    use serde_json::Map;
+
+    #[test]
+    fn rejects_unknown_internal_identity_tool() {
+        assert_eq!(
+            parse("unknown_identity_tool", &Map::new(), Scope::default()),
+            Err("unknown tool: unknown_identity_tool".to_owned())
+        );
+    }
+}

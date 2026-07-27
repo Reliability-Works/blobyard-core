@@ -3,7 +3,7 @@
 use super::{
     exchange_at, exchange_failure, exchanged_redirect, expected_origin, fresh_login_redirect_at,
     identity_error, identity_response, login_redirect_at, logout_result, parsed_origin,
-    require_same_origin, revoke_cookie, session_cookie_result, single_code,
+    require_same_origin, resolve_identity_at, revoke_cookie, session_cookie_result, single_code,
 };
 use crate::test_support::error_status;
 use axum::http::{HeaderMap, StatusCode};
@@ -81,6 +81,15 @@ fn runtime_clock_and_overflow_failures_are_internal() {
     }
     assert_eq!(
         error_status(revoke_cookie(&state, "docs-fixture", &code, failure(),)),
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    assert_eq!(
+        error_status(resolve_identity_at(
+            &state,
+            "docs-fixture",
+            &code,
+            failure(),
+        )),
         StatusCode::INTERNAL_SERVER_ERROR
     );
 }
@@ -163,7 +172,7 @@ async fn identity_response_is_exact_redacted_and_non_cacheable() {
         (YardManagementRole::Developer, "developer"),
         (YardManagementRole::Auditor, "auditor"),
     ] {
-        let response = identity_response(YardIdentity {
+        let response = identity_response(&YardIdentity {
             user_id: "user_fixture".to_owned(),
             workspace_id: "workspace_fixture".to_owned(),
             project_id: "project_fixture".to_owned(),

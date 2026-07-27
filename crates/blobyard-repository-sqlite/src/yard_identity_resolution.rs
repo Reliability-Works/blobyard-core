@@ -3,7 +3,7 @@ use super::{
     yard_session_admission, yard_session_rows,
 };
 use blobyard_contract::{RepositoryError, YardIdentity};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::collections::BTreeSet;
 
 struct IdentityBase {
@@ -103,23 +103,25 @@ fn base_by_host(
                  )
                )",
             params![token_hash, host_label, now_ms],
-            |row| {
-                Ok(IdentityBase {
-                    session_id: row.get(0)?,
-                    user_id: row.get(1)?,
-                    workspace_id: row.get(2)?,
-                    project_id: row.get(3)?,
-                    yard_id: row.get(4)?,
-                    environment_id: row.get(5)?,
-                    display_name: row.get(6)?,
-                    email: row.get(7)?,
-                    visibility: row.get(8)?,
-                })
-            },
+            identity_base,
         )
         .optional()
         .map_err(map_error)?
         .ok_or(RepositoryError::NotFound)
+}
+
+fn identity_base(row: &Row<'_>) -> rusqlite::Result<IdentityBase> {
+    Ok(IdentityBase {
+        session_id: row.get(0)?,
+        user_id: row.get(1)?,
+        workspace_id: row.get(2)?,
+        project_id: row.get(3)?,
+        yard_id: row.get(4)?,
+        environment_id: row.get(5)?,
+        display_name: row.get(6)?,
+        email: row.get(7)?,
+        visibility: row.get(8)?,
+    })
 }
 
 fn effective_application_authority(
@@ -161,4 +163,89 @@ fn touch(connection: &Connection, session_id: &str, now_ms: i64) -> Result<(), R
         )
         .map_err(map_error)?;
     super::changed_once(changed)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+
+    use super::{effective_application_authority, identity_base};
+    use blobyard_contract::YardApplicationPolicyRecord;
+    use blobyard_core::{ApplicationPolicyGraph, EffectiveApplicationPolicy};
+    use rusqlite::{Connection, params_from_iter, types::Value};
+    use std::collections::BTreeMap;
+
+    fn policy_with_effective_roles(
+        effective_roles: BTreeMap<String, Vec<String>>,
+    ) -> YardApplicationPolicyRecord {
+        YardApplicationPolicyRecord {
+            yard_id: "yard_fixture".to_owned(),
+            workspace_id: "workspace_fixture".to_owned(),
+            revision: 1,
+            source_manifest_digest: "a".repeat(64),
+            policy: ApplicationPolicyGraph {
+                default_role: None,
+                roles: BTreeMap::new(),
+            },
+            effective: EffectiveApplicationPolicy {
+                effective_roles,
+                effective_permissions: BTreeMap::new(),
+            },
+            approved_at_ms: 1,
+            approved_by_principal: "fixture".to_owned(),
+        }
+    }
+
+    #[test]
+    fn incomplete_effective_policy_does_not_grant_permissions() {
+        let policy = policy_with_effective_roles(BTreeMap::from([(
+            "viewer".to_owned(),
+            vec!["viewer".to_owned()],
+        )]));
+        assert_eq!(
+            effective_application_authority(Some(policy), vec!["viewer".to_owned()]),
+            (vec!["viewer".to_owned()], Vec::new())
+        );
+        assert_eq!(
+            effective_application_authority(
+                Some(policy_with_effective_roles(BTreeMap::new())),
+                vec!["missing".to_owned()],
+            ),
+            (Vec::new(), Vec::new())
+        );
+    }
+
+    #[test]
+    fn identity_base_rejects_non_text_columns() {
+        let valid = || {
+            vec![
+                Value::Text("session".to_owned()),
+                Value::Text("user".to_owned()),
+                Value::Text("workspace".to_owned()),
+                Value::Text("project".to_owned()),
+                Value::Text("yard".to_owned()),
+                Value::Text("environment".to_owned()),
+                Value::Text("Display".to_owned()),
+                Value::Text("email@example.test".to_owned()),
+                Value::Text("selected".to_owned()),
+            ]
+        };
+        let decode = |values| {
+            Connection::open_in_memory().expect("connection").query_row(
+                "SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9",
+                params_from_iter(values),
+                identity_base,
+            )
+        };
+        assert!(decode(valid()).is_ok());
+        for index in 0..9 {
+            let mut values = valid();
+            values[index] = Value::Integer(1);
+            assert!(decode(values).is_err(), "column {index}");
+        }
+        let mut nullable = valid();
+        nullable[6] = Value::Null;
+        nullable[7] = Value::Null;
+        assert!(decode(nullable).is_ok());
+    }
 }

@@ -43,6 +43,10 @@ pub(crate) enum Corruption {
     PreviewCreatedAt,
     PreviewExpiresAt,
     YardSessionCreatedAt,
+    YardManagementRoleTimestamp,
+    YardPolicyTimestamp,
+    YardPolicyRevision,
+    YardAccessGrantTimestamp,
 }
 
 pub(crate) struct FaultingRepository {
@@ -263,3 +267,6 @@ mod preview_tests;
 
 #[path = "repository_fault_tests/yard_tests.rs"]
 mod yard_tests;
+
+#[path = "repository_fault_tests/yard_identity_tests.rs"]
+mod yard_identity_tests;

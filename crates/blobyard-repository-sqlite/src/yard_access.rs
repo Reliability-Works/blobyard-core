@@ -68,7 +68,7 @@ pub(super) fn insert_grant(
     let yard = validated_grant_yard(transaction, grant)?;
     let roles =
         super::yard_application_policy::validated_roles(transaction, &yard.id, &grant.app_roles)?;
-    let app_roles = encode_roles(&roles)?;
+    let app_roles = serde_json::Value::from(roles).to_string();
     let created_at = yard_validation::action_event(
         event,
         "yard.access_granted",

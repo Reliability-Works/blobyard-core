@@ -160,6 +160,22 @@ async fn approve_viewer(session: &super::session_support::SessionFixture) {
         }),
     )
     .await;
+    let current = response_json(
+        send(
+            &session.fixture,
+            "GET",
+            &format!("/v1/yards/application-policy?yardId={}", session.yard_id),
+            &[],
+            false,
+        )
+        .await,
+    )
+    .await;
+    assert_eq!(current["data"]["policy"]["revision"], 1);
+    assert_eq!(
+        current["data"]["policy"]["roles"]["viewer"]["permissions"],
+        serde_json::json!(["content.read"])
+    );
     mutate(
         &session.fixture,
         "/v1/yards/access/roles",

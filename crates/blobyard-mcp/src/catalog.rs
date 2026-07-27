@@ -1,6 +1,14 @@
 use serde_json::{Map, Value};
 
 use crate::catalog_access as access;
+use crate::catalog_access::{
+    get_yard_application_policy_contract as get_application_policy,
+    list_yard_management_roles_contract as list_management_roles,
+    revoke_yard_management_role_contract as revoke_management_role,
+    set_yard_access_roles_contract as set_access_roles,
+    set_yard_application_policy_contract as set_application_policy,
+    set_yard_management_role_contract as set_management_role,
+};
 use crate::catalog_contracts as contracts;
 use crate::catalog_contracts::{
     add, boolean, delete_contract, download_contract, inbox_contract, preview_contract,
@@ -12,10 +20,11 @@ use crate::catalog_contracts::{
 mod annotations;
 #[path = "group_catalog.rs"]
 mod group_catalog;
-#[path = "catalog_identity.rs"]
-mod identity_catalog;
-#[path = "catalog_read.rs"]
-mod read_catalog;
+
+const WORKSPACE_NAME: &str = "Human-readable workspace name.";
+const PROJECT_NAME: &str = "Human-readable project name.";
+const CREATE_WORKSPACE: &str = "Create a workspace.";
+const CREATE_PROJECT: &str = "Create a project in the selected workspace.";
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(super) enum ToolKind {
@@ -126,24 +135,21 @@ fn tool(kind: ToolKind) -> Value {
 
 fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'static str>) {
     let mut properties = scope_properties();
-    if let Some((description, required)) = identity_catalog::contract(kind, &mut properties) {
-        return (description, properties, required);
-    }
-    if let Some((description, required)) = read_catalog::contract(kind) {
-        return (description, properties, required);
-    }
     let (description, required) = match kind {
-        ToolKind::CreateWorkspace => named_resource_contract(
-            &mut properties,
-            "Human-readable workspace name.",
-            "Create a workspace.",
+        ToolKind::Whoami => (
+            "Show the authenticated Blobyard identity and selected scope.",
+            vec![],
         ),
+        ToolKind::ListWorkspaces => ("List workspaces visible to the current identity.", vec![]),
+        ToolKind::ListProjects => ("List projects visible in the selected workspace.", vec![]),
+        ToolKind::GetRetention => ("Show the selected project's retention policy.", vec![]),
+        ToolKind::ListInboxes => ("List redacted inboxes in the selected project.", vec![]),
+        ToolKind::ListShares => ("List redacted shares in the selected workspace.", vec![]),
+        ToolKind::ListPreviews => ("List redacted previews in the selected project.", vec![]),
+        ToolKind::ListWebYards => ("List Web Yards in the selected project.", vec![]),
+        ToolKind::CreateWorkspace => create_workspace_contract(&mut properties),
         ToolKind::ListObjects => list_objects_contract(&mut properties),
-        ToolKind::CreateProject => named_resource_contract(
-            &mut properties,
-            "Human-readable project name.",
-            "Create a project in the selected workspace.",
-        ),
+        ToolKind::CreateProject => create_project_contract(&mut properties),
         ToolKind::UploadFile => upload_contract(&mut properties),
         ToolKind::DownloadFile => download_contract(&mut properties),
         ToolKind::DeleteObject => delete_contract(&mut properties),
@@ -174,13 +180,30 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::SetYardVisibility => access::set_yard_visibility_contract(&mut properties),
         ToolKind::GrantYardAccess => access::grant_yard_access_contract(&mut properties),
         ToolKind::RevokeYardAccess => access::revoke_yard_access_contract(&mut properties),
+        ToolKind::ListYardManagementRoles => list_management_roles(&mut properties),
+        ToolKind::SetYardManagementRole => set_management_role(&mut properties),
+        ToolKind::RevokeYardManagementRole => revoke_management_role(&mut properties),
+        ToolKind::GetYardApplicationPolicy => get_application_policy(&mut properties),
+        ToolKind::SetYardApplicationPolicy => set_application_policy(&mut properties),
+        ToolKind::SetYardAccessRoles => set_access_roles(&mut properties),
         ToolKind::ListYardSessions => access::list_yard_sessions_contract(&mut properties),
         ToolKind::RevokeYardSession => access::revoke_yard_session_contract(&mut properties),
         ToolKind::RollbackWebYard => contracts::rollback_yard_contract(&mut properties),
         ToolKind::DeleteWebYard => contracts::delete_yard_contract(&mut properties),
-        _ => unreachable!("delegated catalog contract"),
     };
     (description, properties, required)
+}
+
+fn create_workspace_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    named_resource_contract(properties, WORKSPACE_NAME, CREATE_WORKSPACE)
+}
+
+fn create_project_contract(
+    properties: &mut Map<String, Value>,
+) -> (&'static str, Vec<&'static str>) {
+    named_resource_contract(properties, PROJECT_NAME, CREATE_PROJECT)
 }
 
 fn identifier_contract(

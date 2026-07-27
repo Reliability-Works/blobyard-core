@@ -86,6 +86,10 @@ mod yard_access_principals;
 mod yard_access_record_validation;
 #[path = "yard_application_policy.rs"]
 mod yard_application_policy;
+#[path = "yard_application_policy_encoding.rs"]
+mod yard_application_policy_encoding;
+#[path = "yard_application_policy_row.rs"]
+mod yard_application_policy_row;
 #[path = "yard_cleanup.rs"]
 mod yard_cleanup;
 #[path = "yard_finalise.rs"]
@@ -100,6 +104,8 @@ mod yard_identity_grants;
 mod yard_identity_resolution;
 #[path = "yard_lifecycle.rs"]
 mod yard_lifecycle;
+#[path = "yard_management_role_rows.rs"]
+mod yard_management_role_rows;
 #[path = "yard_management_roles.rs"]
 mod yard_management_roles;
 #[path = "yard_queries.rs"]

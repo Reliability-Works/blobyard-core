@@ -1,6 +1,6 @@
 use super::{map_error, rows, yard_access};
 use blobyard_contract::{MAXIMUM_USER_GROUPS, RepositoryError};
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, Row, Statement, params};
 
 const GROUP_ROLES_SQL: &str = "
     SELECT wg.id, grant.app_roles
@@ -130,19 +130,29 @@ fn direct_roles(
              ORDER BY id",
         )
         .map_err(map_error)?;
-    let encoded = statement
-        .query_map(params![yard_id, user_id, environment_id, now_ms], |row| {
-            row.get::<_, String>(0)
-        })
-        .map_err(map_error)?;
+    let encoded = direct_role_rows(&mut statement, yard_id, environment_id, user_id, now_ms)?;
     let mut roles = Vec::new();
     for value in encoded {
-        roles.extend(
-            yard_access::decode_roles(&value.map_err(map_error)?)
-                .ok_or(RepositoryError::Unavailable)?,
-        );
+        roles.extend(yard_access::decode_roles(&value).ok_or(RepositoryError::Unavailable)?);
     }
     Ok(roles)
+}
+
+fn direct_role_rows(
+    statement: &mut Statement<'_>,
+    yard_id: &str,
+    environment_id: &str,
+    user_id: &str,
+    now_ms: i64,
+) -> Result<Vec<String>, RepositoryError> {
+    super::collect(
+        statement
+            .query_map(
+                params![yard_id, user_id, environment_id, now_ms],
+                encoded_roles,
+            )
+            .map_err(map_error)?,
+    )
 }
 
 fn group_rows(
@@ -154,11 +164,102 @@ fn group_rows(
     now_ms: i64,
 ) -> Result<Vec<(String, String)>, RepositoryError> {
     let mut statement = connection.prepare(GROUP_ROLES_SQL).map_err(map_error)?;
-    let rows = statement
-        .query_map(
-            params![yard_id, workspace_id, user_id, environment_id, now_ms],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .map_err(map_error)?;
-    super::collect(rows)
+    query_group_rows(
+        &mut statement,
+        yard_id,
+        environment_id,
+        workspace_id,
+        user_id,
+        now_ms,
+    )
+}
+
+fn query_group_rows(
+    statement: &mut Statement<'_>,
+    yard_id: &str,
+    environment_id: &str,
+    workspace_id: &str,
+    user_id: &str,
+    now_ms: i64,
+) -> Result<Vec<(String, String)>, RepositoryError> {
+    super::collect(
+        statement
+            .query_map(
+                params![yard_id, workspace_id, user_id, environment_id, now_ms],
+                group_roles,
+            )
+            .map_err(map_error)?,
+    )
+}
+
+fn encoded_roles(row: &Row<'_>) -> rusqlite::Result<String> {
+    row.get(0)
+}
+
+fn group_roles(row: &Row<'_>) -> rusqlite::Result<(String, String)> {
+    Ok((row.get(0)?, row.get(1)?))
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+
+    use super::{direct_role_rows, encoded_roles, group_roles, query_group_rows};
+    use blobyard_contract::RepositoryError;
+    use rusqlite::{Connection, params};
+
+    #[test]
+    fn identity_grant_rows_require_text_columns() {
+        let connection = Connection::open_in_memory().expect("connection");
+        assert_eq!(
+            connection
+                .query_row("SELECT '[]'", [], encoded_roles)
+                .expect("roles"),
+            "[]"
+        );
+        assert!(connection.query_row("SELECT 1", [], encoded_roles).is_err());
+        assert_eq!(
+            connection
+                .query_row("SELECT 'group', '[]'", [], group_roles)
+                .expect("group roles"),
+            ("group".to_owned(), "[]".to_owned())
+        );
+        for (group, roles) in [
+            (
+                rusqlite::types::Value::Integer(1),
+                rusqlite::types::Value::Text("[]".to_owned()),
+            ),
+            (
+                rusqlite::types::Value::Text("group".to_owned()),
+                rusqlite::types::Value::Integer(1),
+            ),
+        ] {
+            assert!(
+                connection
+                    .query_row("SELECT ?1, ?2", params![group, roles], group_roles)
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn identity_grant_queries_map_parameter_failures() {
+        let connection = Connection::open_in_memory().expect("connection");
+        let mut statement = connection.prepare("SELECT 1").expect("wrong statement");
+        assert_eq!(
+            direct_role_rows(&mut statement, "yard", "environment", "user", 1),
+            Err(RepositoryError::Unavailable)
+        );
+        assert_eq!(
+            query_group_rows(
+                &mut statement,
+                "yard",
+                "environment",
+                "workspace",
+                "user",
+                1,
+            ),
+            Err(RepositoryError::Unavailable)
+        );
+    }
 }

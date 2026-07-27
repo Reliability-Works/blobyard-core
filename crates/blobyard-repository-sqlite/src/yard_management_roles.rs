@@ -1,11 +1,13 @@
-use super::{lifecycle_audit, map_error, rows, yard_access, yard_rows, yard_validation};
+use super::{
+    lifecycle_audit, map_error, rows, yard_access, yard_management_role_rows, yard_validation,
+};
 use blobyard_contract::{
     AuditValue, MAXIMUM_YARD_MANAGEMENT_ROLES, NewAuditEvent, RepositoryError, YardManagementRole,
     YardManagementRoleAssignment, YardManagementRoleCursor, YardManagementRolePage,
 };
-use rusqlite::{Connection, OptionalExtension, Row, Transaction, params};
+use rusqlite::{Connection, OptionalExtension, Statement, Transaction, params};
 
-const COLUMNS: &str = "yard_id, user_id, workspace_id, role, created_at_ms, updated_at_ms";
+use yard_management_role_rows::{COLUMNS, RoleState, assignment, role_state};
 
 pub(super) fn list(
     connection: &Connection,
@@ -35,10 +37,7 @@ pub(super) fn list(
              LIMIT 51"
         ))
         .map_err(map_error)?;
-    let rows = statement
-        .query_map(params![yard_id, precedence, user_id], assignment)
-        .map_err(map_error)?;
-    let mut items = super::collect(rows)?;
+    let mut items = query_page(&mut statement, yard_id, precedence, user_id)?;
     let next_cursor = (items.len() > 50).then(|| {
         let item = &items[49];
         YardManagementRoleCursor {
@@ -48,6 +47,19 @@ pub(super) fn list(
     });
     items.truncate(50);
     Ok(YardManagementRolePage { items, next_cursor })
+}
+
+fn query_page(
+    statement: &mut Statement<'_>,
+    yard_id: &str,
+    precedence: Option<u8>,
+    user_id: Option<&str>,
+) -> Result<Vec<YardManagementRoleAssignment>, RepositoryError> {
+    super::collect(
+        statement
+            .query_map(params![yard_id, precedence, user_id], assignment)
+            .map_err(map_error)?,
+    )
 }
 
 pub(super) fn set(
@@ -231,11 +243,6 @@ fn require_active_user(
     exists.then_some(()).ok_or(RepositoryError::NotFound)
 }
 
-struct RoleState {
-    assignments: u64,
-    owners: u64,
-}
-
 fn validate_state(connection: &Connection, yard_id: &str) -> Result<RoleState, RepositoryError> {
     let state = connection
         .query_row(
@@ -245,12 +252,7 @@ fn validate_state(connection: &Connection, yard_id: &str) -> Result<RoleState, R
                WHERE yard_id = ?1 LIMIT 501
              )",
             [yard_id],
-            |row| {
-                Ok(RoleState {
-                    assignments: yard_rows::required_u64(row.get(0)?)?,
-                    owners: yard_rows::required_u64(row.get(1)?)?,
-                })
-            },
+            role_state,
         )
         .map_err(map_error)?;
     let valid = state.assignments <= u64::from(MAXIMUM_YARD_MANAGEMENT_ROLES)
@@ -259,21 +261,21 @@ fn validate_state(connection: &Connection, yard_id: &str) -> Result<RoleState, R
     valid.then_some(state).ok_or(RepositoryError::Unavailable)
 }
 
-fn assignment(row: &Row<'_>) -> rusqlite::Result<YardManagementRoleAssignment> {
-    let role: String = row.get(3)?;
-    let assignment = YardManagementRoleAssignment {
-        yard_id: row.get(0)?,
-        user_id: row.get(1)?,
-        workspace_id: row.get(2)?,
-        role: YardManagementRole::parse(&role).ok_or_else(|| rows::conversion_error(role))?,
-        created_at_ms: yard_rows::required_u64(row.get(4)?)?,
-        updated_at_ms: yard_rows::required_u64(row.get(5)?)?,
-    };
-    let valid = rows::validate_text(&assignment.yard_id).is_ok()
-        && rows::validate_text(&assignment.user_id).is_ok()
-        && rows::validate_text(&assignment.workspace_id).is_ok()
-        && assignment.updated_at_ms >= assignment.created_at_ms;
-    valid
-        .then_some(assignment)
-        .ok_or_else(|| rows::conversion_error("invalid persisted management role"))
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
+
+    use super::query_page;
+    use blobyard_contract::RepositoryError;
+    use rusqlite::Connection;
+
+    #[test]
+    fn management_role_query_maps_parameter_failure() {
+        let connection = Connection::open_in_memory().expect("connection");
+        let mut statement = connection.prepare("SELECT 1").expect("wrong statement");
+        assert_eq!(
+            query_page(&mut statement, "yard", None, None),
+            Err(RepositoryError::Unavailable)
+        );
+    }
 }

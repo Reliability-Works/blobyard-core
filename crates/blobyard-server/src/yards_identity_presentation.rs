@@ -48,6 +48,10 @@ pub(super) const fn api_role(role: YardManagementRole) -> ApiManagementRole {
     }
 }
 
-pub(super) fn role_json(roles: &[String]) -> Result<String, ApiError> {
-    serde_json::to_string(roles).map_err(|_error| ApiError::internal())
+pub(super) fn role_json(roles: &[String]) -> String {
+    let mut values = Vec::with_capacity(roles.len());
+    for role in roles {
+        values.push(serde_json::Value::String(role.clone()));
+    }
+    serde_json::Value::Array(values).to_string()
 }

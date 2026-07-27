@@ -201,6 +201,36 @@ pub(in crate::runner) fn ok(data: &serde_json::Value, request_id: &str) -> RawRe
     RawResponse::new(200, Some(request_id.into()), body.to_string())
 }
 
+pub(in crate::runner) fn fixture_tokens() -> RawResponse {
+    ok(
+        &serde_json::json!({
+            "accessToken": "access-token-fixture",
+            "refreshToken": "refresh-token-fixture",
+            "expiresInSeconds": 900
+        }),
+        "request_tokens",
+    )
+}
+
+pub(in crate::runner) fn fixture_yards() -> RawResponse {
+    ok(
+        &serde_json::json!({
+            "items": [{
+                "currentDeployId": "deploy_documentation",
+                "hostLabel": "documentation-123456789-team",
+                "id": "yard_documentation",
+                "name": "documentation",
+                "projectId": "project_artifacts",
+                "status": "active",
+                "url": "https://documentation-123456789-team.blobyard.app",
+                "workspaceId": "workspace_main"
+            }],
+            "nextCursor": null
+        }),
+        "request_yards",
+    )
+}
+
 pub(in crate::runner) fn api_failure(
     code: ErrorCode,
     status: u16,

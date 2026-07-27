@@ -1,4 +1,4 @@
-use super::FaultingRepository;
+use super::{Corruption, FaultingRepository};
 use blobyard_contract::{
     NewAuditEvent, RepositoryError, YardAccessGrantRecord, YardApplicationPolicyRecord,
     YardIdentity, YardIdentityRepository, YardManagementRole, YardManagementRoleAssignment,
@@ -13,7 +13,15 @@ impl YardIdentityRepository for FaultingRepository {
         cursor: Option<&YardManagementRoleCursor>,
     ) -> Result<YardManagementRolePage, RepositoryError> {
         self.check()?;
-        self.inner.list_yard_management_roles(yard_id, cursor)
+        let mut page = self.inner.list_yard_management_roles(yard_id, cursor)?;
+        if matches!(
+            self.corruption,
+            Some(Corruption::YardManagementRoleTimestamp)
+        ) && let Some(assignment) = page.items.first_mut()
+        {
+            assignment.updated_at_ms = u64::MAX;
+        }
+        Ok(page)
     }
 
     fn set_yard_management_role(
@@ -25,8 +33,16 @@ impl YardIdentityRepository for FaultingRepository {
         event: &NewAuditEvent,
     ) -> Result<YardManagementRoleAssignment, RepositoryError> {
         self.check()?;
-        self.inner
-            .set_yard_management_role(yard_id, user_id, role, now_ms, event)
+        let mut assignment = self
+            .inner
+            .set_yard_management_role(yard_id, user_id, role, now_ms, event)?;
+        if matches!(
+            self.corruption,
+            Some(Corruption::YardManagementRoleTimestamp)
+        ) {
+            assignment.updated_at_ms = u64::MAX;
+        }
+        Ok(assignment)
     }
 
     fn revoke_yard_management_role(
@@ -46,7 +62,30 @@ impl YardIdentityRepository for FaultingRepository {
         yard_id: &str,
     ) -> Result<Option<YardApplicationPolicyRecord>, RepositoryError> {
         self.check()?;
-        self.inner.get_yard_application_policy(yard_id)
+        let mut policy = self.inner.get_yard_application_policy(yard_id)?;
+        if let Some(policy) = policy.as_mut() {
+            match self.corruption {
+                Some(Corruption::YardPolicyTimestamp) => policy.approved_at_ms = u64::MAX,
+                Some(Corruption::YardPolicyRevision) => policy.revision = u64::MAX,
+                Some(
+                    Corruption::CompletedVersion
+                    | Corruption::CompletedPath
+                    | Corruption::CompletedSize
+                    | Corruption::CompletedChecksum
+                    | Corruption::AbortedStorageKey
+                    | Corruption::ShareObjectSize
+                    | Corruption::ShareExpiry
+                    | Corruption::InboxExpiry
+                    | Corruption::PreviewCreatedAt
+                    | Corruption::PreviewExpiresAt
+                    | Corruption::YardSessionCreatedAt
+                    | Corruption::YardManagementRoleTimestamp
+                    | Corruption::YardAccessGrantTimestamp,
+                )
+                | None => {}
+            }
+        }
+        Ok(policy)
     }
 
     fn set_yard_application_policy(
@@ -59,14 +98,18 @@ impl YardIdentityRepository for FaultingRepository {
         event: &NewAuditEvent,
     ) -> Result<YardApplicationPolicyRecord, RepositoryError> {
         self.check()?;
-        self.inner.set_yard_application_policy(
+        let mut policy = self.inner.set_yard_application_policy(
             yard_id,
             source_manifest_digest,
             policy,
             approved_by_principal,
             now_ms,
             event,
-        )
+        )?;
+        if matches!(self.corruption, Some(Corruption::YardPolicyTimestamp)) {
+            policy.approved_at_ms = u64::MAX;
+        }
+        Ok(policy)
     }
 
     fn set_yard_access_roles(
@@ -78,8 +121,13 @@ impl YardIdentityRepository for FaultingRepository {
         event: &NewAuditEvent,
     ) -> Result<YardAccessGrantRecord, RepositoryError> {
         self.check()?;
-        self.inner
-            .set_yard_access_roles(yard_id, grant_id, app_roles, now_ms, event)
+        let mut grant = self
+            .inner
+            .set_yard_access_roles(yard_id, grant_id, app_roles, now_ms, event)?;
+        if matches!(self.corruption, Some(Corruption::YardAccessGrantTimestamp)) {
+            grant.created_at_ms = u64::MAX;
+        }
+        Ok(grant)
     }
 
     fn resolve_yard_identity(

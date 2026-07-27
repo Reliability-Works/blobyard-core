@@ -11,7 +11,6 @@ use blobyard_contract::{
     YardSessionAuditContext,
 };
 use blobyard_core::{GeneratedSecretKind, SecretString};
-use serde::Serialize;
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -27,15 +26,25 @@ async fn identity_dispatch(
     let host_label = get_host(&state, &request)?;
     require_same_origin(&state, &host_label, request.headers())?;
     let token = yard_session_cookie::read(request.headers()).ok_or_else(ApiError::not_found)?;
+    resolve_identity_at(
+        &state,
+        &host_label,
+        &token,
+        crate::transfer_grants::now_ms(),
+    )
+}
+
+fn resolve_identity_at(
+    state: &AppState,
+    host_label: &str,
+    token: &SecretString,
+    now: Result<u64, ApiError>,
+) -> Result<Response<Body>, ApiError> {
     let identity = state
         .repository
-        .resolve_yard_identity(
-            &host_label,
-            &crate::auth::hash(token.expose_secret()),
-            crate::transfer_grants::now_ms()?,
-        )
+        .resolve_yard_identity(host_label, &crate::auth::hash(token.expose_secret()), now?)
         .map_err(identity_error)?;
-    identity_response(identity)
+    identity_response(&identity)
 }
 
 async fn exchange_dispatch(
@@ -267,47 +276,32 @@ fn logout_result(result: Result<bool, RepositoryError>) -> Result<(), ApiError> 
         .map_err(|_error| ApiError::internal())
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct IdentityResponse {
-    user_id: String,
-    workspace_id: String,
-    project_id: String,
-    yard_id: String,
-    environment_id: String,
-    display_name: Option<String>,
-    email: Option<String>,
-    groups: Vec<String>,
-    management_role: Option<&'static str>,
-    app_roles: Vec<String>,
-    permissions: Vec<String>,
-    session_id: String,
-}
-
-fn identity_response(identity: YardIdentity) -> Result<Response<Body>, ApiError> {
-    let body = IdentityResponse {
-        user_id: identity.user_id,
-        workspace_id: identity.workspace_id,
-        project_id: identity.project_id,
-        yard_id: identity.yard_id,
-        environment_id: identity.environment_id,
-        display_name: identity.display_name,
-        email: identity.email,
-        groups: identity.groups,
-        management_role: identity
-            .management_role
-            .map(blobyard_contract::YardManagementRole::as_str),
-        app_roles: identity.app_roles,
-        permissions: identity.permissions,
-        session_id: identity.session_id,
-    };
-    let encoded = serde_json::to_vec(&body).map_err(|_error| ApiError::internal())?;
+fn identity_response(identity: &YardIdentity) -> Result<Response<Body>, ApiError> {
+    let management_role = identity
+        .management_role
+        .map_or(serde_json::Value::Null, |role| {
+            serde_json::Value::String(role.as_str().to_owned())
+        });
+    let body = serde_json::json!({
+        "userId": identity.user_id,
+        "workspaceId": identity.workspace_id,
+        "projectId": identity.project_id,
+        "yardId": identity.yard_id,
+        "environmentId": identity.environment_id,
+        "displayName": identity.display_name,
+        "email": identity.email,
+        "groups": identity.groups,
+        "managementRole": management_role,
+        "appRoles": identity.app_roles,
+        "permissions": identity.permissions,
+        "sessionId": identity.session_id,
+    });
     ApiError::internal_result(
         Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, "application/json")
             .header(header::CACHE_CONTROL, "private, no-store")
-            .body(Body::from(encoded)),
+            .body(Body::from(body.to_string())),
     )
 }
 

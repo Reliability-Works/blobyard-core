@@ -42,10 +42,10 @@ pub(super) fn list_management_roles(
             .into_iter()
             .map(api_assignment)
             .collect::<Result<Vec<_>, _>>()?,
-        next_cursor: page
-            .next_cursor
-            .as_ref()
-            .map(|position| cursor::encode(&yard.id, position)),
+        next_cursor: match page.next_cursor.as_ref() {
+            Some(position) => Some(cursor::encode(&yard.id, position)),
+            None => None,
+        },
     }))
 }
 
@@ -146,8 +146,10 @@ pub(super) fn set_application_policy(
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<YardApplicationPolicyResponse>>, ApiError> {
     let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
-    let canonical = canonicalize_application_policy(request.policy.clone())
-        .map_err(|_error| ApiError::invalid_request())?;
+    let canonical = match canonicalize_application_policy(request.policy.clone()) {
+        Ok(canonical) => canonical,
+        Err(_error) => return Err(ApiError::invalid_request()),
+    };
     let previous = state
         .repository
         .get_yard_application_policy(&yard.id)
@@ -169,14 +171,11 @@ pub(super) fn set_application_policy(
             ),
             (
                 "permissionCount".to_owned(),
-                AuditValue::Number(application_permission_count(&canonical.graph)?),
+                AuditValue::Number(application_permission_count(&canonical.graph)),
             ),
             (
                 "roleCount".to_owned(),
-                AuditValue::Number(
-                    u64::try_from(canonical.graph.roles.len())
-                        .map_err(|_error| ApiError::internal())?,
-                ),
+                AuditValue::Number(application_role_count(&canonical.graph)),
             ),
             (
                 "sourceManifestDigest".to_owned(),
@@ -203,16 +202,24 @@ pub(super) fn set_application_policy(
     }))
 }
 
-fn application_permission_count(
-    graph: &blobyard_core::ApplicationPolicyGraph,
-) -> Result<u64, ApiError> {
-    let count = graph
-        .roles
-        .values()
-        .flat_map(|role| role.permissions.iter())
-        .collect::<BTreeSet<_>>()
-        .len();
-    u64::try_from(count).map_err(|_error| ApiError::internal())
+fn application_permission_count(graph: &blobyard_core::ApplicationPolicyGraph) -> u64 {
+    let mut permissions = BTreeSet::new();
+    for role in graph.roles.values() {
+        permissions.extend(role.permissions.iter());
+    }
+    let mut count = 0_u64;
+    for _permission in permissions {
+        count += 1;
+    }
+    count
+}
+
+fn application_role_count(graph: &blobyard_core::ApplicationPolicyGraph) -> u64 {
+    let mut count = 0_u64;
+    for _role in graph.roles.keys() {
+        count += 1;
+    }
+    count
 }
 
 pub(super) fn set_access_roles(
@@ -222,13 +229,18 @@ pub(super) fn set_access_roles(
     now: Result<u64, ApiError>,
 ) -> Result<Json<Success<SetYardAccessRolesResponse>>, ApiError> {
     let (yard, now) = yard_at(state, principal, &request.yard_id, now)?;
-    let grant = state
+    let grants = state
         .repository
         .list_yard_access_grants(&yard.id, now)
-        .map_err(ApiError::from_repository)?
-        .into_iter()
-        .find(|grant| grant.id == request.grant_id)
-        .ok_or_else(ApiError::not_found)?;
+        .map_err(ApiError::from_repository)?;
+    let mut selected = None;
+    for grant in grants {
+        if grant.id == request.grant_id {
+            selected = Some(grant);
+            break;
+        }
+    }
+    let grant = selected.ok_or_else(ApiError::not_found)?;
     let mut to = request.app_roles.clone();
     to.sort();
     let mut from = grant.app_roles;
@@ -241,7 +253,7 @@ pub(super) fn set_access_roles(
         vec![
             (
                 "from".to_owned(),
-                AuditValue::String(identity_presentation::role_json(&from)?),
+                AuditValue::String(identity_presentation::role_json(&from)),
             ),
             (
                 "grantId".to_owned(),
@@ -249,7 +261,7 @@ pub(super) fn set_access_roles(
             ),
             (
                 "to".to_owned(),
-                AuditValue::String(identity_presentation::role_json(&to)?),
+                AuditValue::String(identity_presentation::role_json(&to)),
             ),
             ("yardId".to_owned(), AuditValue::String(yard.id.clone())),
         ],
@@ -275,8 +287,10 @@ fn role_for_user(
             .repository
             .list_yard_management_roles(yard_id, position.as_ref())
             .map_err(ApiError::from_repository)?;
-        if let Some(assignment) = page.items.iter().find(|value| value.user_id == user_id) {
-            return Ok(Some(assignment.role));
+        for assignment in page.items {
+            if assignment.user_id == user_id {
+                return Ok(Some(assignment.role));
+            }
         }
         let Some(next) = page.next_cursor else {
             return Ok(None);

@@ -1,17 +1,19 @@
 use super::{
-    lifecycle_audit, map_error, rows, yard_access, yard_management_roles, yard_rows,
-    yard_validation,
+    lifecycle_audit, map_error, rows, yard_access, yard_management_roles, yard_validation,
 };
 use blobyard_contract::{
     AuditValue, MAXIMUM_YARD_ACCESS_ROLES, NewAuditEvent, RepositoryError, YardAccessGrantRecord,
     YardApplicationPolicyRecord,
 };
 use blobyard_core::{
-    ApplicationPolicyGraph, CanonicalApplicationPolicy, EffectiveApplicationPolicy,
-    canonicalize_application_policy, valid_source_manifest_digest,
+    ApplicationPolicyGraph, CanonicalApplicationPolicy, canonicalize_application_policy,
+    valid_source_manifest_digest,
 };
-use rusqlite::{Connection, OptionalExtension, Row, Transaction, params};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use std::collections::BTreeSet;
+
+use super::yard_application_policy_encoding::{encode_effective, encode_graph, role_json};
+use super::yard_application_policy_row::policy_row;
 
 const POLICY_COLUMNS: &str = "yard_id, workspace_id, revision, source_manifest_digest, policy_json, effective_json, approved_at_ms, approved_by_principal";
 
@@ -61,12 +63,9 @@ pub(super) fn set(
     let canonical =
         canonicalize_application_policy(policy).map_err(|_error| RepositoryError::InvalidInput)?;
     let previous = policy_by_yard(transaction, yard_id)?;
-    let revision = previous.as_ref().map_or(Ok(1_u64), |record| {
-        record
-            .revision
-            .checked_add(1)
-            .ok_or(RepositoryError::Conflict)
-    })?;
+    let revision = previous
+        .as_ref()
+        .map_or(1_u64, |record| record.revision + 1);
     let approved_at = u64::try_from(now_ms).map_err(|_error| RepositoryError::InvalidInput)?;
     validate_policy_event(
         event,
@@ -80,8 +79,8 @@ pub(super) fn set(
         },
         &canonical,
     )?;
-    let policy_json = encode_graph(&canonical.graph)?;
-    let effective_json = encode_effective(&canonical.effective)?;
+    let policy_json = encode_graph(&canonical.graph);
+    let effective_json = encode_effective(&canonical.effective);
     transaction
         .execute(
             "INSERT INTO yard_application_policies
@@ -126,7 +125,8 @@ pub(super) fn set_grant_roles(
         return Err(RepositoryError::NotFound);
     }
     let roles = validated_roles(transaction, yard_id, app_roles)?;
-    let from = canonical_roles(&grant.app_roles)?;
+    let mut from = grant.app_roles;
+    from.sort();
     let at = u64::try_from(now_ms).map_err(|_error| RepositoryError::InvalidInput)?;
     yard_validation::action_event(
         event,
@@ -135,13 +135,13 @@ pub(super) fn set_grant_roles(
         &yard.workspace_id,
         at,
         [
-            ("from", AuditValue::String(role_json(&from)?)),
+            ("from", AuditValue::String(role_json(&from))),
             ("grantId", AuditValue::String(grant_id.to_owned())),
-            ("to", AuditValue::String(role_json(&roles)?)),
+            ("to", AuditValue::String(role_json(&roles))),
             ("yardId", AuditValue::String(yard_id.to_owned())),
         ],
     )?;
-    let encoded = yard_access::encode_roles(&roles)?;
+    let encoded = serde_json::Value::from(roles).to_string();
     let changed = transaction
         .execute(
             "UPDATE yard_access_grants SET app_roles = ?3
@@ -196,13 +196,18 @@ fn validate_policy_event(
     context: &PolicyEventContext<'_>,
     canonical: &CanonicalApplicationPolicy,
 ) -> Result<(), RepositoryError> {
-    let permissions = canonical
-        .graph
-        .roles
-        .values()
-        .flat_map(|role| role.permissions.iter())
-        .collect::<BTreeSet<_>>()
-        .len();
+    let mut permissions = BTreeSet::new();
+    for role in canonical.graph.roles.values() {
+        permissions.extend(role.permissions.iter());
+    }
+    let mut permission_count = 0_u64;
+    for _permission in permissions {
+        permission_count += 1;
+    }
+    let mut role_count = 0_u64;
+    for _role in canonical.graph.roles.keys() {
+        role_count += 1;
+    }
     yard_validation::action_event(
         event,
         "yard.application_policy_set",
@@ -216,19 +221,8 @@ fn validate_policy_event(
                     .from_revision
                     .map_or(AuditValue::Null, AuditValue::Number),
             ),
-            (
-                "permissionCount",
-                AuditValue::Number(
-                    u64::try_from(permissions).map_err(|_error| RepositoryError::InvalidInput)?,
-                ),
-            ),
-            (
-                "roleCount",
-                AuditValue::Number(
-                    u64::try_from(canonical.graph.roles.len())
-                        .map_err(|_error| RepositoryError::InvalidInput)?,
-                ),
-            ),
+            ("permissionCount", AuditValue::Number(permission_count)),
+            ("roleCount", AuditValue::Number(role_count)),
             (
                 "sourceManifestDigest",
                 AuditValue::String(context.digest.to_owned()),
@@ -250,50 +244,4 @@ fn canonical_roles(roles: &[String]) -> Result<Vec<String>, RepositoryError> {
     } else {
         Err(RepositoryError::InvalidInput)
     }
-}
-
-fn role_json(roles: &[String]) -> Result<String, RepositoryError> {
-    serde_json::to_string(roles).map_err(|_error| RepositoryError::Unavailable)
-}
-
-fn encode_graph(value: &ApplicationPolicyGraph) -> Result<String, RepositoryError> {
-    serde_json::to_string(value).map_err(|_error| RepositoryError::Unavailable)
-}
-
-fn encode_effective(value: &EffectiveApplicationPolicy) -> Result<String, RepositoryError> {
-    serde_json::to_string(value).map_err(|_error| RepositoryError::Unavailable)
-}
-
-fn policy_row(row: &Row<'_>) -> rusqlite::Result<YardApplicationPolicyRecord> {
-    let revision = yard_rows::required_u64(row.get(2)?)?;
-    let source_manifest_digest: String = row.get(3)?;
-    let policy_json: String = row.get(4)?;
-    let effective_json: String = row.get(5)?;
-    let policy: ApplicationPolicyGraph =
-        serde_json::from_str(&policy_json).map_err(rows::conversion_error)?;
-    let effective: EffectiveApplicationPolicy =
-        serde_json::from_str(&effective_json).map_err(rows::conversion_error)?;
-    let canonical =
-        canonicalize_application_policy(policy.clone()).map_err(rows::conversion_error)?;
-    let valid = revision > 0
-        && valid_source_manifest_digest(&source_manifest_digest)
-        && canonical.graph == policy
-        && canonical.effective == effective
-        && encode_graph(&policy).ok().as_deref() == Some(policy_json.as_str())
-        && encode_effective(&effective).ok().as_deref() == Some(effective_json.as_str());
-    if !valid {
-        return Err(rows::conversion_error(
-            "invalid persisted application policy",
-        ));
-    }
-    Ok(YardApplicationPolicyRecord {
-        yard_id: row.get(0)?,
-        workspace_id: row.get(1)?,
-        revision,
-        source_manifest_digest,
-        policy,
-        effective,
-        approved_at_ms: yard_rows::required_u64(row.get(6)?)?,
-        approved_by_principal: row.get(7)?,
-    })
 }

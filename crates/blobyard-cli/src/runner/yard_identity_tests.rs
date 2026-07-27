@@ -9,6 +9,9 @@ use blobyard_api_client::{
 use blobyard_core::{ApplicationPolicyGraph, ApplicationRoleDefinition, ErrorCode};
 use std::{collections::BTreeMap, path::PathBuf};
 
+#[path = "yard_identity_command_tests.rs"]
+mod command_tests;
+
 fn graph() -> ApplicationPolicyGraph {
     ApplicationPolicyGraph {
         default_role: Some("viewer".to_owned()),

@@ -259,6 +259,8 @@ fn assert_poisoned_lifecycle(repository: &SqliteRepository) {
     unavailable(repository.retained_projects());
 }
 
+include!("adapter_failure_map_yard_identity.rs");
+
 fn assert_every_public_operation(repository: &SqliteRepository) {
     assert_poisoned_metadata(repository);
     assert_poisoned_credentials(repository);
@@ -270,6 +272,7 @@ fn assert_every_public_operation(repository: &SqliteRepository) {
     assert_poisoned_inboxes(repository);
     assert_poisoned_previews(repository);
     poisoned_yards::assert_poisoned_yards(repository);
+    assert_poisoned_yard_identity(repository);
     assert_poisoned_lifecycle(repository);
 }
 
