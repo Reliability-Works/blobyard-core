@@ -53,7 +53,7 @@ when you need to:
 ```bash
 curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
   https://raw.githubusercontent.com/Reliability-Works/blobyard-core/main/scripts/install.sh \
-  | sh -s -- --version 0.1.13 --install-dir /usr/local/bin
+  | sh -s -- --version 0.1.14 --install-dir /usr/local/bin
 ```
 
 Confirm the installation:
