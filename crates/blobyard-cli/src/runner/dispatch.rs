@@ -1,8 +1,8 @@
 use super::Runner;
 use crate::commands::{Command, InboxCommand, ProjectsCommand, RetentionCommand};
 use crate::yard_commands::{
-    AccessCommand, ApplicationPolicyCommand, EnvCommand, ManagementRolesCommand, YardCommand,
-    YardSessionsCommand,
+    AccessCommand, ApplicationPolicyCommand, EnvCommand, GuestInvitesCommand,
+    ManagementRolesCommand, YardCommand, YardSessionsCommand,
 };
 use crate::{CommandResult, generate_completion};
 use blobyard_core::{BlobyardError, ErrorCode};
@@ -87,12 +87,24 @@ impl Runner {
             Command::Yard { command } => self.execute_yard(command).await,
             Command::Env { command } => self.execute_env(command).await,
             Command::Access { command } => self.execute_access(command).await,
+            Command::GuestInvites { command } => self.execute_guest_invites(command).await,
             Command::ManagementRoles { command } => self.execute_management_roles(command).await,
             Command::ApplicationPolicy { command } => {
                 self.execute_application_policy(command).await
             }
             Command::YardSessions { command } => self.execute_yard_sessions(command).await,
             _ => Err(BlobyardError::from_code(ErrorCode::InternalError)),
+        }
+    }
+
+    pub(super) async fn execute_guest_invites(
+        &self,
+        command: &GuestInvitesCommand,
+    ) -> Result<CommandResult, BlobyardError> {
+        match command {
+            GuestInvitesCommand::List(arguments) => self.list_guest_invites(arguments).await,
+            GuestInvitesCommand::Create(arguments) => self.create_guest_invite(arguments).await,
+            GuestInvitesCommand::Revoke(arguments) => self.revoke_guest_invite(arguments).await,
         }
     }
 

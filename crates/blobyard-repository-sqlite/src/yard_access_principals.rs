@@ -10,6 +10,13 @@ pub(super) fn validate(
     yard: &WebYardRecord,
     grant: &NewYardAccessGrant,
 ) -> Result<(), RepositoryError> {
+    if matches!(
+        grant.principal_kind,
+        YardAccessPrincipalKind::User | YardAccessPrincipalKind::Group
+    ) && is_guest_subject(transaction, &grant.principal_id)?
+    {
+        return Err(RepositoryError::InvalidInput);
+    }
     match grant.principal_kind {
         YardAccessPrincipalKind::User => {
             require_active_user(transaction, &yard.workspace_id, &grant.principal_id)
@@ -20,6 +27,21 @@ pub(super) fn validate(
         }
         YardAccessPrincipalKind::GuestInvite | YardAccessPrincipalKind::Link => Ok(()),
     }
+}
+
+fn is_guest_subject(
+    transaction: &Transaction<'_>,
+    principal_id: &str,
+) -> Result<bool, RepositoryError> {
+    transaction
+        .query_row(
+            "SELECT EXISTS(
+               SELECT 1 FROM yard_subjects WHERE id = ?1 AND kind = 'guest'
+             )",
+            [principal_id],
+            |row| row.get(0),
+        )
+        .map_err(map_error)
 }
 
 fn require_active_user(

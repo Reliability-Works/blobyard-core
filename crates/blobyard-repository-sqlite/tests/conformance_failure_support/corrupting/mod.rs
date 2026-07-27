@@ -7,6 +7,7 @@ mod previews;
 mod sharing;
 mod transfer;
 mod yard_access;
+mod yard_guests;
 mod yard_identity;
 mod yard_sessions;
 mod yards;
@@ -166,6 +167,12 @@ pub(crate) enum Corruption {
     YardSessionFirstRevoke,
     YardSessionLogoutRevoke,
     YardSessionDeactivation,
+    YardGuestEnvironmentSeed,
+    YardGuestCreatedRecord,
+    YardGuestBoundaryScope,
+    YardGuestCapacityCreateFailure,
+    YardGuestCapacityOverflowAccepted,
+    YardGuestIdentityRecord,
 }
 
 pub(crate) struct Corrupting<'a, T> {

@@ -10,14 +10,14 @@ use crate::{
 };
 use axum::http::StatusCode;
 use blobyard_api_client::{
-    GetYardAccessQuery, GrantYardAccessRequest, RevokeYardAccessRequest, SetYardVisibilityRequest,
-    YardAccessPrincipalKind, YardVisibility,
+    GetYardAccessQuery, GrantYardAccessPrincipalKind, GrantYardAccessRequest,
+    RevokeYardAccessRequest, SetYardVisibilityRequest, YardVisibility,
 };
 
 pub(super) fn grant_request(yard_id: &str) -> GrantYardAccessRequest {
     GrantYardAccessRequest {
         yard_id: yard_id.to_owned(),
-        principal_kind: YardAccessPrincipalKind::User,
+        principal_kind: GrantYardAccessPrincipalKind::User,
         principal_id: "user_reader".to_owned(),
         app_roles: Vec::new(),
         environment_id: None,
@@ -255,4 +255,17 @@ async fn access_routes_map_extractor_rejections_to_the_public_error_contract() {
         )
         .await;
     }
+    assert_error(
+        send(
+            &fixture,
+            "POST",
+            "/v1/yards/access/grant",
+            br#"{"yardId":"yard_fixture","principalKind":"guest-invite","principalId":"ygi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","appRoles":[]}"#,
+            false,
+        )
+        .await,
+        StatusCode::BAD_REQUEST,
+        "INVALID_REQUEST",
+    )
+    .await;
 }

@@ -11,9 +11,12 @@ use rusqlite::Connection;
 
 #[test]
 fn generic_query_result_mapping_preserves_success_and_stabilizes_failure() {
-    assert_eq!(super::map_query_result(Ok(7_u8)), Ok(7));
     assert_eq!(
-        super::map_query_result::<()>(Err(rusqlite::Error::InvalidQuery)),
+        super::workspace_group_queries::map_query_result(Ok(7_u8)),
+        Ok(7)
+    );
+    assert_eq!(
+        super::workspace_group_queries::map_query_result::<()>(Err(rusqlite::Error::InvalidQuery)),
         Err(RepositoryError::Unavailable)
     );
 }

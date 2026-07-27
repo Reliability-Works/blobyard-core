@@ -76,6 +76,7 @@ impl<T: WebYardRepository> WebYardRepository for Corrupting<'_, T> {
             }
             Corruption::YardAccessEnvironmentSeed if populated_calls > 1 => records.clear(),
             Corruption::YardSessionEnvironmentSeed if populated_calls > 2 => records.clear(),
+            Corruption::YardGuestEnvironmentSeed if populated_calls > 3 => records.clear(),
             _ => {}
         }
         Ok(records)

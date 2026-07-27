@@ -2126,6 +2126,108 @@
         "x-blobyard-sdk": true
       }
     },
+    "/yards/guest-invites": {
+      "get": {
+        "description": "Lists one deterministic page of Yard guest invitations without secret material.",
+        "operationId": "listYardGuestInvites",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yardId",
+            "required": true,
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Identifier" }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": { "$ref": "./blobyard-shared.openapi.json#/components/schemas/Cursor" }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "default": 50, "maximum": 50, "minimum": 1, "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/ListYardGuestInvitesSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["guest-invites", "list"] },
+        "x-blobyard-mcp": { "tool": "blobyard_list_yard_guest_invites" },
+        "x-blobyard-sdk": true
+      },
+      "post": {
+        "description": "Creates one guest invitation and returns its invitation URL exactly once.",
+        "operationId": "createYardGuestInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateYardGuestInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/CreateYardGuestInviteSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["guest-invites", "create"] },
+        "x-blobyard-mcp": { "tool": "blobyard_create_yard_guest_invite" },
+        "x-blobyard-sdk": true
+      }
+    },
+    "/yards/guest-invites/revoke": {
+      "post": {
+        "description": "Revokes one guest invitation, its grant, and its active guest keys.",
+        "operationId": "revokeYardGuestInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardGuestInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./blobyard-shared.openapi.json#/components/schemas/RevokeYardGuestInviteSuccessEnvelope"
+                }
+              }
+            },
+            "description": "Operation completed successfully."
+          },
+          "default": { "$ref": "./blobyard-shared.openapi.json#/components/responses/ApiError" }
+        },
+        "x-blobyard-cli": { "command": ["guest-invites", "revoke"] },
+        "x-blobyard-mcp": { "tool": "blobyard_revoke_yard_guest_invite" },
+        "x-blobyard-sdk": true
+      }
+    },
     "/yards/management-roles": {
       "get": {
         "description": "Lists one deterministic page of Yard management-role assignments.",

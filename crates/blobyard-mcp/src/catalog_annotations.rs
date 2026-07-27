@@ -18,6 +18,7 @@ pub(super) fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ListYardDeploys
             | ToolKind::ListYardEnvironments
             | ToolKind::GetYardAccess
+            | ToolKind::ListYardGuestInvites
             | ToolKind::ListYardManagementRoles
             | ToolKind::GetYardApplicationPolicy
             | ToolKind::ListYardSessions
@@ -32,6 +33,7 @@ pub(super) fn annotations(kind: ToolKind) -> Value {
             | ToolKind::ClearRetention
             | ToolKind::SetYardVisibility
             | ToolKind::RevokeYardAccess
+            | ToolKind::RevokeYardGuestInvite
             | ToolKind::RevokeYardManagementRole
             | ToolKind::RevokeYardSession
             | ToolKind::RollbackWebYard
@@ -45,6 +47,7 @@ pub(super) fn annotations(kind: ToolKind) -> Value {
             | ToolKind::CreateInbox
             | ToolKind::DeployWebYard
             | ToolKind::GrantYardAccess
+            | ToolKind::CreateYardGuestInvite
     );
     json!({
         "title": title(name),

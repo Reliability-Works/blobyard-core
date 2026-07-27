@@ -94,7 +94,11 @@ pub mod transfers;
 #[doc(hidden)]
 pub mod transfers_operations;
 #[doc(hidden)]
+pub mod yard_account;
+#[doc(hidden)]
 pub mod yard_cleanup;
+#[doc(hidden)]
+pub mod yard_invite;
 #[doc(hidden)]
 pub mod yard_login;
 #[doc(hidden)]
@@ -157,6 +161,7 @@ repository_surface!(
     blobyard_contract::LocalUserRepository,
     blobyard_contract::WorkspaceGroupRepository,
     blobyard_contract::YardSessionRepository,
+    blobyard_contract::YardGuestRepository,
     blobyard_contract::CiRepository,
     blobyard_contract::TransferRepository,
     blobyard_contract::LifecycleRepository,

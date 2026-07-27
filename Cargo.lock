@@ -321,7 +321,7 @@ checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
 name = "blobyard-api-client"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-core",
  "futures-util",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-cli"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-api-client",
  "blobyard-contract",
@@ -366,7 +366,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-contract"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-core",
  "unicode-normalization",
@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-core"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "jiff",
  "percent-encoding",
@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-mcp"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-api-client",
  "serde",
@@ -397,7 +397,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-repository-sqlite"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-contract",
  "blobyard-core",
@@ -410,7 +410,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-server"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "axum",
  "base64",
@@ -443,7 +443,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-storage-filesystem"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-contract",
  "blobyard-core",
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-storage-s3"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "base64",
  "blobyard-contract",
@@ -478,7 +478,7 @@ dependencies = [
 
 [[package]]
 name = "blobyard-testkit"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "blobyard-contract",
  "blobyard-core",
@@ -3038,7 +3038,7 @@ checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
 
 [[package]]
 name = "xtask"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "tempfile",
 ]

@@ -1,11 +1,11 @@
 use super::contracts::web_yard_url;
 use crate::error::ApiError;
 use blobyard_api_client::{
-    StartYardDeployResponse, WebYardStatus as ApiYardStatus, WebYardSummary,
-    YardAccessGrantSummary, YardAccessPrincipalKind as ApiPrincipalKind,
-    YardDeployStatus as ApiDeployStatus, YardDeploySummary, YardDeploymentResponse,
-    YardEnvironmentKind as ApiEnvironmentKind, YardEnvironmentSummary,
-    YardVisibility as ApiVisibility,
+    GrantYardAccessPrincipalKind as ApiGrantPrincipalKind, StartYardDeployResponse,
+    WebYardStatus as ApiYardStatus, WebYardSummary, YardAccessGrantSummary,
+    YardAccessPrincipalKind as ApiPrincipalKind, YardDeployStatus as ApiDeployStatus,
+    YardDeploySummary, YardDeploymentResponse, YardEnvironmentKind as ApiEnvironmentKind,
+    YardEnvironmentSummary, YardVisibility as ApiVisibility,
 };
 use blobyard_contract::{
     WebYardRecord, WebYardStatus, YardAccessPrincipalKind, YardDeployRecord, YardDeployStatus,
@@ -114,12 +114,11 @@ const fn api_principal_kind(kind: YardAccessPrincipalKind) -> ApiPrincipalKind {
     }
 }
 
-pub(super) const fn domain_principal_kind(kind: ApiPrincipalKind) -> YardAccessPrincipalKind {
+pub(super) const fn domain_principal_kind(kind: ApiGrantPrincipalKind) -> YardAccessPrincipalKind {
     match kind {
-        ApiPrincipalKind::User => YardAccessPrincipalKind::User,
-        ApiPrincipalKind::Group => YardAccessPrincipalKind::Group,
-        ApiPrincipalKind::GuestInvite => YardAccessPrincipalKind::GuestInvite,
-        ApiPrincipalKind::Link => YardAccessPrincipalKind::Link,
+        ApiGrantPrincipalKind::User => YardAccessPrincipalKind::User,
+        ApiGrantPrincipalKind::Group => YardAccessPrincipalKind::Group,
+        ApiGrantPrincipalKind::Link => YardAccessPrincipalKind::Link,
     }
 }
 

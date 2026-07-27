@@ -12,6 +12,7 @@ mod lifecycle;
 mod local_users;
 mod repository;
 mod storage;
+mod yard_guests;
 
 pub use ci::{CI_REPOSITORY, ci_trust, github_oidc_identity};
 pub use credentials::{cli_session_record, cli_session_revoked_event, credential_conformance};
@@ -28,9 +29,11 @@ pub use repository::{
     YardConformanceRepository, granted_event, inbox_conformance, inbox_event, inbox_upload_event,
     new_grant, preview_conformance, preview_event, repository_conformance, revoked_event,
     share_event, sharing_conformance, transfer_conformance, visibility_event,
-    yard_application_policy, yard_conformance, yard_event, yard_owner_event, yard_policy_event,
+    yard_application_policy, yard_conformance, yard_event, yard_fault_conformance,
+    yard_owner_event, yard_policy_event,
 };
 pub use storage::storage_conformance;
+pub use yard_guests::{SQLITE_GUEST_YARD_SEED, sqlite_guest_yard_continuation};
 
 pub(crate) fn ensure_equal<T: Eq>(
     actual: &T,

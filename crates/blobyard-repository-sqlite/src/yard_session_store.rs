@@ -29,9 +29,12 @@ pub(super) fn issue(
         &continuation.yard_id,
         &continuation.environment_id,
     )?;
-    transaction
+    let changed = transaction
         .execute(
-            "INSERT INTO yard_continuations (id, continuation_hash, code_hash, yard_id, environment_id, host_label, user_id, return_path, created_at_ms, expires_at_ms, consumed_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)",
+            "INSERT INTO yard_continuations
+             (id, continuation_hash, code_hash, yard_id, environment_id, host_label, subject_id,
+              return_path, created_at_ms, expires_at_ms, consumed_at_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)",
             params![
                 continuation.id,
                 continuation.continuation_hash,
@@ -45,8 +48,8 @@ pub(super) fn issue(
                 super::auth_validation::sql_time(continuation.expires_at_ms)?,
             ],
         )
-        .map(|_changed| ())
-        .map_err(map_error)
+        .map_err(map_error)?;
+    super::changed_once(changed)
 }
 
 pub(super) fn exchange(
@@ -74,7 +77,7 @@ pub(super) fn exchange(
         &continuation.continuation.environment_id,
     )?;
     let record = yard_session_validation::record(session, &continuation);
-    insert_session(transaction, &record)?;
+    insert_session(transaction, &record, now)?;
     insert_issued_audit(transaction, audit, &admission, &record, now_ms)?;
     Ok(YardSessionExchange {
         session: record,
@@ -103,11 +106,17 @@ fn consume_continuation(
 fn insert_session(
     transaction: &Transaction<'_>,
     session: &YardSessionRecord,
+    created_at: i64,
 ) -> Result<(), RepositoryError> {
-    let (created_at, expires_at) = session_times(session)?;
-    transaction
+    let expires_at = super::auth_validation::sql_time(session.expires_at_ms)?;
+    let changed = transaction
         .execute(
-            "INSERT INTO yard_sessions (id, token_hash, yard_id, environment_id, host_label, user_id, created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL)",
+            "INSERT INTO yard_sessions
+             (id, token_hash, yard_id, environment_id, host_label, subject_id,
+              created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms)
+             SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL
+             FROM yard_subjects subject
+             WHERE subject.id = ?6 AND subject.revoked_at_ms IS NULL",
             params![
                 session.id,
                 session.token_hash,
@@ -119,8 +128,8 @@ fn insert_session(
                 expires_at,
             ],
         )
-        .map(|_changed| ())
-        .map_err(map_error)
+        .map_err(map_error)?;
+    super::changed_once(changed)
 }
 
 fn insert_issued_audit(
@@ -224,7 +233,8 @@ pub(super) fn revoke_for_user(
 ) -> Result<(), RepositoryError> {
     transaction
         .execute(
-            "UPDATE yard_sessions SET revoked_at_ms = ?2 WHERE user_id = ?1 AND revoked_at_ms IS NULL AND expires_at_ms > ?2",
+            "UPDATE yard_sessions SET revoked_at_ms = ?2
+             WHERE subject_id = ?1 AND revoked_at_ms IS NULL AND expires_at_ms > ?2",
             params![user_id, now_ms],
         )
         .map(|_changed| ())
@@ -272,18 +282,15 @@ fn require_admission(
     yard_id: &str,
     environment_id: &str,
 ) -> Result<(), RepositoryError> {
-    if admission.yard_id == yard_id && admission.environment_id == environment_id {
+    if (
+        admission.yard_id.as_str(),
+        admission.environment_id.as_str(),
+    ) == (yard_id, environment_id)
+    {
         Ok(())
     } else {
         Err(RepositoryError::NotFound)
     }
-}
-
-fn session_times(session: &YardSessionRecord) -> Result<(i64, i64), RepositoryError> {
-    Ok((
-        super::auth_validation::sql_time(session.created_at_ms)?,
-        super::auth_validation::sql_time(session.expires_at_ms)?,
-    ))
 }
 
 fn require_session_yard(session: &YardSessionRecord, yard_id: &str) -> Result<(), RepositoryError> {

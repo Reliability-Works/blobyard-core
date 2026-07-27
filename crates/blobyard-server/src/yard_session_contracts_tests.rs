@@ -1,9 +1,10 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
 use super::{
-    CONTINUATION_PREFIX, ContinuationClaims, ContractFault, activate, derive_key, has_token_shape,
-    identity_authority, issue, login_url, normalize_return_path, signature, valid_host_label,
-    verify, yard_host_label, yard_url,
+    CONTINUATION_PREFIX, ContinuationClaims, ContractFault, INVITATION_CONTINUATION_PREFIX,
+    activate, derive_key, has_token_shape, identity_authority, issue, issue_invitation, login_url,
+    normalize_return_path, signature, valid_host_label, verify, verify_invitation, yard_host_label,
+    yard_url,
 };
 use crate::test_support::error_status;
 use axum::http::StatusCode;
@@ -41,6 +42,42 @@ fn continuation_rejects_expiry_and_tampering() {
     let tampered =
         SecretString::new(format!("{}0", continuation.expose_secret())).expect("valid secret");
     assert!(verify(&key, &tampered, 101).is_err());
+}
+
+#[test]
+fn invitation_continuation_is_purpose_bound_and_lives_until_invitation_expiry() {
+    let (key, _capability) = key();
+    let expires_at_ms = 604_800_100;
+    let invitation = issue_invitation(
+        &key,
+        "docs-a1b2c3d4e-workspace",
+        "/guide",
+        100,
+        expires_at_ms,
+    )
+    .expect("invitation continuation");
+    assert!(
+        invitation
+            .expose_secret()
+            .starts_with(INVITATION_CONTINUATION_PREFIX)
+    );
+    let claims = verify_invitation(&key, &invitation, 600_101).expect("valid beyond ten minutes");
+    assert_eq!(claims.return_path(), "/guide");
+    assert!(verify_invitation(&key, &invitation, expires_at_ms).is_err());
+    assert!(verify(&key, &invitation, 101).is_err());
+
+    let ordinary = issue(&key, "docs-a1b2c3d4e-workspace", "/", 100).expect("continuation");
+    assert!(verify_invitation(&key, &ordinary, 101).is_err());
+    assert_eq!(
+        error_status(issue_invitation(
+            &key,
+            "docs-a1b2c3d4e-workspace",
+            "/",
+            100,
+            100,
+        )),
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }
 
 #[test]

@@ -1,12 +1,10 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::admission;
 use blobyard_contract::{
     LifecycleRepository, NewYardContinuation, NewYardSession, RepositoryError, WebYardRepository,
     YARD_EXCHANGE_CODE_LIFETIME_MS, YARD_SESSION_LIFETIME_MS, YardSessionAuditContext,
     YardSessionRepository,
 };
-use rusqlite::Connection;
 
 struct Fixture {
     _temporary: tempfile::TempDir,
@@ -44,6 +42,11 @@ impl Fixture {
                     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
                  INSERT INTO local_users VALUES
                    ('user_foreign', 'workspace_foreign', 'Foreign user', NULL, 'active', 1, NULL);
+                 INSERT INTO yard_subjects
+                   (id, kind, workspace_id, local_user_id, invitation_id, created_at_ms,
+                    revoked_at_ms)
+                 VALUES
+                   ('user_foreign', 'member', 'workspace_foreign', 'user_foreign', NULL, 1, NULL);
                  INSERT INTO web_yards VALUES
                    ('yard_owner', 'workspace_owner', 'project_owner', 'docs', 'docs-fixture',
                     'deploy_owner', 'active', 1, 1, NULL);
@@ -147,18 +150,6 @@ fn audit(id: &str) -> YardSessionAuditContext {
     YardSessionAuditContext {
         id: id.to_owned(),
         request_id: format!("request_{id}"),
-    }
-}
-
-#[test]
-fn admission_row_rejects_each_non_text_column() {
-    let connection = Connection::open_in_memory().expect("connection");
-    let base = ["'yard'", "'environment'", "'workspace'"];
-    for index in 0..base.len() {
-        let mut values = base;
-        values[index] = "X'00'";
-        let query = format!("SELECT {}", values.join(", "));
-        assert!(connection.query_row(&query, [], admission).is_err());
     }
 }
 

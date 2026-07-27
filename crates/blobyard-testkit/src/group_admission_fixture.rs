@@ -4,21 +4,36 @@ use std::collections::BTreeSet;
 
 const YARD_SESSION_FIXTURE: &str = include_str!("../../../conformance/behavior/yard-sessions.json");
 const AUTHORIZATION_FIXTURE: &str = include_str!("../../../conformance/authorization/vectors.json");
-const YARD_SESSION_CASE_COUNT: usize = 42;
+const YARD_SESSION_CASE_COUNT: usize = 91;
 const CLOUD_CASE_IDS: &[&str] = &[
+    "cloud-duplicate-guest-identity-rows-fail-closed",
+    "cloud-guest-acceptance-rejects-mismatched-email",
+    "cloud-guest-acceptance-rejects-unverified-email",
+    "cloud-guest-acceptance-requires-current-verified-normalized-email",
+    "cloud-guest-account-deletion-revokes-authority",
+    "cloud-guest-email-drift-denies-on-next-private-request",
+    "cloud-guest-without-workspace-membership-admits-selected",
+    "cloud-independent-member-grant-preserves-admission",
     "same-user-in-two-workspaces-does-not-bridge-authority",
     "workspace-membership-removal-denies-on-next-private-request",
 ];
 const OWNER_SUITES: &[(&str, &str)] = &[
     ("cloud", "hosted-admission"),
+    ("cloud", "hosted-guests"),
+    ("server", "guest-invitation-http"),
     ("server", "group-machine"),
     ("server", "session-contracts"),
     ("server", "session-cookie"),
     ("sqlite", "admission-corruption"),
     ("sqlite", "admission-drift"),
+    ("sqlite", "guest-atomicity"),
+    ("sqlite", "guest-authority-propagation"),
+    ("sqlite", "guest-corruption"),
+    ("sqlite", "guest-pagination"),
     ("sqlite", "group-limits"),
     ("sqlite", "group-pagination"),
     ("testkit", "groups"),
+    ("testkit", "yard-guests"),
     ("testkit", "yard-sessions"),
 ];
 

@@ -624,6 +624,61 @@ export interface Schemas {
     readonly ok: true;
     readonly requestId: string;
   }>;
+  readonly YardGuestInviteStatus: "pending" | "accepted" | "revoked";
+  readonly YardGuestInvite: Readonly<{
+    readonly acceptedAt: Schemas["IsoTimestamp"] | null;
+    readonly appRoles: readonly Schemas["ApplicationRoleName"][];
+    readonly createdAt: Schemas["IsoTimestamp"];
+    readonly email: string;
+    readonly environmentId: Schemas["Identifier"] | null;
+    readonly expiresAt: Schemas["IsoTimestamp"];
+    readonly id: string;
+    readonly revokedAt: Schemas["IsoTimestamp"] | null;
+    readonly status: Schemas["YardGuestInviteStatus"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly ListYardGuestInvitesQuery: Readonly<{
+    readonly cursor?: Schemas["Cursor"];
+    readonly limit?: number;
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly ListYardGuestInvitesResult: Readonly<{
+    readonly items: readonly Schemas["YardGuestInvite"][];
+    readonly nextCursor: Schemas["Cursor"] | null;
+  }>;
+  readonly ListYardGuestInvitesSuccessEnvelope: Readonly<{
+    readonly data: Schemas["ListYardGuestInvitesResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly CreateYardGuestInviteRequest: Readonly<{
+    readonly appRoles: readonly Schemas["ApplicationRoleName"][];
+    readonly email: string;
+    readonly environmentId: Schemas["Identifier"] | null;
+    readonly expiresAt?: Schemas["IsoTimestamp"];
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly CreateYardGuestInviteResult: Readonly<{
+    readonly invitation: Schemas["YardGuestInvite"];
+    readonly invitationUrl: Schemas["Url"];
+  }>;
+  readonly CreateYardGuestInviteSuccessEnvelope: Readonly<{
+    readonly data: Schemas["CreateYardGuestInviteResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
+  readonly RevokeYardGuestInviteRequest: Readonly<{
+    readonly invitationId: string;
+    readonly yardId: Schemas["Identifier"];
+  }>;
+  readonly RevokeYardGuestInviteResult: Readonly<{
+    readonly invitation: Schemas["YardGuestInvite"];
+  }>;
+  readonly RevokeYardGuestInviteSuccessEnvelope: Readonly<{
+    readonly data: Schemas["RevokeYardGuestInviteResult"];
+    readonly ok: true;
+    readonly requestId: string;
+  }>;
   readonly YardManagementRole: "owner" | "admin" | "developer" | "auditor";
   readonly YardManagementRoleAssignment: Readonly<{
     readonly createdAt: Schemas["IsoTimestamp"];
@@ -706,6 +761,7 @@ export interface Schemas {
   readonly YardVisibility:
     "public" | "owner" | "selected" | "workspace" | "authenticated-link" | "any-authenticated";
   readonly YardAccessPrincipalKind: "user" | "group" | "guest-invite" | "link";
+  readonly GrantYardAccessPrincipalKind: "user" | "group" | "link";
   readonly YardAccessGrantSummary: Readonly<{
     readonly appRoles: readonly string[];
     readonly createdAt: Schemas["IsoTimestamp"];
@@ -740,7 +796,7 @@ export interface Schemas {
     readonly environmentId?: Schemas["Identifier"];
     readonly expiresAt?: Schemas["IsoTimestamp"];
     readonly principalId: string;
-    readonly principalKind: Schemas["YardAccessPrincipalKind"];
+    readonly principalKind: Schemas["GrantYardAccessPrincipalKind"];
     readonly yardId: Schemas["Identifier"];
   }>;
   readonly GrantYardAccessResult: Readonly<{ readonly grant: Schemas["YardAccessGrantSummary"] }>;
@@ -1518,6 +1574,10 @@ export type CreateWorkspaceInput = Readonly<{
   readonly body: Schemas["CreateWorkspaceRequest"];
   readonly signal?: AbortSignal;
 }>;
+export type CreateYardGuestInviteInput = Readonly<{
+  readonly body: Schemas["CreateYardGuestInviteRequest"];
+  readonly signal?: AbortSignal;
+}>;
 export type DeactivateGroupInput = Readonly<{
   readonly body: Schemas["DeactivateGroupRequest"];
   readonly signal?: AbortSignal;
@@ -1686,6 +1746,14 @@ export type ListYardEnvironmentsInput = Readonly<{
   readonly query: Readonly<{ readonly yardId: Schemas["Identifier"] }>;
   readonly signal?: AbortSignal;
 }>;
+export type ListYardGuestInvitesInput = Readonly<{
+  readonly query: Readonly<{
+    readonly yardId: Schemas["Identifier"];
+    readonly cursor?: Schemas["Cursor"];
+    readonly limit?: number;
+  }>;
+  readonly signal?: AbortSignal;
+}>;
 export type ListYardManagementRolesInput = Readonly<{
   readonly query: Readonly<{
     readonly yardId: Schemas["Identifier"];
@@ -1798,6 +1866,10 @@ export type RevokeShareInput = Readonly<{
 }>;
 export type RevokeYardAccessInput = Readonly<{
   readonly body: Schemas["RevokeYardAccessRequest"];
+  readonly signal?: AbortSignal;
+}>;
+export type RevokeYardGuestInviteInput = Readonly<{
+  readonly body: Schemas["RevokeYardGuestInviteRequest"];
   readonly signal?: AbortSignal;
 }>;
 export type RevokeYardManagementRoleInput = Readonly<{
@@ -2096,6 +2168,18 @@ export declare const operations: Readonly<{
     requiredCiActions: readonly [];
     requiredUserScopes: readonly ["project:write"];
     risk: "write";
+    successStatus: 200;
+  }>;
+  readonly createYardGuestInvite: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/guest-invites";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
     successStatus: 200;
   }>;
   readonly deactivateGroup: Readonly<{
@@ -2554,6 +2638,18 @@ export declare const operations: Readonly<{
     risk: "read";
     successStatus: 200;
   }>;
+  readonly listYardGuestInvites: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "GET";
+    ownership: "core";
+    path: "/yards/guest-invites";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "sensitive";
+    successStatus: 200;
+  }>;
   readonly listYardManagementRoles: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -2878,6 +2974,18 @@ export declare const operations: Readonly<{
     risk: "destructive";
     successStatus: 200;
   }>;
+  readonly revokeYardGuestInvite: Readonly<{
+    idempotency: false;
+    idempotencyRequired: false;
+    method: "POST";
+    ownership: "core";
+    path: "/yards/guest-invites/revoke";
+    public: false;
+    requiredCiActions: readonly [];
+    requiredUserScopes: readonly ["yard:manage"];
+    risk: "destructive";
+    successStatus: 200;
+  }>;
   readonly revokeYardManagementRole: Readonly<{
     idempotency: false;
     idempotencyRequired: false;
@@ -3046,6 +3154,7 @@ export type RequiredOperationId =
   | "createStorageCheckout"
   | "createStorageUpdate"
   | "createWorkspace"
+  | "createYardGuestInvite"
   | "deactivateGroup"
   | "deactivateLocalUser"
   | "deleteObject"
@@ -3077,6 +3186,7 @@ export type RequiredOperationId =
   | "listWebYardDeploys"
   | "listWebYards"
   | "listYardEnvironments"
+  | "listYardGuestInvites"
   | "listYardManagementRoles"
   | "listYardSessions"
   | "logoutCliSession"
@@ -3104,6 +3214,7 @@ export type RequiredOperationId =
   | "revokePreview"
   | "revokeShare"
   | "revokeYardAccess"
+  | "revokeYardGuestInvite"
   | "revokeYardManagementRole"
   | "revokeYardSession"
   | "rollbackWebYard"
@@ -3146,6 +3257,7 @@ export interface OperationInputs {
   readonly createStorageCheckout: CreateStorageCheckoutInput;
   readonly createStorageUpdate: CreateStorageUpdateInput;
   readonly createWorkspace: CreateWorkspaceInput;
+  readonly createYardGuestInvite: CreateYardGuestInviteInput;
   readonly deactivateGroup: DeactivateGroupInput;
   readonly deactivateLocalUser: DeactivateLocalUserInput;
   readonly deleteObject: DeleteObjectInput;
@@ -3184,6 +3296,7 @@ export interface OperationInputs {
   readonly listWebYards: ListWebYardsInput;
   readonly listWorkspaces: ListWorkspacesInput;
   readonly listYardEnvironments: ListYardEnvironmentsInput;
+  readonly listYardGuestInvites: ListYardGuestInvitesInput;
   readonly listYardManagementRoles: ListYardManagementRolesInput;
   readonly listYardSessions: ListYardSessionsInput;
   readonly logoutCliSession: LogoutCliSessionInput;
@@ -3211,6 +3324,7 @@ export interface OperationInputs {
   readonly revokePreview: RevokePreviewInput;
   readonly revokeShare: RevokeShareInput;
   readonly revokeYardAccess: RevokeYardAccessInput;
+  readonly revokeYardGuestInvite: RevokeYardGuestInviteInput;
   readonly revokeYardManagementRole: RevokeYardManagementRoleInput;
   readonly revokeYardSession: RevokeYardSessionInput;
   readonly rollbackWebYard: RollbackWebYardInput;
@@ -3246,6 +3360,7 @@ export interface OperationOutputs {
   readonly createStorageCheckout: Schemas["CreateStorageCheckoutResult"];
   readonly createStorageUpdate: Schemas["CreateStorageUpdateResult"];
   readonly createWorkspace: Schemas["CreateWorkspaceResult"];
+  readonly createYardGuestInvite: Schemas["CreateYardGuestInviteResult"];
   readonly deactivateGroup: Schemas["DeactivateGroupResult"];
   readonly deactivateLocalUser: Schemas["DeactivateLocalUserResult"];
   readonly deleteObject: Schemas["DeleteObjectResult"];
@@ -3284,6 +3399,7 @@ export interface OperationOutputs {
   readonly listWebYards: Schemas["ListWebYardsResult"];
   readonly listWorkspaces: Schemas["ListWorkspacesResult"];
   readonly listYardEnvironments: Schemas["ListYardEnvironmentsResult"];
+  readonly listYardGuestInvites: Schemas["ListYardGuestInvitesResult"];
   readonly listYardManagementRoles: Schemas["ListYardManagementRolesResult"];
   readonly listYardSessions: Schemas["ListYardSessionsResult"];
   readonly logoutCliSession: Schemas["LogoutCliSessionResult"];
@@ -3311,6 +3427,7 @@ export interface OperationOutputs {
   readonly revokePreview: Schemas["RevokePreviewResult"];
   readonly revokeShare: Schemas["RevokeShareResult"];
   readonly revokeYardAccess: Schemas["RevokeYardAccessResult"];
+  readonly revokeYardGuestInvite: Schemas["RevokeYardGuestInviteResult"];
   readonly revokeYardManagementRole: Schemas["RevokeYardManagementRoleResult"];
   readonly revokeYardSession: Schemas["RevokeYardSessionResult"];
   readonly rollbackWebYard: Schemas["RollbackWebYardResult"];
@@ -3378,6 +3495,9 @@ export interface OperationBindings {
   readonly createWorkspace: (
     options: CreateWorkspaceInput,
   ) => Promise<OperationOutputs["createWorkspace"]>;
+  readonly createYardGuestInvite: (
+    options: CreateYardGuestInviteInput,
+  ) => Promise<OperationOutputs["createYardGuestInvite"]>;
   readonly deactivateGroup: (
     options: DeactivateGroupInput,
   ) => Promise<OperationOutputs["deactivateGroup"]>;
@@ -3464,6 +3584,9 @@ export interface OperationBindings {
   readonly listYardEnvironments: (
     options: ListYardEnvironmentsInput,
   ) => Promise<OperationOutputs["listYardEnvironments"]>;
+  readonly listYardGuestInvites: (
+    options: ListYardGuestInvitesInput,
+  ) => Promise<OperationOutputs["listYardGuestInvites"]>;
   readonly listYardManagementRoles: (
     options: ListYardManagementRolesInput,
   ) => Promise<OperationOutputs["listYardManagementRoles"]>;
@@ -3531,6 +3654,9 @@ export interface OperationBindings {
   readonly revokeYardAccess: (
     options: RevokeYardAccessInput,
   ) => Promise<OperationOutputs["revokeYardAccess"]>;
+  readonly revokeYardGuestInvite: (
+    options: RevokeYardGuestInviteInput,
+  ) => Promise<OperationOutputs["revokeYardGuestInvite"]>;
   readonly revokeYardManagementRole: (
     options: RevokeYardManagementRoleInput,
   ) => Promise<OperationOutputs["revokeYardManagementRole"]>;

@@ -6,8 +6,8 @@ use crate::headless_commands::{
     SharesCommand, TokensCommand, TrustsCommand, UsersCommand, WorkspacesCommand,
 };
 use crate::yard_commands::{
-    AccessCommand, ApplicationPolicyCommand, DeployArgs, EnvCommand, ManagementRolesCommand,
-    YardCommand, YardSessionsCommand,
+    AccessCommand, ApplicationPolicyCommand, DeployArgs, EnvCommand, GuestInvitesCommand,
+    ManagementRolesCommand, YardCommand, YardSessionsCommand,
 };
 use clap::{Args, Subcommand, ValueEnum};
 use std::num::NonZeroU32;
@@ -98,6 +98,12 @@ pub enum Command {
         /// The access operation.
         #[command(subcommand)]
         command: AccessCommand,
+    },
+    /// Create, list, or revoke Web Yard guest invitations.
+    GuestInvites {
+        /// The guest-invitation operation.
+        #[command(subcommand)]
+        command: GuestInvitesCommand,
     },
     /// Inspect or manage Yard-scoped human roles.
     ManagementRoles {

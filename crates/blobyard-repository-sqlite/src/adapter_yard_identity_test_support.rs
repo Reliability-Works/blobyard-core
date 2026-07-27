@@ -28,6 +28,13 @@ pub(super) fn repository() -> (tempfile::TempDir, SqliteRepository) {
                 'identity@example.test', 'active', 1, NULL),
                ('user_backup_owner', 'workspace_fixture', 'Backup Owner',
                 'backup@example.test', 'active', 1, NULL);
+             INSERT INTO yard_subjects
+               (id, kind, workspace_id, local_user_id, invitation_id, created_at_ms, revoked_at_ms)
+             VALUES
+               ('user_identity_fixture', 'member', 'workspace_fixture',
+                'user_identity_fixture', NULL, 1, NULL),
+               ('user_backup_owner', 'member', 'workspace_fixture',
+                'user_backup_owner', NULL, 1, NULL);
              INSERT INTO web_yards
                (id, workspace_id, project_id, name, host_label, current_deploy_id,
                 status, created_at_ms, updated_at_ms, deleted_at_ms)
@@ -51,7 +58,7 @@ pub(super) fn repository() -> (tempfile::TempDir, SqliteRepository) {
                ('yardgrant_identity', 'yard_identity_fixture', NULL, 'user',
                 'user_identity_fixture', '[]', 'active', 1, 'fixture', NULL, NULL);
              INSERT INTO yard_sessions
-               (id, token_hash, yard_id, environment_id, host_label, user_id,
+               (id, token_hash, yard_id, environment_id, host_label, subject_id,
                 created_at_ms, expires_at_ms, last_used_at_ms, revoked_at_ms)
              VALUES
                ('yardsession_identity',

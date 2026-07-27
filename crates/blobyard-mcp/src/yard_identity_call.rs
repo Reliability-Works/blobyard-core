@@ -1,4 +1,4 @@
-use super::{WebYardToolCall, string_list};
+use super::{WebYardToolCall, arguments::string_list};
 use crate::{Scope, tool_call::required_string};
 use serde_json::{Map, Value};
 

@@ -41,7 +41,7 @@ pub struct NewYardContinuation {
     pub environment_id: String,
     /// Exact Yard host label that may exchange the code.
     pub host_label: String,
-    /// Authenticated local-user identifier.
+    /// Authenticated opaque platform subject identifier.
     pub user_id: String,
     /// Normalized path restored after exchange.
     pub return_path: String,
@@ -95,7 +95,7 @@ pub struct YardSessionRecord {
     pub environment_id: String,
     /// Exact bound Yard host label.
     pub host_label: String,
-    /// Authenticated local-user identifier.
+    /// Authenticated opaque platform subject identifier.
     pub user_id: String,
     /// Session creation time as Unix milliseconds.
     pub created_at_ms: u64,

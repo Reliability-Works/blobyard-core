@@ -8,6 +8,7 @@ mod deploy_selection;
 mod dispatch;
 mod environments;
 mod groups;
+mod guest_invites;
 mod identity;
 mod local;
 mod local_users;
@@ -113,6 +114,7 @@ impl Runner {
             Command::Yard { .. }
             | Command::Env { .. }
             | Command::Access { .. }
+            | Command::GuestInvites { .. }
             | Command::ManagementRoles { .. }
             | Command::ApplicationPolicy { .. }
             | Command::YardSessions { .. } => self.execute_yard_family(command).await,

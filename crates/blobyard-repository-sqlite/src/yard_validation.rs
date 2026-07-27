@@ -118,29 +118,35 @@ pub(super) fn failure(
     transfer_validation::to_i64(now)
 }
 
-pub(super) fn action_event(
+pub(super) fn action_event<K>(
     event: &NewAuditEvent,
     action: &str,
     target_type: &str,
     workspace_id: &str,
     at_ms: u64,
-    metadata: impl IntoIterator<Item = (&'static str, AuditValue)>,
-) -> Result<i64, RepositoryError> {
+    metadata: impl IntoIterator<Item = (K, AuditValue)>,
+) -> Result<i64, RepositoryError>
+where
+    K: AsRef<str>,
+{
     event_matches(event, action, target_type, workspace_id, at_ms, metadata)?;
     transfer_validation::to_i64(at_ms)
 }
 
-fn event_matches(
+fn event_matches<K>(
     event: &NewAuditEvent,
     action: &str,
     target_type: &str,
     workspace_id: &str,
     at_ms: u64,
-    metadata: impl IntoIterator<Item = (&'static str, AuditValue)>,
-) -> Result<(), RepositoryError> {
+    metadata: impl IntoIterator<Item = (K, AuditValue)>,
+) -> Result<(), RepositoryError>
+where
+    K: AsRef<str>,
+{
     let expected = metadata
         .into_iter()
-        .map(|(name, value)| (name.to_owned(), value))
+        .map(|(name, value)| (name.as_ref().to_owned(), value))
         .collect::<BTreeMap<_, _>>();
     let actual = event.metadata.iter().cloned().collect::<BTreeMap<_, _>>();
     let valid = event.action == action

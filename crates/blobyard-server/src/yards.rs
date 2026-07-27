@@ -21,8 +21,14 @@ use blobyard_contract::CiAction;
 mod access;
 #[path = "yards_contracts.rs"]
 mod contracts;
+#[path = "yards_cursor.rs"]
+mod cursor;
 #[path = "yards_deploy.rs"]
 mod deploy;
+#[path = "yards_guest_invite_cursor.rs"]
+mod guest_invite_cursor;
+#[path = "yards_guest_invites.rs"]
+mod guest_invites;
 #[path = "yards_identity.rs"]
 mod identity;
 #[path = "yards_identity_routes.rs"]
@@ -63,6 +69,14 @@ pub(crate) fn routes() -> Router<AppState> {
             "/v1/yards/application-policy",
             get(identity_routes::get_yard_application_policy)
                 .post(identity_routes::set_yard_application_policy),
+        )
+        .route(
+            "/v1/yards/guest-invites",
+            get(guest_invites::list_handler).post(guest_invites::create_handler),
+        )
+        .route(
+            "/v1/yards/guest-invites/revoke",
+            post(guest_invites::revoke_handler),
         )
         .route("/v1/yards/delete", post(delete_yard))
         .route("/v1/yards/deploys", get(list_yard_deploys))

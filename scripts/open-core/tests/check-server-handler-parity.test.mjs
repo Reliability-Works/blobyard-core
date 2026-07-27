@@ -6,8 +6,8 @@ import { checkServerHandlerParity } from "../check-server-handler-parity.mjs";
 
 test("proves every Core operation has implemented route evidence", async () => {
   const result = await checkServerHandlerParity({ requireComplete: true });
-  assert.equal(result.core, 73);
-  assert.equal(result.implemented, 73);
+  assert.equal(result.core, 76);
+  assert.equal(result.implemented, 76);
   assert.equal(result.partial, 0);
   assert.equal(result.missing, 0);
   assert.deepEqual(result.pending, []);

@@ -13,7 +13,7 @@ pub(super) fn assert_openapi_catalog(listed: &[Value]) {
         .iter()
         .filter_map(|tool| tool["name"].as_str())
         .collect::<BTreeSet<_>>();
-    assert_eq!(expected_names.len(), 68);
+    assert_eq!(expected_names.len(), 71);
     assert_eq!(listed_names, expected_names);
     for (operation, expected_path, expected_method, tool_name) in OPENAPI_MCP_OPERATIONS {
         let endpoint = Endpoint::PUBLIC
@@ -83,4 +83,27 @@ pub(super) fn assert_yard_catalog(listed: &[Value]) {
         revoke_session["inputSchema"]["required"],
         json!(["yard", "session_id"])
     );
+    assert_guest_catalog(listed);
+}
+
+fn assert_guest_catalog(listed: &[Value]) {
+    let list_guests = listed
+        .iter()
+        .find(|tool| tool["name"] == "blobyard_list_yard_guest_invites")
+        .expect("guest invitation list tool must be listed");
+    assert_eq!(list_guests["annotations"]["readOnlyHint"], true);
+    let create_guest = listed
+        .iter()
+        .find(|tool| tool["name"] == "blobyard_create_yard_guest_invite")
+        .expect("guest invitation create tool must be listed");
+    assert_eq!(create_guest["annotations"]["openWorldHint"], true);
+    assert_eq!(
+        create_guest["inputSchema"]["required"],
+        json!(["yard", "email"])
+    );
+    let revoke_guest = listed
+        .iter()
+        .find(|tool| tool["name"] == "blobyard_revoke_yard_guest_invite")
+        .expect("guest invitation revoke tool must be listed");
+    assert_eq!(revoke_guest["annotations"]["destructiveHint"], true);
 }

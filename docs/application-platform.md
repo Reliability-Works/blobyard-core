@@ -104,8 +104,38 @@ exchange code. The Yard origin consumes that code and sets a twelve-hour
 `__Host-blobyard-yard-session` cookie with `Secure`, `HttpOnly`, `SameSite=Lax`, and `Path=/`. The
 identity origin sets no cookie, so each Yard sign-in re-enters the key. Session claims are resolved
 server-side on every delivery request; client-supplied tenant identifiers are never authorization
-inputs, and revocation takes effect on the next request. Guest invitations, link redemption, and
-OIDC identities arrive in later slices.
+inputs, and revocation takes effect on the next request. Link redemption and OIDC identities arrive
+in later slices.
+
+Core models every Yard-session principal as an opaque runtime subject. Existing local-user IDs
+remain the member subject IDs, so the current `YardIdentity.userId` contract does not change. An
+accepted guest instead receives a `guest_` subject linked to one invitation and never becomes a
+local user, workspace member, management-role holder, direct-user principal, or group member.
+
+A human operator with `yard:manage` may list, create, and revoke guest invitations; CI machine
+principals and Yard guest keys cannot authenticate these management operations. Creation normalizes
+the invited email by Unicode-whitespace trimming and lowercase conversion, validates application
+roles against the approved policy, and atomically stores one `guest-invite` access grant with the
+same Yard, optional Core production environment, and expiry. Core currently accepts either a
+Yard-wide invitation or the Yard's active production environment ID; other active environment kinds
+fail closed until delivery is environment-addressable. The dedicated guest-invitation operations
+exclusively create and revoke `guest-invite` grants, so generic access-grant operations cannot
+orphan or strand the invitation lifecycle. The invitation URL is returned once. Listing exposes only
+non-secret invitation state, while raw `bygi_` invitation values, their hashes, `byg_` guest keys,
+key prefixes, and session material remain concealed. Pages contain at most 50 newest-first records;
+a Yard may have 100 unexpired pending or accepted invitations, one active invitation per normalized
+email and environment scope, and lifetimes from five minutes through 30 days with a seven-day
+default when `expiresAt` or `--expires` is omitted.
+
+`GET /account/yard-invite` and `POST /account/yard-invite/accept` run only on the account origin,
+emit no-store and no-referrer HTML, accept an exact signed continuation, and conceal malformed,
+expired, consumed, revoked, foreign, or ambiguous invitations behind the same invalid-link page.
+First acceptance atomically consumes the invitation, creates the guest subject, stores only the hash
+of a one-time-displayed `byg_` login key, and issues the host-bound Yard exchange code. Guest grants
+admit only `selected` and `authenticated-link` visibility in their matching environment. Identity
+uses the normalized invitation email, expands approved application roles and permissions, keeps
+groups empty and `managementRole` null, and remains concealed for public Yards. Grant, invitation,
+key, subject, policy, or session revocation and expiry are re-evaluated on the next private request.
 
 `GET /.blobyard/session/identity` returns the exact live `YardIdentity` on a private Yard origin
 when the host-bound session remains admitted. It accepts only same-origin `GET`, emits
@@ -135,12 +165,13 @@ only when the group is active and belongs to the Yard workspace. Legacy group-pr
 do not resolve to a current group remain stored but fail closed.
 
 The generated `conformance/behavior/yard-sessions.json` and `conformance/authorization/vectors.json`
-files carry the portable group/admission matrix for Core and Cloud. The Rust testkit asserts the
-exact case inventory and execution owner. Core cases cover tenant isolation, lifecycle and
-environment drift, deterministic pagination, cardinality limits, exact mutation audits, rollback,
-and all seven machine-denied group routes. Better Auth workspace membership cases are marked
-`conformanceOwner: cloud`; Core proves the corresponding local-user deactivation boundary without
-claiming Cloud membership semantics.
+files carry the portable group, guest, and admission matrix for Core and Cloud. The Rust testkit
+asserts the exact case inventory and execution owner. Core cases cover tenant isolation, lifecycle
+and environment drift, deterministic pagination, cardinality limits, exact mutation audits,
+rollback, machine-denied management routes, guest acceptance, live identity, and immediate
+revocation. Better Auth workspace membership and verified-email guest cases are marked
+`conformanceOwner: cloud`; Core proves the corresponding local-user and invitation boundaries
+without claiming Cloud identity semantics.
 
 ## The application manifest
 

@@ -4,15 +4,23 @@
 )]
 
 use crate::Scope;
-use crate::tool_call::{optional_bool, required_string};
+use crate::tool_call::required_string;
 use serde_json::{Map, Value};
 
+#[path = "yard_call_arguments.rs"]
+mod arguments;
+#[path = "yard_guest_invite_call.rs"]
+mod guest_invites;
 #[path = "yard_identity_call.rs"]
 mod identity;
+
+pub use guest_invites::YardGuestInviteToolCall;
 
 /// A validated MCP operation for public Web Yards.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WebYardToolCall {
+    /// Manage Web Yard guest invitations.
+    GuestInvite(YardGuestInviteToolCall),
     /// Deploy a local static directory to a named Web Yard.
     DeployWebYard {
         /// CLI scope overrides.
@@ -182,6 +190,9 @@ pub enum WebYardToolCall {
 }
 
 pub(crate) fn is_yard_tool(name: &str) -> bool {
+    if guest_invites::is_tool(name) {
+        return true;
+    }
     matches!(
         name,
         "deploy_web_yard"
@@ -210,12 +221,15 @@ pub(crate) fn parse_yard_call(
     arguments: &Map<String, Value>,
     scope: Scope,
 ) -> Result<WebYardToolCall, String> {
-    reject_unknown(name, arguments)?;
+    if guest_invites::is_tool(name) {
+        return guest_invites::parse(name, arguments, scope).map(WebYardToolCall::GuestInvite);
+    }
+    arguments::reject_unknown(name, arguments)?;
     if identity::is_tool(name) {
         return identity::parse(name, arguments, scope);
     }
     match name {
-        "deploy_web_yard" => parse_deploy(scope, arguments),
+        "deploy_web_yard" => arguments::parse_deploy(scope, arguments),
         "list_web_yards" => Ok(WebYardToolCall::ListWebYards { scope }),
         "list_yard_deploys" => Ok(WebYardToolCall::ListYardDeploys {
             scope,
@@ -237,9 +251,9 @@ pub(crate) fn parse_yard_call(
         "grant_yard_access" => Ok(WebYardToolCall::GrantYardAccess {
             scope,
             yard: required_string(arguments, "yard")?,
-            principal_kind: required_string(arguments, "principal_kind")?,
+            principal_kind: generic_principal_kind(arguments)?,
             principal_id: required_string(arguments, "principal_id")?,
-            roles: string_list(arguments, "roles")?,
+            roles: arguments::string_list(arguments, "roles")?,
             environment_id: crate::optional_string(arguments, "environment_id")?,
             expires_at: crate::optional_string(arguments, "expires_at")?,
         }),
@@ -262,93 +276,19 @@ pub(crate) fn parse_yard_call(
             yard: required_string(arguments, "yard")?,
             deploy_id: crate::optional_string(arguments, "deploy_id")?,
         }),
-        "delete_web_yard" => parse_delete(scope, arguments),
+        "delete_web_yard" => arguments::parse_delete(scope, arguments),
         _ => Err(format!("unknown tool: {name}")),
     }
 }
 
-fn parse_deploy(scope: Scope, arguments: &Map<String, Value>) -> Result<WebYardToolCall, String> {
-    require_true(arguments, "public")?;
-    Ok(WebYardToolCall::DeployWebYard {
-        scope,
-        directory: required_string(arguments, "directory")?,
-        yard: required_string(arguments, "yard")?,
-        spa: optional_bool(arguments, "spa")?.unwrap_or(false),
-        clean_urls: optional_bool(arguments, "clean_urls")?.unwrap_or(false),
-    })
-}
-
-fn parse_delete(scope: Scope, arguments: &Map<String, Value>) -> Result<WebYardToolCall, String> {
-    require_true(arguments, "confirm")?;
-    Ok(WebYardToolCall::DeleteWebYard {
-        scope,
-        yard: required_string(arguments, "yard")?,
-    })
-}
-
-pub(super) fn string_list(
-    arguments: &Map<String, Value>,
-    key: &str,
-) -> Result<Vec<String>, String> {
-    let Some(value) = arguments.get(key) else {
-        return Ok(Vec::new());
-    };
-    let items = value
-        .as_array()
-        .ok_or_else(|| format!("{key} must be an array of strings"))?;
-    items
-        .iter()
-        .map(|item| {
-            item.as_str()
-                .filter(|text| !text.is_empty())
-                .map(ToOwned::to_owned)
-                .ok_or_else(|| format!("{key} must contain non-empty strings"))
-        })
-        .collect()
-}
-
-fn require_true(arguments: &Map<String, Value>, key: &str) -> Result<(), String> {
-    match optional_bool(arguments, key)? {
-        Some(true) => Ok(()),
-        Some(false) => Err(format!("{key} must be true to confirm this operation")),
-        None => Err(format!("missing required argument: {key}")),
+fn generic_principal_kind(arguments: &Map<String, Value>) -> Result<String, String> {
+    let value = required_string(arguments, "principal_kind")?;
+    if matches!(value.as_str(), "user" | "group" | "link") {
+        Ok(value)
+    } else {
+        Err(
+            "principal_kind must be user, group, or link; use create_yard_guest_invite for guest access"
+                .to_owned(),
+        )
     }
-}
-
-fn reject_unknown(name: &str, arguments: &Map<String, Value>) -> Result<(), String> {
-    let specific: &[&str] = match name {
-        "deploy_web_yard" => &["directory", "yard", "spa", "clean_urls", "public"],
-        "list_yard_deploys"
-        | "list_yard_environments"
-        | "get_yard_access"
-        | "get_yard_application_policy"
-        | "list_yard_sessions" => &["yard"],
-        "list_yard_management_roles" => &["yard", "cursor"],
-        "set_yard_management_role" => &["yard", "user_id", "role"],
-        "revoke_yard_management_role" => &["yard", "user_id"],
-        "set_yard_application_policy" => {
-            &["yard", "source_manifest_digest", "default_role", "roles"]
-        }
-        "set_yard_access_roles" => &["yard", "grant_id", "roles"],
-        "set_yard_visibility" => &["yard", "visibility"],
-        "grant_yard_access" => &[
-            "yard",
-            "principal_kind",
-            "principal_id",
-            "roles",
-            "environment_id",
-            "expires_at",
-        ],
-        "revoke_yard_access" => &["yard", "grant_id"],
-        "revoke_yard_session" => &["yard", "session_id"],
-        "delete_web_yard" => &["yard", "confirm"],
-        "rollback_web_yard" => &["yard", "deploy_id"],
-        _ => &[],
-    };
-    arguments
-        .keys()
-        .find(|key| {
-            !matches!(key.as_str(), "workspace" | "project") && !specific.contains(&key.as_str())
-        })
-        .map_or(Ok(()), |key| Err(format!("unexpected argument: {key}")))
 }

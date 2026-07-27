@@ -110,7 +110,8 @@ impl TransferRepository for FaultingRepository {
                 | Corruption::YardManagementRoleTimestamp
                 | Corruption::YardPolicyTimestamp
                 | Corruption::YardPolicyRevision
-                | Corruption::YardAccessGrantTimestamp,
+                | Corruption::YardAccessGrantTimestamp
+                | Corruption::YardGuestInviteTimestamp,
             )
             | None => {}
         }

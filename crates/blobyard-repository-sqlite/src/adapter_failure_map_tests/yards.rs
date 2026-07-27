@@ -50,6 +50,7 @@ pub(super) fn assert_poisoned_yards(repository: &SqliteRepository) {
     unavailable(repository.yard_file_by_host(&yard.host_label, "", None, 0));
     assert_poisoned_yard_sessions(repository, &yard, &event);
     assert_poisoned_yard_access(repository, &yard.id, &event);
+    assert_poisoned_yard_guests(repository, &yard, &event);
 }
 
 fn assert_poisoned_yard_sessions(
@@ -104,4 +105,92 @@ fn assert_poisoned_yard_access(
     unavailable(repository.insert_yard_access_grant(&grant, event));
     unavailable(repository.revoke_yard_access_grant(yard_id, &grant.id, 1_001, event));
     unavailable(repository.list_yard_access_grants(yard_id, 1_001));
+}
+
+fn assert_poisoned_yard_guests(
+    repository: &SqliteRepository,
+    yard: &blobyard_contract::NewWebYard,
+    event: &blobyard_contract::NewAuditEvent,
+) {
+    let (invitation, grant) = guest_invitation_and_grant(yard);
+    let subject = blobyard_contract::YardSubjectRecord {
+        id: "guest_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_owned(),
+        kind: blobyard_contract::YardSubjectKind::Guest,
+        workspace_id: yard.workspace_id.clone(),
+        local_user_id: None,
+        invitation_id: Some(invitation.id.clone()),
+        created_at_ms: 1_001,
+        revoked_at_ms: None,
+    };
+    let key = blobyard_contract::YardGuestLoginKeyRecord {
+        id: "ygk_cccccccccccccccccccccccccccccccc".to_owned(),
+        subject_id: subject.id.clone(),
+        invitation_id: invitation.id.clone(),
+        workspace_id: yard.workspace_id.clone(),
+        token_prefix: "byg_fixture".to_owned(),
+        secret_hash: checksum('5'),
+        created_at_ms: 1_001,
+        expires_at_ms: 301_000,
+        last_used_at_ms: None,
+        revoked_at_ms: None,
+    };
+    let continuation = blobyard_contract::NewYardContinuation {
+        id: "yardcont_guest_failure_map".to_owned(),
+        continuation_hash: checksum('6'),
+        code_hash: checksum('7'),
+        yard_id: yard.id.clone(),
+        environment_id: "environment_failure_map".to_owned(),
+        host_label: yard.host_label.clone(),
+        user_id: subject.id.clone(),
+        return_path: "/".to_owned(),
+        created_at_ms: 1_001,
+        expires_at_ms: 301_001,
+    };
+
+    unavailable(repository.list_yard_guest_invites(&yard.id, None, 50));
+    unavailable(repository.yard_guest_invite_by_id(&invitation.id));
+    unavailable(repository.create_yard_guest_invite(&invitation, &grant, event));
+    unavailable(repository.pending_yard_guest_invite_by_token(&invitation.token_hash, 1_001));
+    unavailable(repository.accept_yard_guest_invite(
+        &invitation.token_hash,
+        &subject,
+        &key,
+        &continuation,
+        event,
+        1_001,
+    ));
+    unavailable(repository.revoke_yard_guest_invite(&yard.id, &invitation.id, 1_001, event));
+    unavailable(repository.authenticate_yard_guest_key(&key.secret_hash, 1_001));
+}
+
+fn guest_invitation_and_grant(
+    yard: &blobyard_contract::NewWebYard,
+) -> (
+    blobyard_contract::NewYardGuestInvite,
+    blobyard_contract::NewYardAccessGrant,
+) {
+    let invitation = blobyard_contract::NewYardGuestInvite {
+        id: "ygi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+        workspace_id: yard.workspace_id.clone(),
+        project_id: yard.project_id.clone(),
+        yard_id: yard.id.clone(),
+        environment_id: None,
+        email: "guest@example.test".to_owned(),
+        token_hash: checksum('4'),
+        grant_id: "yardgrant_failure_map".to_owned(),
+        created_at_ms: 1_000,
+        expires_at_ms: 301_000,
+    };
+    let grant = blobyard_contract::NewYardAccessGrant {
+        id: invitation.grant_id.clone(),
+        yard_id: invitation.yard_id.clone(),
+        environment_id: None,
+        principal_kind: blobyard_contract::YardAccessPrincipalKind::GuestInvite,
+        principal_id: invitation.id.clone(),
+        app_roles: Vec::new(),
+        created_at_ms: 1_000,
+        created_by_principal: "fixture".to_owned(),
+        expires_at_ms: Some(301_000),
+    };
+    (invitation, grant)
 }

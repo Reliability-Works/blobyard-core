@@ -86,6 +86,81 @@
       }
     },
     {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": true, "authority": "guest-invitation" },
+      "id": "authenticated-link-admits-a-matching-guest-invitation",
+      "input": { "principalKind": "guest", "visibility": "authenticated-link" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "cloud-duplicate-guest-identity-rows-fail-closed",
+      "input": { "acceptedIdentityRowCount": 2, "principalKind": "guest" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": {
+        "accepted": false,
+        "responseClass": "concealed-not-found",
+        "workspaceMembershipCreated": false
+      },
+      "id": "cloud-guest-acceptance-rejects-mismatched-email",
+      "input": { "emailState": "verified-mismatch", "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": {
+        "accepted": false,
+        "responseClass": "concealed-not-found",
+        "workspaceMembershipCreated": false
+      },
+      "id": "cloud-guest-acceptance-rejects-unverified-email",
+      "input": { "emailState": "unverified-match", "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "accepted": true, "workspaceMembershipCreated": false },
+      "id": "cloud-guest-acceptance-requires-current-verified-normalized-email",
+      "input": { "emailState": "verified-match", "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "admitted": false, "grantRevoked": true, "invitationRevoked": true },
+      "id": "cloud-guest-account-deletion-revokes-authority",
+      "input": { "change": "account-deleted", "principalKind": "guest" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "cloud-guest-email-drift-denies-on-next-private-request",
+      "input": { "change": "verified-email-changed", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "admitted": true },
+      "id": "cloud-guest-without-workspace-membership-admits-selected",
+      "input": {
+        "principalKind": "guest",
+        "visibility": "selected",
+        "workspaceMembershipPresent": false
+      }
+    },
+    {
+      "conformanceOwner": "cloud",
+      "conformanceSuite": "hosted-guests",
+      "expected": { "admitted": true, "admittingAuthority": "member" },
+      "id": "cloud-independent-member-grant-preserves-admission",
+      "input": { "change": "invitation-revoked", "principalKind": "member-and-guest" }
+    },
+    {
       "conformanceOwner": "server",
       "conformanceSuite": "session-contracts",
       "expected": { "lifetimeMilliseconds": 600000 },
@@ -98,6 +173,34 @@
       "expected": { "admitted": false, "responseClass": "concealed-not-found" },
       "id": "corrupt-group-membership-cardinality-is-inert",
       "input": { "memberCountMatchesMembershipRows": false, "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-guest-grant-link-is-inert",
+      "input": { "grantMatchesInvitation": false, "principalKind": "guest" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-guest-lifecycle-is-inert",
+      "input": { "lifecycleConsistent": false, "principalKind": "guest" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-guest-subject-kind-is-inert",
+      "input": { "principalKind": "guest", "subjectKind": "unknown" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-corruption",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "corrupt-guest-tenant-link-is-inert",
+      "input": { "invitationWorkspaceMatchesSubject": false, "principalKind": "guest" }
     },
     {
       "conformanceOwner": "sqlite",
@@ -120,6 +223,13 @@
       },
       "id": "direct-user-grant-admits",
       "input": { "grantStatus": "active", "principalKind": "user" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "auditEventCount": 0, "repositoryError": "CONFLICT" },
+      "id": "duplicate-active-guest-invitation-conflicts-without-rotation",
+      "input": { "scope": "same-email-yard-environment" }
     },
     {
       "conformanceOwner": "testkit",
@@ -159,11 +269,47 @@
       "input": { "grantExpiry": "elapsed", "grantStatus": "active", "principalKind": "group" }
     },
     {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "expired-guest-grant-denies-the-next-private-request",
+      "input": { "authority": "grant", "change": "expired", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseClass": "concealed-not-found" },
+      "id": "expired-guest-invitation-token-is-concealed",
+      "input": { "invitationState": "expired", "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "expired-guest-key-denies-the-next-private-request",
+      "input": { "authority": "key", "change": "expired", "surface": "private-delivery" }
+    },
+    {
       "conformanceOwner": "testkit",
       "conformanceSuite": "groups",
       "expected": { "auditEventCount": 0, "stateChanged": false },
       "id": "failed-group-mutations-emit-no-audit",
       "input": { "mutationResult": ["invalid", "conflict", "concealed-not-found"] }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseClass": "concealed-not-found" },
+      "id": "foreign-guest-invitation-token-is-concealed",
+      "input": { "invitationState": "foreign", "surface": "account-acceptance" }
     },
     {
       "conformanceOwner": "testkit",
@@ -248,6 +394,214 @@
       "input": { "mutation": "group-rename" }
     },
     {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-atomicity",
+      "expected": {
+        "auditEventCreated": false,
+        "rolledBack": true,
+        "writeBoundaryCoverage": "complete"
+      },
+      "id": "guest-accept-rolls-back-after-every-write-boundary",
+      "input": { "faultPosition": "each-write-authorization-boundary", "mutation": "accept" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "accepted": true, "replayResponse": "concealed-not-found" },
+      "id": "guest-acceptance-is-single-use-and-key-is-hash-only",
+      "input": { "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "applicationRoles": ["viewer"], "created": true },
+      "id": "guest-create-accepts-approved-application-roles",
+      "input": {
+        "applicationRoles": ["viewer"],
+        "operation": "createYardGuestInvite",
+        "policyRoles": ["viewer"]
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "applicationRoles": [], "created": true },
+      "id": "guest-create-allows-empty-application-roles",
+      "input": { "applicationRoles": [], "operation": "createYardGuestInvite" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "auditEventCount": 1, "grantCount": 1, "invitationCount": 1 },
+      "id": "guest-create-atomically-persists-invitation-grant-and-audit",
+      "input": { "mutation": "guest-invitation-create" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseCode": "BAD_REQUEST" },
+      "id": "guest-create-rejects-duplicate-application-roles",
+      "input": {
+        "applicationRoles": ["viewer", "viewer"],
+        "operation": "createYardGuestInvite",
+        "policyRoles": ["viewer"]
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseCode": "BAD_REQUEST" },
+      "id": "guest-create-rejects-unknown-application-roles",
+      "input": {
+        "applicationRoles": ["unknown"],
+        "operation": "createYardGuestInvite",
+        "policyRoles": ["viewer"]
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": {
+        "presentOnCreate": true,
+        "presentOnList": false,
+        "reusableAuthorityReturned": false
+      },
+      "id": "guest-create-returns-one-time-invitation-url",
+      "input": { "operation": "createYardGuestInvite", "responseField": "invitationUrl" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-atomicity",
+      "expected": {
+        "auditEventCreated": false,
+        "rolledBack": true,
+        "writeBoundaryCoverage": "complete"
+      },
+      "id": "guest-create-rolls-back-after-every-write-boundary",
+      "input": { "faultPosition": "each-write-authorization-boundary", "mutation": "create" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": false, "responseClass": "concealed-not-found" },
+      "id": "guest-does-not-inherit-owner-or-workspace-admission",
+      "input": { "principalKind": "guest", "visibility": ["owner", "workspace"] }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": {
+        "applicationRoles": ["editor", "viewer"],
+        "groups": [],
+        "managementRole": null
+      },
+      "id": "guest-identity-expands-application-role-without-management-authority",
+      "input": { "applicationRole": "editor", "principalKind": "guest" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "activeInvitations": 100, "repositoryError": "CONFLICT" },
+      "id": "guest-invitation-capacity-allows-exactly-one-hundred-active-authorities",
+      "input": { "activeInvitations": 100, "nextMutation": "create" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "authorityCreated": false, "repositoryError": "INVALID_INPUT" },
+      "id": "guest-invitation-lifetimes-outside-five-minutes-and-thirty-days-fail",
+      "input": { "lifetimeMilliseconds": [299999, 2592000001] }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-pagination",
+      "expected": {
+        "duplicates": 0,
+        "omissionsWithinSnapshot": 0,
+        "ordering": ["createdAt-desc", "id-desc"]
+      },
+      "id": "guest-invitation-pagination-is-deterministic-and-cursor-safe",
+      "input": {
+        "concurrentInsertAfterCursor": true,
+        "pageSize": 50,
+        "resource": "guest-invitations"
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "allowed": false, "code": "UNAUTHORIZED" },
+      "id": "guest-key-is-rejected-by-management-authentication",
+      "input": { "principalKind": "guest", "surface": "management-authentication" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "containsAuthorityMaterial": false, "pageSize": 50 },
+      "id": "guest-list-output-permanently-conceals-authority-material",
+      "input": { "surface": "guest-invitation-list" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "guest-policy-change-denies-the-next-private-request",
+      "input": { "authority": "policy", "change": "owner-only", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": false, "propagationMilliseconds": 0 },
+      "id": "guest-revocation-denies-on-next-private-request",
+      "input": { "change": "invitation-revoked", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-atomicity",
+      "expected": {
+        "auditEventCreated": false,
+        "rolledBack": true,
+        "writeBoundaryCoverage": "complete"
+      },
+      "id": "guest-revoke-rolls-back-after-every-write-boundary",
+      "input": { "faultPosition": "each-write-authorization-boundary", "mutation": "revoke" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": false, "repositoryError": "INVALID_INPUT" },
+      "id": "guest-subject-cannot-inherit-direct-principal-authority",
+      "input": {
+        "attemptedPrincipalKind": "user",
+        "guestSubjectId": "guest_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": false, "repositoryError": "INVALID_INPUT" },
+      "id": "guest-subject-cannot-inherit-group-principal-authority",
+      "input": {
+        "attemptedPrincipalKind": "group",
+        "guestSubjectId": "guest_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": {
+        "cacheControl": "no-store",
+        "frameAncestors": "none",
+        "referrerPolicy": "no-referrer"
+      },
+      "id": "invitation-pages-prevent-cache-referrer-and-framing-leaks",
+      "input": { "surface": "account-invitation-page" }
+    },
+    {
       "conformanceOwner": "server",
       "conformanceSuite": "group-machine",
       "expected": { "allowed": false, "code": "FORBIDDEN", "deniedOperationCount": 7 },
@@ -264,6 +618,13 @@
         ],
         "principalKind": "machine"
       }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseClass": "concealed-not-found" },
+      "id": "malformed-and-ambiguous-invitation-input-is-concealed",
+      "input": { "inputClass": ["malformed", "ambiguous"], "surface": "account-acceptance" }
     },
     {
       "conformanceOwner": "testkit",
@@ -328,6 +689,13 @@
       }
     },
     {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "repositoryCalls": 0, "responseCode": "BAD_REQUEST" },
+      "id": "oversized-invitation-submission-is-rejected-before-resolution",
+      "input": { "bodyBytes": 32769, "surface": "account-acceptance" }
+    },
+    {
       "conformanceOwner": "testkit",
       "conformanceSuite": "yard-sessions",
       "expected": { "repositoryError": "NOT_FOUND" },
@@ -347,6 +715,46 @@
       "expected": { "admitted": false, "responseClass": "concealed-not-found" },
       "id": "revoked-group-grant-denies",
       "input": { "grantExpiry": "none", "grantStatus": "revoked", "principalKind": "group" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "revoked-guest-grant-denies-the-next-private-request",
+      "input": { "authority": "grant", "change": "revoked", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseClass": "concealed-not-found" },
+      "id": "revoked-guest-invitation-token-is-concealed",
+      "input": { "invitationState": "revoked", "surface": "account-acceptance" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "revoked-guest-key-denies-the-next-private-request",
+      "input": { "authority": "key", "change": "revoked", "surface": "private-delivery" }
+    },
+    {
+      "conformanceOwner": "sqlite",
+      "conformanceSuite": "guest-authority-propagation",
+      "expected": {
+        "admitted": false,
+        "propagationMilliseconds": 0,
+        "responseClass": "concealed-not-found"
+      },
+      "id": "revoked-guest-subject-denies-the-next-private-request",
+      "input": { "authority": "subject", "change": "revoked", "surface": "private-delivery" }
     },
     {
       "conformanceOwner": "sqlite",
@@ -373,6 +781,13 @@
       }
     },
     {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "admitted": true, "environmentScoped": true },
+      "id": "selected-guest-grant-admits-only-matching-environment",
+      "input": { "principalKind": "guest-invite", "visibility": "selected" }
+    },
+    {
       "conformanceOwner": "server",
       "conformanceSuite": "session-cookie",
       "expected": {
@@ -388,6 +803,13 @@
       "expected": { "lifetimeMilliseconds": 43200000 },
       "id": "session-lifetime-is-twelve-hours",
       "input": { "surface": "session" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "guest-invitation-http",
+      "expected": { "authorityCreated": false, "responseClass": "concealed-not-found" },
+      "id": "unknown-guest-invitation-token-is-concealed",
+      "input": { "invitationState": "unknown", "surface": "account-acceptance" }
     },
     {
       "conformanceOwner": "sqlite",
@@ -434,6 +856,13 @@
         "principalKind": "group",
         "surface": "private-delivery"
       }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "yard-guests",
+      "expected": { "created": true, "scope": "yard-wide" },
+      "id": "yard-wide-guest-invitations-accept-exact-lifetime-boundaries",
+      "input": { "environmentId": null, "lifetimeMilliseconds": [300000, 2592000000] }
     }
   ],
   "schemaVersion": 1

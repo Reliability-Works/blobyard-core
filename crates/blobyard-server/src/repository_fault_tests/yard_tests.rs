@@ -1,12 +1,16 @@
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
-use super::{FaultingRepository, Repository};
+use super::{Corruption, FaultingRepository, Repository};
 use crate::transfers::test_seams;
 use blobyard_contract::{
     NewAuditEvent, NewWebYard, NewYardDeploy, NewYardFile, RepositoryError, WebYardRepository,
+    YardGuestRepository,
 };
 use blobyard_core::Slug;
 use std::sync::Arc;
+
+#[path = "yard_guest_fault_support.rs"]
+mod yard_guest_fault_support;
 
 fn yard() -> NewWebYard {
     NewWebYard {
@@ -46,8 +50,31 @@ fn event(action: &str, target_type: &str, field: &str, value: &str) -> NewAuditE
 #[test]
 fn yard_fault_wrapper_forwards_every_operation() {
     let (_temporary, inner) = super::conforming_repository();
-    let repository = FaultingRepository::new(inner, usize::MAX);
+    let repository = FaultingRepository::new(Arc::clone(&inner), usize::MAX);
     blobyard_testkit::yard_conformance(&repository, &yard_fixture()).expect("yard conformance");
+    assert_eq!(
+        repository.yard_guest_invite_by_id("missing"),
+        Err(RepositoryError::NotFound)
+    );
+    let corrupted =
+        FaultingRepository::corrupting(Arc::clone(&inner), Corruption::YardGuestInviteTimestamp)
+            .list_yard_guest_invites("yard_docs_1", None, 50)
+            .expect("guest invitation list");
+    assert_eq!(
+        corrupted
+            .items
+            .first()
+            .expect("guest invitation")
+            .created_at_ms,
+        u64::MAX
+    );
+    assert!(
+        FaultingRepository::corrupting(Arc::clone(&inner), Corruption::YardGuestInviteTimestamp)
+            .list_yard_guest_invites("yard_without_invitations", None, 50)
+            .expect("empty guest invitation list")
+            .items
+            .is_empty()
+    );
     assert_eq!(
         repository.list_yard_access_grants("", 1),
         Err(RepositoryError::InvalidInput)
@@ -126,4 +153,11 @@ fn yard_fault_wrapper_fails_every_operation_at_the_boundary() {
         fail().yard_file_by_host(&yard.host_label, "", None, 0),
         Err(RepositoryError::Unavailable)
     );
+}
+
+#[test]
+fn yard_guest_fault_wrapper_fails_every_operation_at_the_boundary() {
+    let fixture = test_seams::fixture(&["yard:manage"]);
+    let inner: Arc<dyn Repository> = Arc::clone(&fixture.state.repository);
+    yard_guest_fault_support::assert_guest_faults(&inner);
 }

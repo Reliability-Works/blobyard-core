@@ -184,6 +184,18 @@ pub enum YardAccessPrincipalKind {
     Link,
 }
 
+/// Kind of principal accepted by the generic Yard access-grant operation.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GrantYardAccessPrincipalKind {
+    /// A local user account.
+    User,
+    /// A local group.
+    Group,
+    /// A capability link holder.
+    Link,
+}
+
 /// Stable metadata for one active Yard access grant.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -1,6 +1,6 @@
 use super::{
-    map_error, yard_application_policy, yard_identity_grants, yard_management_roles,
-    yard_session_admission, yard_session_rows,
+    map_error, yard_application_policy, yard_guest_identity, yard_identity_grants,
+    yard_management_roles, yard_session_admission, yard_session_rows,
 };
 use blobyard_contract::{RepositoryError, YardIdentity};
 use rusqlite::{Connection, OptionalExtension, Row, params};
@@ -9,6 +9,8 @@ use std::collections::BTreeSet;
 struct IdentityBase {
     session_id: String,
     user_id: String,
+    subject_kind: String,
+    invitation_id: Option<String>,
     workspace_id: String,
     project_id: String,
     yard_id: String,
@@ -35,20 +37,9 @@ pub(super) fn resolve(
         &base.visibility,
         now_ms,
     )?;
-    if admitted.as_deref() != Some(base.session_id.as_str()) {
-        return Err(RepositoryError::NotFound);
-    }
+    require_admitted_session(admitted.as_deref(), &base.session_id)?;
     yard_management_roles::validate_integrity(connection, &base.yard_id)?;
-    let management_role = yard_management_roles::by_user(connection, &base.yard_id, &base.user_id)?
-        .map(|assignment| assignment.role);
-    let sources = yard_identity_grants::resolve(
-        connection,
-        &base.yard_id,
-        &base.environment_id,
-        &base.workspace_id,
-        &base.user_id,
-        now_ms,
-    )?;
+    let (management_role, sources) = authority(connection, &base, now_ms)?;
     let (app_roles, permissions) = effective_application_authority(
         yard_application_policy::policy_by_yard(connection, &base.yard_id)?,
         sources.roles,
@@ -70,6 +61,58 @@ pub(super) fn resolve(
     })
 }
 
+fn require_admitted_session(
+    admitted_session_id: Option<&str>,
+    resolved_session_id: &str,
+) -> Result<(), RepositoryError> {
+    if admitted_session_id == Some(resolved_session_id) {
+        Ok(())
+    } else {
+        Err(RepositoryError::NotFound)
+    }
+}
+
+fn authority(
+    connection: &Connection,
+    base: &IdentityBase,
+    now_ms: i64,
+) -> Result<
+    (
+        Option<blobyard_contract::YardManagementRole>,
+        yard_identity_grants::IdentityGrantSources,
+    ),
+    RepositoryError,
+> {
+    match (base.subject_kind.as_str(), base.invitation_id.as_deref()) {
+        ("member", None) => {
+            let role = yard_management_roles::by_user(connection, &base.yard_id, &base.user_id)?
+                .map(|assignment| assignment.role);
+            let sources = yard_identity_grants::resolve(
+                connection,
+                &base.yard_id,
+                &base.environment_id,
+                &base.workspace_id,
+                &base.user_id,
+                now_ms,
+            )?;
+            Ok((role, sources))
+        }
+        ("guest", Some(invitation_id)) => {
+            let sources = yard_guest_identity::resolve(
+                connection,
+                &base.yard_id,
+                &base.environment_id,
+                &base.workspace_id,
+                &base.user_id,
+                invitation_id,
+                now_ms,
+            )?;
+            Ok((None, sources))
+        }
+        _ => Err(RepositoryError::Unavailable),
+    }
+}
+
 fn base_by_host(
     connection: &Connection,
     host_label: &str,
@@ -78,11 +121,23 @@ fn base_by_host(
 ) -> Result<IdentityBase, RepositoryError> {
     connection
         .query_row(
-            "SELECT s.id, u.id, u.workspace_id, y.project_id, y.id, e.id,
-                    u.display_name, u.email, p.visibility
+            "SELECT s.id, subject.id, subject.kind, subject.invitation_id,
+                    subject.workspace_id, y.project_id, y.id, e.id,
+                    COALESCE(u.display_name, invitation.email),
+                    COALESCE(u.email, invitation.email), p.visibility
              FROM yard_sessions s
-             JOIN local_users u ON u.id = s.user_id
+             JOIN yard_subjects subject
+               ON subject.id = s.subject_id
+              AND subject.revoked_at_ms IS NULL
+             LEFT JOIN local_users u
+               ON subject.kind = 'member'
+              AND u.id = subject.local_user_id
+              AND u.workspace_id = subject.workspace_id
               AND u.deactivated_at_ms IS NULL AND u.status = 'active'
+             LEFT JOIN yard_guest_invitations invitation
+               ON subject.kind = 'guest'
+              AND invitation.id = subject.invitation_id
+              AND invitation.workspace_id = subject.workspace_id
              JOIN web_yards y
                ON y.id = s.yard_id AND y.status = 'active'
              JOIN yard_environments e
@@ -93,6 +148,13 @@ fn base_by_host(
                ON p.yard_id = y.id AND p.visibility != 'public' AND p.visibility != 'owner'
              WHERE s.token_hash = ?1 AND s.host_label = ?2
                AND s.revoked_at_ms IS NULL AND s.expires_at_ms > ?3
+               AND (
+                 (subject.kind = 'member' AND subject.invitation_id IS NULL AND u.id IS NOT NULL)
+                 OR (
+                   subject.kind = 'guest' AND subject.local_user_id IS NULL
+                   AND invitation.id IS NOT NULL
+                 )
+               )
                AND (
                  y.host_label = ?2
                  OR EXISTS (
@@ -114,13 +176,15 @@ fn identity_base(row: &Row<'_>) -> rusqlite::Result<IdentityBase> {
     Ok(IdentityBase {
         session_id: row.get(0)?,
         user_id: row.get(1)?,
-        workspace_id: row.get(2)?,
-        project_id: row.get(3)?,
-        yard_id: row.get(4)?,
-        environment_id: row.get(5)?,
-        display_name: row.get(6)?,
-        email: row.get(7)?,
-        visibility: row.get(8)?,
+        subject_kind: row.get(2)?,
+        invitation_id: row.get(3)?,
+        workspace_id: row.get(4)?,
+        project_id: row.get(5)?,
+        yard_id: row.get(6)?,
+        environment_id: row.get(7)?,
+        display_name: row.get(8)?,
+        email: row.get(9)?,
+        visibility: row.get(10)?,
     })
 }
 
@@ -166,86 +230,5 @@ fn touch(connection: &Connection, session_id: &str, now_ms: i64) -> Result<(), R
 }
 
 #[cfg(test)]
-mod tests {
-    #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
-
-    use super::{effective_application_authority, identity_base};
-    use blobyard_contract::YardApplicationPolicyRecord;
-    use blobyard_core::{ApplicationPolicyGraph, EffectiveApplicationPolicy};
-    use rusqlite::{Connection, params_from_iter, types::Value};
-    use std::collections::BTreeMap;
-
-    fn policy_with_effective_roles(
-        effective_roles: BTreeMap<String, Vec<String>>,
-    ) -> YardApplicationPolicyRecord {
-        YardApplicationPolicyRecord {
-            yard_id: "yard_fixture".to_owned(),
-            workspace_id: "workspace_fixture".to_owned(),
-            revision: 1,
-            source_manifest_digest: "a".repeat(64),
-            policy: ApplicationPolicyGraph {
-                default_role: None,
-                roles: BTreeMap::new(),
-            },
-            effective: EffectiveApplicationPolicy {
-                effective_roles,
-                effective_permissions: BTreeMap::new(),
-            },
-            approved_at_ms: 1,
-            approved_by_principal: "fixture".to_owned(),
-        }
-    }
-
-    #[test]
-    fn incomplete_effective_policy_does_not_grant_permissions() {
-        let policy = policy_with_effective_roles(BTreeMap::from([(
-            "viewer".to_owned(),
-            vec!["viewer".to_owned()],
-        )]));
-        assert_eq!(
-            effective_application_authority(Some(policy), vec!["viewer".to_owned()]),
-            (vec!["viewer".to_owned()], Vec::new())
-        );
-        assert_eq!(
-            effective_application_authority(
-                Some(policy_with_effective_roles(BTreeMap::new())),
-                vec!["missing".to_owned()],
-            ),
-            (Vec::new(), Vec::new())
-        );
-    }
-
-    #[test]
-    fn identity_base_rejects_non_text_columns() {
-        let valid = || {
-            vec![
-                Value::Text("session".to_owned()),
-                Value::Text("user".to_owned()),
-                Value::Text("workspace".to_owned()),
-                Value::Text("project".to_owned()),
-                Value::Text("yard".to_owned()),
-                Value::Text("environment".to_owned()),
-                Value::Text("Display".to_owned()),
-                Value::Text("email@example.test".to_owned()),
-                Value::Text("selected".to_owned()),
-            ]
-        };
-        let decode = |values| {
-            Connection::open_in_memory().expect("connection").query_row(
-                "SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9",
-                params_from_iter(values),
-                identity_base,
-            )
-        };
-        assert!(decode(valid()).is_ok());
-        for index in 0..9 {
-            let mut values = valid();
-            values[index] = Value::Integer(1);
-            assert!(decode(values).is_err(), "column {index}");
-        }
-        let mut nullable = valid();
-        nullable[6] = Value::Null;
-        nullable[7] = Value::Null;
-        assert!(decode(nullable).is_ok());
-    }
-}
+#[path = "yard_identity_resolution_tests.rs"]
+mod tests;

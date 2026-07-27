@@ -17,6 +17,8 @@ VALUES
    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 INSERT INTO local_users VALUES
   ('user_fixture', 'workspace_fixture', 'Fixture user', NULL, 'active', 1, NULL);
+INSERT INTO yard_subjects VALUES
+  ('user_fixture', 'member', 'workspace_fixture', 'user_fixture', NULL, 1, NULL);
 INSERT INTO web_yards VALUES
   ('yard_fixture', 'workspace_fixture', 'project_fixture', 'docs', 'docs-fixture',
    'deploy_fixture', 'active', 1, 1, NULL);

@@ -12,7 +12,7 @@ use crate::{
 use axum::{
     Json,
     body::Body,
-    http::{Response, StatusCode, header},
+    http::{HeaderValue, Response, StatusCode, header},
 };
 use blobyard_api_client::{
     CreateShareRequest, CreateShareResponse, DownloadResponse, EmptyResponse, ListSharesQuery,
@@ -126,10 +126,12 @@ pub(super) fn open_at(
         .share_by_capability(&hash(token.expose_secret()), now?)
         .map_err(ApiError::concealed_capability)?;
     let html = share_page_html(&target, &format!("/s/{}/download", token.expose_secret()))?;
-    crate::response::secure_html(
+    Ok(crate::response::secure_html_with_policy(
         html,
-        "default-src 'none'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
-    )
+        HeaderValue::from_static(
+            "default-src 'none'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+        ),
+    ))
 }
 
 pub(super) fn download_shared_file_at(

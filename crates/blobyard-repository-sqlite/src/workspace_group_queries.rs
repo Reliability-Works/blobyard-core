@@ -1,9 +1,13 @@
-use super::{map_error, map_query_result, rows, workspace_group_rows};
+use super::{map_error, rows, workspace_group_rows};
 use blobyard_contract::{
     RepositoryError, WorkspaceGroupCursor, WorkspaceGroupMemberCursor, WorkspaceGroupMemberPage,
     WorkspaceGroupPage, WorkspaceGroupRecord, WorkspaceGroupStatus,
 };
 use rusqlite::{Connection, OptionalExtension, params};
+
+pub(super) fn map_query_result<T>(result: rusqlite::Result<T>) -> Result<T, RepositoryError> {
+    result.map_err(map_error)
+}
 
 pub(super) fn by_id(
     connection: &Connection,

@@ -77,12 +77,16 @@ The server reuses the browser-approved CLI session and typed API client. It writ
 messages to standard output, keeps diagnostics on standard error, and never returns refresh tokens,
 R2 credentials, or signed transfer URLs to the agent.
 
-The MCP catalog covers workspace rename, safe account-export operations, and redacted Yard session
-management through `blobyard_list_yard_sessions` and `blobyard_revoke_yard_session`. Stripe-hosted
-billing sessions and both phases of account deletion are intentionally absent because they would
-return a hosted payment URL or destructive confirmation capability to model context. Use the
-authenticated CLI or API for those operations, and keep final deletion confirmation under direct
-human control.
+The MCP catalog covers workspace rename, safe account-export operations, redacted Yard session
+management through `blobyard_list_yard_sessions` and `blobyard_revoke_yard_session`, and Yard guest
+management through `blobyard_list_yard_guest_invites`, `blobyard_create_yard_guest_invite`, and
+`blobyard_revoke_yard_guest_invite`. Guest listing and revocation remain redacted. Guest creation
+preserves only the exact top-level `invitationUrl` returned by that specialized operation because it
+is the one chance to deliver the invitation; nested or unrelated secret-bearing URLs remain
+redacted. Stripe-hosted billing sessions and both phases of account deletion are intentionally
+absent because they would return a hosted payment URL or destructive confirmation capability to
+model context. Use the authenticated CLI or API for those operations, and keep final deletion
+confirmation under direct human control.
 
 ## Projects and objects
 
@@ -340,6 +344,22 @@ blobyard access grant marketing --principal-kind user --principal-id user_123 \
 blobyard access set-roles marketing <grant-id> --role viewer
 blobyard access revoke marketing <grant-id>
 ```
+
+Create, list, and revoke guest invitations through their dedicated lifecycle. Omitting `--expires`
+uses seven days; explicit expiry must be between five minutes and 30 days. Core accepts Yard-wide
+invitations or an explicit active production environment identifier. Generic `access grant` and
+`access revoke` do not create or revoke guest-invitation authority.
+
+```bash
+blobyard guest-invites create marketing guest@example.com \
+  --role viewer --environment <production-environment-id>
+blobyard guest-invites list marketing
+blobyard guest-invites revoke marketing <invitation-id>
+```
+
+Creation prints the invitation URL once. Deliver it through an appropriate private channel and do
+not place it in logs or shell history. Later list and revoke responses contain invitation metadata
+only, never the invitation token, accepted guest key, token hash, or key hash.
 
 Manage the independent human control-plane roles and the owner-approved application role graph. Core
 permits a `yard:manage` non-machine operator to bootstrap the first owner assignment because

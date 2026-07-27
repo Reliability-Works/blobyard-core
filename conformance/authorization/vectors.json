@@ -3,6 +3,42 @@
   "vectors": [
     {
       "action": "yard:manage",
+      "expected": { "allowed": true },
+      "id": "cloud-admin-can-manage-guest-invitations",
+      "principalKind": "human",
+      "principalRole": "admin",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "cloud-auditor-cannot-manage-guest-invitations",
+      "principalKind": "human",
+      "principalRole": "auditor",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "cloud-developer-cannot-manage-guest-invitations",
+      "principalKind": "human",
+      "principalRole": "developer",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": true },
+      "id": "cloud-owner-can-manage-guest-invitations",
+      "principalKind": "human",
+      "principalRole": "owner",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
       "expected": { "allowed": false, "code": "NOT_FOUND" },
       "id": "cross-workspace-access-grant-is-concealed",
       "principalScopes": ["yard:manage"],
@@ -20,6 +56,33 @@
       "expected": { "allowed": false, "code": "NOT_FOUND" },
       "id": "cross-workspace-groups-are-concealed",
       "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-guest-invitation-create-is-concealed",
+      "operationId": "createYardGuestInvite",
+      "principalKind": "human",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-guest-invitation-list-is-concealed",
+      "operationId": "listYardGuestInvites",
+      "principalKind": "human",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "other" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "NOT_FOUND" },
+      "id": "cross-workspace-guest-invitation-revocation-is-concealed",
+      "operationId": "revokeYardGuestInvite",
+      "principalKind": "human",
+      "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "other" }
     },
     {
@@ -58,12 +121,29 @@
       "resource": { "project": "demo", "workspace": "other" }
     },
     {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "guest-cannot-manage-guest-invitations",
+      "principalKind": "guest",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
       "action": "users:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "machine-cannot-add-workspace-group-member",
       "operationId": "addGroupMember",
       "principalKind": "machine",
       "principalScopes": ["users:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-create-guest-invitation",
+      "operationId": "createYardGuestInvite",
+      "principalKind": "machine",
+      "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "default" }
     },
     {
@@ -88,6 +168,15 @@
       "action": "yard:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "machine-cannot-grant-access",
+      "principalKind": "machine",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-list-guest-invitations",
+      "operationId": "listYardGuestInvites",
       "principalKind": "machine",
       "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "default" }
@@ -140,6 +229,15 @@
       "action": "yard:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "machine-cannot-revoke-access",
+      "principalKind": "machine",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "machine-cannot-revoke-guest-invitation",
+      "operationId": "revokeYardGuestInvite",
       "principalKind": "machine",
       "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "default" }
@@ -247,6 +345,15 @@
     {
       "action": "yard:manage",
       "expected": { "allowed": true },
+      "id": "yard-manager-can-create-guest-invitation",
+      "operationId": "createYardGuestInvite",
+      "principalKind": "human",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": true },
       "id": "yard-manager-can-grant-access",
       "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "default" }
@@ -254,7 +361,25 @@
     {
       "action": "yard:manage",
       "expected": { "allowed": true },
+      "id": "yard-manager-can-list-guest-invitations",
+      "operationId": "listYardGuestInvites",
+      "principalKind": "human",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": true },
       "id": "yard-manager-can-revoke-access",
+      "principalScopes": ["yard:manage"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": true },
+      "id": "yard-manager-can-revoke-guest-invitation",
+      "operationId": "revokeYardGuestInvite",
+      "principalKind": "human",
       "principalScopes": ["yard:manage"],
       "resource": { "project": "demo", "workspace": "default" }
     },
@@ -296,6 +421,15 @@
     {
       "action": "yard:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "yard-reader-cannot-create-guest-invitation",
+      "operationId": "createYardGuestInvite",
+      "principalKind": "human",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "yard-reader-cannot-grant-access",
       "principalScopes": ["yard:read"],
       "resource": { "project": "demo", "workspace": "default" }
@@ -303,7 +437,25 @@
     {
       "action": "yard:manage",
       "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "yard-reader-cannot-list-guest-invitations",
+      "operationId": "listYardGuestInvites",
+      "principalKind": "human",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
       "id": "yard-reader-cannot-revoke-access",
+      "principalScopes": ["yard:read"],
+      "resource": { "project": "demo", "workspace": "default" }
+    },
+    {
+      "action": "yard:manage",
+      "expected": { "allowed": false, "code": "FORBIDDEN" },
+      "id": "yard-reader-cannot-revoke-guest-invitation",
+      "operationId": "revokeYardGuestInvite",
+      "principalKind": "human",
       "principalScopes": ["yard:read"],
       "resource": { "project": "demo", "workspace": "default" }
     },

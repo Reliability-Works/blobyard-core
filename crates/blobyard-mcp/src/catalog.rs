@@ -2,8 +2,11 @@ use serde_json::{Map, Value};
 
 use crate::catalog_access as access;
 use crate::catalog_access::{
+    create_yard_guest_invite_contract as create_guest_invite,
     get_yard_application_policy_contract as get_application_policy,
+    list_yard_guest_invites_contract as list_guest_invites,
     list_yard_management_roles_contract as list_management_roles,
+    revoke_yard_guest_invite_contract as revoke_guest_invite,
     revoke_yard_management_role_contract as revoke_management_role,
     set_yard_access_roles_contract as set_access_roles,
     set_yard_application_policy_contract as set_application_policy,
@@ -11,7 +14,8 @@ use crate::catalog_access::{
 };
 use crate::catalog_contracts as contracts;
 use crate::catalog_contracts::{
-    add, boolean, delete_contract, download_contract, inbox_contract, preview_contract,
+    add, boolean, delete_contract, download_contract, inbox_contract,
+    list_yard_environments_contract as list_yard_environments, preview_contract,
     retention_contract, revoke_share_contract, scope_properties, share_contract, string,
     tool_schema, upload_contract,
 };
@@ -20,6 +24,8 @@ use crate::catalog_contracts::{
 mod annotations;
 #[path = "group_catalog.rs"]
 mod group_catalog;
+#[path = "catalog_names.rs"]
+mod names;
 
 const WORKSPACE_NAME: &str = "Human-readable workspace name.";
 const PROJECT_NAME: &str = "Human-readable project name.";
@@ -57,6 +63,9 @@ pub(super) enum ToolKind {
     SetYardVisibility,
     GrantYardAccess,
     RevokeYardAccess,
+    ListYardGuestInvites,
+    CreateYardGuestInvite,
+    RevokeYardGuestInvite,
     ListYardManagementRoles,
     SetYardManagementRole,
     RevokeYardManagementRole,
@@ -69,7 +78,7 @@ pub(super) enum ToolKind {
     DeleteWebYard,
 }
 
-const TOOLS: [ToolKind; 39] = [
+const TOOLS: [ToolKind; 42] = [
     ToolKind::Whoami,
     ToolKind::ListWorkspaces,
     ToolKind::CreateWorkspace,
@@ -99,6 +108,9 @@ const TOOLS: [ToolKind; 39] = [
     ToolKind::SetYardVisibility,
     ToolKind::GrantYardAccess,
     ToolKind::RevokeYardAccess,
+    ToolKind::ListYardGuestInvites,
+    ToolKind::CreateYardGuestInvite,
+    ToolKind::RevokeYardGuestInvite,
     ToolKind::ListYardManagementRoles,
     ToolKind::SetYardManagementRole,
     ToolKind::RevokeYardManagementRole,
@@ -173,13 +185,14 @@ fn tool_contract(kind: ToolKind) -> (&'static str, Map<String, Value>, Vec<&'sta
         ToolKind::ClearRetention => ("Clear the selected project's retention policy.", vec![]),
         ToolKind::DeployWebYard => contracts::deploy_yard_contract(&mut properties),
         ToolKind::ListYardDeploys => contracts::list_yard_deploys_contract(&mut properties),
-        ToolKind::ListYardEnvironments => {
-            contracts::list_yard_environments_contract(&mut properties)
-        }
+        ToolKind::ListYardEnvironments => list_yard_environments(&mut properties),
         ToolKind::GetYardAccess => access::yard_access_contract(&mut properties),
         ToolKind::SetYardVisibility => access::set_yard_visibility_contract(&mut properties),
         ToolKind::GrantYardAccess => access::grant_yard_access_contract(&mut properties),
         ToolKind::RevokeYardAccess => access::revoke_yard_access_contract(&mut properties),
+        ToolKind::ListYardGuestInvites => list_guest_invites(&mut properties),
+        ToolKind::CreateYardGuestInvite => create_guest_invite(&mut properties),
+        ToolKind::RevokeYardGuestInvite => revoke_guest_invite(&mut properties),
         ToolKind::ListYardManagementRoles => list_management_roles(&mut properties),
         ToolKind::SetYardManagementRole => set_management_role(&mut properties),
         ToolKind::RevokeYardManagementRole => revoke_management_role(&mut properties),
@@ -240,50 +253,4 @@ fn list_objects_contract(properties: &mut Map<String, Value>) -> (&'static str, 
         "List objects under an optional Blobyard URI prefix.",
         vec![],
     )
-}
-
-impl ToolKind {
-    pub(super) const fn name(self) -> &'static str {
-        match self {
-            Self::Whoami => "whoami",
-            Self::ListWorkspaces => "list_workspaces",
-            Self::CreateWorkspace => "create_workspace",
-            Self::ListProjects => "list_projects",
-            Self::ListObjects => "list_objects",
-            Self::GetRetention => "get_retention",
-            Self::ListInboxes => "list_inboxes",
-            Self::ListShares => "list_shares",
-            Self::ListPreviews => "list_previews",
-            Self::CreateProject => "create_project",
-            Self::UploadFile => "upload_file",
-            Self::DownloadFile => "download_file",
-            Self::DeleteObject => "delete_object",
-            Self::CreateShare => "create_share",
-            Self::RevokeShare => "revoke_share",
-            Self::CreatePreview => "create_preview",
-            Self::RevokePreview => "revoke_preview",
-            Self::CreateInbox => "create_inbox",
-            Self::RevokeInbox => "revoke_inbox",
-            Self::SetRetention => "set_retention",
-            Self::ClearRetention => "clear_retention",
-            Self::DeployWebYard => "deploy_web_yard",
-            Self::ListWebYards => "list_web_yards",
-            Self::ListYardDeploys => "list_yard_deploys",
-            Self::ListYardEnvironments => "list_yard_environments",
-            Self::GetYardAccess => "get_yard_access",
-            Self::SetYardVisibility => "set_yard_visibility",
-            Self::GrantYardAccess => "grant_yard_access",
-            Self::RevokeYardAccess => "revoke_yard_access",
-            Self::ListYardManagementRoles => "list_yard_management_roles",
-            Self::SetYardManagementRole => "set_yard_management_role",
-            Self::RevokeYardManagementRole => "revoke_yard_management_role",
-            Self::GetYardApplicationPolicy => "get_yard_application_policy",
-            Self::SetYardApplicationPolicy => "set_yard_application_policy",
-            Self::SetYardAccessRoles => "set_yard_access_roles",
-            Self::ListYardSessions => "list_yard_sessions",
-            Self::RevokeYardSession => "revoke_yard_session",
-            Self::RollbackWebYard => "rollback_web_yard",
-            Self::DeleteWebYard => "delete_web_yard",
-        }
-    }
 }

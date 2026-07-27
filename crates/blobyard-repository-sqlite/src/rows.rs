@@ -206,6 +206,21 @@ pub(super) fn validate_text(value: &str) -> Result<(), RepositoryError> {
     }
 }
 
+pub(super) fn validate_texts<'a>(
+    values: impl IntoIterator<Item = &'a str>,
+) -> Result<(), RepositoryError> {
+    values.into_iter().try_for_each(validate_text)
+}
+
+pub(super) fn valid_prefixed_hex_id(value: &str, prefix: &str) -> bool {
+    value.strip_prefix(prefix).is_some_and(|suffix| {
+        suffix.len() == 32
+            && suffix
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    })
+}
+
 fn slug(value: String) -> rusqlite::Result<Slug> {
     Slug::new(value.clone()).map_err(|_error| conversion_error(value))
 }

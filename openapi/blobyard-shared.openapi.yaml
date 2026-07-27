@@ -2359,6 +2359,207 @@ components:
         - data
         - ok
         - requestId
+    YardGuestInviteStatus:
+      type: string
+      description: Persisted lifecycle state of one Yard guest invitation.
+      enum:
+        - pending
+        - accepted
+        - revoked
+    YardGuestInvite:
+      type: object
+      additionalProperties: false
+      properties:
+        acceptedAt:
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
+        appRoles:
+          type: array
+          maxItems: 16
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ApplicationRoleName"
+        createdAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        email:
+          type: string
+          format: email
+          pattern: "^[^@\\s]+@[^@\\s]+$"
+          maxLength: 254
+        environmentId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+          description:
+            Core accepts null for Yard-wide authority or the active production environment
+            identifier. Other Core environment kinds fail closed.
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+        id:
+          type: string
+          pattern: ^ygi_[0-9a-f]{32}$
+        revokedAt:
+          anyOf:
+            - $ref: "#/components/schemas/IsoTimestamp"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/YardGuestInviteStatus"
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - acceptedAt
+        - appRoles
+        - createdAt
+        - email
+        - environmentId
+        - expiresAt
+        - id
+        - revokedAt
+        - status
+        - yardId
+    ListYardGuestInvitesQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          $ref: "#/components/schemas/Cursor"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 50
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - yardId
+    ListYardGuestInvitesResult:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/YardGuestInvite"
+        nextCursor:
+          anyOf:
+            - $ref: "#/components/schemas/Cursor"
+            - type: "null"
+      required:
+        - items
+        - nextCursor
+    ListYardGuestInvitesSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/ListYardGuestInvitesResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    CreateYardGuestInviteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        appRoles:
+          type: array
+          maxItems: 16
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ApplicationRoleName"
+        email:
+          type: string
+          format: email
+          pattern: "^[^@\\s]+@[^@\\s]+$"
+          maxLength: 254
+        environmentId:
+          anyOf:
+            - $ref: "#/components/schemas/Identifier"
+            - type: "null"
+          description:
+            Core accepts null for Yard-wide authority or the active production environment
+            identifier. Other Core environment kinds fail closed.
+        expiresAt:
+          $ref: "#/components/schemas/IsoTimestamp"
+          description: Optional absolute expiry; omission defaults to seven days.
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - appRoles
+        - email
+        - environmentId
+        - yardId
+    CreateYardGuestInviteResult:
+      type: object
+      additionalProperties: false
+      properties:
+        invitation:
+          $ref: "#/components/schemas/YardGuestInvite"
+        invitationUrl:
+          $ref: "#/components/schemas/Url"
+      required:
+        - invitation
+        - invitationUrl
+    CreateYardGuestInviteSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateYardGuestInviteResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
+    RevokeYardGuestInviteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        invitationId:
+          type: string
+          pattern: ^ygi_[0-9a-f]{32}$
+        yardId:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - invitationId
+        - yardId
+    RevokeYardGuestInviteResult:
+      type: object
+      additionalProperties: false
+      properties:
+        invitation:
+          $ref: "#/components/schemas/YardGuestInvite"
+      required:
+        - invitation
+    RevokeYardGuestInviteSuccessEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/RevokeYardGuestInviteResult"
+        ok:
+          type: boolean
+          const: true
+        requestId:
+          type: string
+          description: Request correlation identifier.
+      required:
+        - data
+        - ok
+        - requestId
     YardManagementRole:
       type: string
       description: Yard-scoped human management role.
@@ -2637,6 +2838,15 @@ components:
         - group
         - guest-invite
         - link
+    GrantYardAccessPrincipalKind:
+      type: string
+      description:
+        Principal kind accepted by the generic grant lifecycle. Guest invitations use their
+        dedicated atomic operations.
+      enum:
+        - user
+        - group
+        - link
     YardAccessGrantSummary:
       type: object
       additionalProperties: false
@@ -2766,7 +2976,7 @@ components:
           minLength: 1
           maxLength: 256
         principalKind:
-          $ref: "#/components/schemas/YardAccessPrincipalKind"
+          $ref: "#/components/schemas/GrantYardAccessPrincipalKind"
         yardId:
           $ref: "#/components/schemas/Identifier"
       required:
@@ -5099,6 +5309,8 @@ x-blobyard-path-order:
   - /previews/revoke
   - /yards
   - /yards/environments
+  - /yards/guest-invites
+  - /yards/guest-invites/revoke
   - /yards/management-roles
   - /yards/management-roles/set
   - /yards/management-roles/revoke

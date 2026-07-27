@@ -3,13 +3,10 @@
     allow(clippy::expect_used, reason = "test fixtures must fail loudly")
 )]
 
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use blobyard_contract::{YardManagementRole, YardManagementRoleCursor};
 use serde::Deserialize;
 
 use crate::error::ApiError;
-
-const MAXIMUM_CURSOR_LENGTH: usize = 1_024;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -25,24 +22,15 @@ pub(super) fn encode(scope: &str, cursor: &YardManagementRoleCursor) -> String {
         "scope": scope,
         "user_id": cursor.user_id,
     });
-    URL_SAFE_NO_PAD.encode(value.to_string())
+    super::super::cursor::encode(&value)
 }
 
 pub(super) fn decode(
     scope: &str,
     value: Option<&str>,
 ) -> Result<Option<YardManagementRoleCursor>, ApiError> {
-    let Some(value) = value else {
+    let Some(cursor) = super::super::cursor::decode::<Cursor>(value)? else {
         return Ok(None);
-    };
-    if !(1..=MAXIMUM_CURSOR_LENGTH).contains(&value.len()) {
-        return Err(ApiError::invalid_request());
-    }
-    let Ok(bytes) = URL_SAFE_NO_PAD.decode(value) else {
-        return Err(ApiError::invalid_request());
-    };
-    let Ok(cursor) = serde_json::from_slice::<Cursor>(&bytes) else {
-        return Err(ApiError::invalid_request());
     };
     if cursor.scope != scope {
         return Err(ApiError::invalid_request());
