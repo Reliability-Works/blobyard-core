@@ -29,6 +29,14 @@ fn server_errors_have_complete_redaction_safe_messages() {
             "standalone Web Yard origin is invalid",
         ),
         (
+            ServerError::OidcConfiguration,
+            "standalone OIDC configuration is invalid",
+        ),
+        (
+            ServerError::OidcDiscovery,
+            "standalone OIDC provider discovery failed",
+        ),
+        (
             ServerError::Initialization,
             "standalone runtime initialization failed",
         ),

@@ -14,6 +14,7 @@ const FIXTURES = [
   ["grants.yaml", "behavior/grants.json", "cases"],
   ["ranges.yaml", "behavior/ranges.json", "cases"],
   ["retention.yaml", "behavior/retention.json", "cases"],
+  ["yard-oidc.yaml", "behavior/yard-oidc.json", "cases"],
   ["yard-sessions.yaml", "behavior/yard-sessions.json", "cases"],
 ];
 const SENSITIVE_KEY = /(?:secret|token|password|credential|privateKey)/iu;

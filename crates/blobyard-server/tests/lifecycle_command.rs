@@ -112,6 +112,19 @@ fn serve_rejects_an_unsafe_web_yard_origin_before_binding() {
 }
 
 #[test]
+fn serve_rejects_partial_oidc_before_binding() {
+    let output = run(&[
+        "serve",
+        "--listen",
+        "127.0.0.1:0",
+        "--oidc-issuer",
+        "https://identity.example.test/",
+    ]);
+    assert!(!output.status.success());
+    assert!(stderr(&output).contains("OidcConfiguration"));
+}
+
+#[test]
 fn lifecycle_commands_propagate_repository_initialization_failures() {
     for command in ["bootstrap-token", "retention-enforce", "reconcile"] {
         let temporary = tempfile::tempdir().expect("temporary directory");

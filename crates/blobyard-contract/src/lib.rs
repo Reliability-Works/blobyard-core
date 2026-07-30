@@ -17,6 +17,7 @@ mod yard_environments;
 mod yard_guest_audit;
 mod yard_guest_invites;
 mod yard_identity;
+mod yard_oidc;
 mod yard_repository;
 mod yard_sessions;
 mod yards;
@@ -97,6 +98,14 @@ pub use yard_identity::{
     MAXIMUM_YARD_ACCESS_ROLES, MAXIMUM_YARD_MANAGEMENT_ROLES, YardApplicationPolicyRecord,
     YardIdentity, YardIdentityRepository, YardManagementRole, YardManagementRoleAssignment,
     YardManagementRoleCursor, YardManagementRolePage,
+};
+pub use yard_oidc::{
+    NewYardOidcAttempt, NewYardOidcAuthentication, YARD_OIDC_ATTEMPT_CLEANUP_LIMIT,
+    YARD_OIDC_ATTEMPT_LIFETIME_MS, YARD_OIDC_IDENTITY_AUDIT_TARGET,
+    YARD_OIDC_IDENTITY_LINKED_ACTION, YARD_OIDC_STATE_PREFIX, YardOidcAttemptRecord,
+    YardOidcAuditContext, YardOidcIdentityRecord, YardOidcRepository,
+    is_valid_oidc_provider_subject, normalize_oidc_email, normalize_oidc_issuer,
+    yard_oidc_identity_audit_metadata,
 };
 pub use yard_repository::{WebYardRepository, YardCleanupPlan};
 pub use yard_sessions::{

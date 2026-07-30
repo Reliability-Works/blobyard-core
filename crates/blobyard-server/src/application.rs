@@ -104,6 +104,24 @@ fn initialize_with_storage_origins_at(
     storage_configuration: &StorageConfiguration,
     completed_at_ms: Result<u64, ServerError>,
 ) -> Result<InitializedServer, ServerError> {
+    initialize_with_storage_origins_at_and_provider(
+        data_directory,
+        public_origin,
+        web_yard_origin,
+        storage_configuration,
+        completed_at_ms,
+        None,
+    )
+}
+
+fn initialize_with_storage_origins_at_and_provider(
+    data_directory: &Path,
+    public_origin: &str,
+    web_yard_origin: &str,
+    storage_configuration: &StorageConfiguration,
+    completed_at_ms: Result<u64, ServerError>,
+    yard_oidc_provider: Option<Arc<dyn crate::yard_oidc_provider::YardOidcProvider>>,
+) -> Result<InitializedServer, ServerError> {
     std::fs::create_dir_all(data_directory).map_err(|_error| ServerError::DataDirectory)?;
     let public_origin = crate::normalize_origin(public_origin)?;
     let web_yard_origin = blobyard_core::WebYardOrigin::new(web_yard_origin)
@@ -120,7 +138,7 @@ fn initialize_with_storage_origins_at(
     let token = auth::generate_token(GeneratedSecretKind::BootstrapToken);
     let installed = repository.install_bootstrap(&auth::hash(token.expose_secret()))?;
     Ok(InitializedServer {
-        router: api::router(
+        router: api::router_with_yard_oidc(
             repository,
             storage,
             workspace,
@@ -128,6 +146,7 @@ fn initialize_with_storage_origins_at(
             public_origin,
             web_yard_origin.as_str().to_owned(),
             staging_directory,
+            yard_oidc_provider,
         ),
         bootstrap_token: installed.then_some(token),
     })
@@ -171,13 +190,51 @@ pub async fn serve_until_with_storage(
     storage_configuration: &StorageConfiguration,
     shutdown: Pin<Box<dyn Future<Output = ()> + Send>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    serve_until_with_storage_and_oidc(
+        listen,
+        data_directory,
+        public_url,
+        web_yard_origin,
+        storage_configuration,
+        None,
+        shutdown,
+    )
+    .await
+}
+
+/// Runs the standalone service with optional generic OIDC until shutdown.
+///
+/// Provider discovery completes before the listener is bound.
+///
+/// # Errors
+///
+/// Returns configuration, discovery, initialization, listener, or terminal server failures.
+#[doc(hidden)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the standalone serve boundary keeps every operator input explicit"
+)]
+pub async fn serve_until_with_storage_and_oidc(
+    listen: SocketAddr,
+    data_directory: &Path,
+    public_url: Option<&str>,
+    web_yard_origin: Option<&str>,
+    storage_configuration: &StorageConfiguration,
+    oidc_configuration: Option<&crate::YardOidcConfiguration>,
+    shutdown: Pin<Box<dyn Future<Output = ()> + Send>>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let derived = format!("http://{listen}");
     let derived_yard_origin = format!("http://localhost:{}", listen.port());
-    let mut initialized = initialize_with_storage_origins(
+    let public_origin = crate::normalize_origin(public_url.unwrap_or(&derived))?;
+    let provider =
+        crate::yard_oidc_provider::configured(oidc_configuration, &public_origin).await?;
+    let mut initialized = initialize_with_storage_origins_at_and_provider(
         data_directory,
-        public_url.unwrap_or(&derived),
+        &public_origin,
         web_yard_origin.unwrap_or(&derived_yard_origin),
         storage_configuration,
+        retention::current_time(),
+        provider,
     )?;
     show_new_token(initialized.take_bootstrap_token());
     let listener = tokio::net::TcpListener::bind(listen).await?;
@@ -247,6 +304,10 @@ pub mod test_seams;
 #[cfg(test)]
 #[path = "application_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "application_oidc_tests.rs"]
+mod oidc_tests;
 
 #[cfg(test)]
 #[path = "application_contract_tests.rs"]

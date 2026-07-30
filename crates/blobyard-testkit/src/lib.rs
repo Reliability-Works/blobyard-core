@@ -20,6 +20,7 @@ pub use fault_forwarders::FailureCounter;
 pub use group_admission_fixture::{
     FixtureExecutionTracker, assert_group_admission_fixture_case,
     assert_group_authorization_fixture_case, group_admission_fixture_conformance,
+    oidc_fixture_conformance,
 };
 pub use groups::{GroupConformanceRepository, group_conformance, group_event};
 pub use lifecycle::lifecycle_conformance;

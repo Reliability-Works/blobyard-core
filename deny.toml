@@ -1,5 +1,8 @@
 [advisories]
 yanked = "deny"
+ignore = [
+  { id = "RUSTSEC-2023-0071", reason = "openidconnect uses rsa only for RS* ID-token signature verification with provider public keys. Blob Yard never performs RSA decryption and never holds an RSA private key, so the Marvin padding-oracle timing attack on decryption does not apply. No safe upgrade is available upstream." },
+]
 
 [bans]
 allow-wildcard-paths = true
@@ -8,6 +11,9 @@ wildcards = "deny"
 highlight = "all"
 skip = [
   { crate = "getrandom@0.2.17", reason = "Target-specific directories and keyring dependencies still require the 0.2 API while runtime crates use 0.4." },
+  { crate = "base64@0.21.7", reason = "The pinned Slice G OIDC provider crate openidconnect 4.0.1 encodes JWK and token material with base64 0.21 while the workspace standardizes on 0.22." },
+  { crate = "thiserror@1.0.69", reason = "The pinned oauth2 5.0.0 and openidconnect 4.0.1 OIDC provider crates derive errors with thiserror 1 while the workspace uses thiserror 2." },
+  { crate = "thiserror-impl@1.0.69", reason = "thiserror 1 pulls thiserror-impl 1 for the pinned oauth2 and openidconnect OIDC provider crates while the workspace uses thiserror-impl 2." },
 ]
 
 [licenses]

@@ -123,6 +123,53 @@ blobyard --profile local yard-sessions list documentation
 blobyard --profile local yard-sessions revoke documentation yardsession_123
 ```
 
+## Optional generic OIDC sign-in
+
+Core can add a generic OpenID Connect provider to the existing private-Yard sign-in page. Register
+this exact redirect URI with the provider, using the same root origin supplied to `--public-url`:
+
+```text
+https://core.example.com/account/yard-oidc/callback
+```
+
+Supply the non-secret issuer and client identifier on the `serve` command, and supply the client
+secret only through the process environment:
+
+```bash
+export BLOBYARD_OIDC_CLIENT_SECRET='replace-with-the-provider-client-secret'
+
+blobyard-server serve \
+  --listen 127.0.0.1:8787 \
+  --data-dir /srv/blobyard \
+  --public-url https://core.example.com \
+  --web-yard-origin https://yards.example.com \
+  --oidc-issuer https://identity.example.com/realms/blobyard \
+  --oidc-client-id blobyard-core
+```
+
+The issuer, client identifier, and `BLOBYARD_OIDC_CLIENT_SECRET` are all-or-nothing. Core completes
+provider discovery and validates the authorization, token, key, and optional UserInfo endpoint URLs
+before opening its listener. A discovery or configuration failure therefore stops startup rather
+than silently removing sign-in. The callback origin derived from `--public-url` must use HTTPS,
+except that loopback HTTP origins are accepted for local development and tests.
+
+OIDC does not provision users or grant access. The provider must return a verified email that
+matches exactly one pre-existing active local user in the Yard workspace or one accepted guest whose
+grant remains valid. Core then binds the exact issuer and provider subject to that existing
+identity. A missing verified email or later email drift denies sign-in and revokes that identity's
+active Yard sessions. Keep local-user and guest lifecycle administration in the existing CLI and API
+paths.
+
+Local-user emails are stored trimmed and lowercased so they compare exactly against the normalized
+provider email. Upgrading to this release normalizes stored local-user emails. The upgrade fails
+closed and leaves the database untouched when two active users in one workspace normalize to the
+same address; resolve the duplicate by deactivating one of the users, then start the server again.
+
+The browser flow requests only `openid`, `email`, and `profile`, uses authorization code flow with
+PKCE and a nonce, and stores only hashed single-use state. Provider tokens, the client secret, raw
+state, nonce, and PKCE verifier are not written to SQLite. These account routes are browser-only
+identity surfaces and are intentionally absent from OpenAPI, the SDK, CLI operations, and MCP.
+
 ## Restart and inspect
 
 Restart Core without removing its durable volume:

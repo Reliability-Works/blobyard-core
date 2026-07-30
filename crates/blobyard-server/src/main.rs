@@ -3,7 +3,7 @@
 use blobyard_server::{
     HostedMigrationOptions, backup_data_directory, enforce_retention_with_storage, initialize,
     migrate_from_hosted, reconcile_data_directory, restore_data_directory, rollback_preflight,
-    serve_until_with_storage, show_new_token, upgrade_preflight,
+    serve_until_with_storage_and_oidc, show_new_token, upgrade_preflight,
 };
 use clap::{Parser, Subcommand};
 use std::io::{Read, Write};
@@ -14,6 +14,9 @@ use std::path::PathBuf;
 /// Command-line object-storage configuration shared by operator subcommands.
 pub mod storage_cli;
 use storage_cli::StorageOptions;
+#[path = "main_oidc.rs"]
+mod oidc_cli;
+use oidc_cli::OidcOptions;
 
 #[derive(Debug, Parser)]
 #[command(name = "blobyard-server", version)]
@@ -41,6 +44,9 @@ enum Command {
         /// Durable object-storage backend.
         #[command(flatten)]
         storage: StorageOptions,
+        /// Optional generic OIDC relying-party configuration.
+        #[command(flatten)]
+        oidc: OidcOptions,
     },
     /// Generate first-start bootstrap authority without starting HTTP.
     BootstrapToken {
@@ -147,8 +153,9 @@ async fn run_command(command: Command) -> Result<(), Box<dyn std::error::Error>>
             public_url,
             web_yard_origin,
             storage,
+            oidc,
         } => {
-            serve(listen, data_dir, public_url, web_yard_origin, storage).await?;
+            serve(listen, data_dir, public_url, web_yard_origin, storage, oidc).await?;
         }
         Command::BootstrapToken { generate, data_dir } => bootstrap(generate, &data_dir)?,
         Command::RetentionEnforce { data_dir, storage } => {
@@ -210,14 +217,17 @@ async fn serve(
     public_url: Option<String>,
     web_yard_origin: Option<String>,
     storage: StorageOptions,
+    oidc: OidcOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let storage = storage.configuration()?;
-    serve_until_with_storage(
+    let oidc = oidc.configuration()?;
+    serve_until_with_storage_and_oidc(
         listen,
         &data_dir,
         public_url.as_deref(),
         web_yard_origin.as_deref(),
         &storage,
+        oidc.as_ref(),
         Box::pin(std::future::pending()),
     )
     .await
@@ -336,3 +346,7 @@ mod tests {
         assert!(read_source_token_from(&mut FailedReader, true).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "main_oidc_command_tests.rs"]
+mod oidc_command_tests;

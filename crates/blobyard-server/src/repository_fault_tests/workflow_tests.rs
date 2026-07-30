@@ -49,7 +49,7 @@ fn fixture(failure_index: usize) -> Fixture {
     let staging = temporary.path().join("staging");
     std::fs::create_dir(&staging).expect("staging");
     Fixture {
-        router: api::router(
+        router: api::router_with_yard_oidc(
             faulting,
             storage,
             workspace,
@@ -57,6 +57,7 @@ fn fixture(failure_index: usize) -> Fixture {
             "http://127.0.0.1:8787".to_owned(),
             "http://localhost:8787".to_owned(),
             staging,
+            None,
         ),
         _temporary: temporary,
     }

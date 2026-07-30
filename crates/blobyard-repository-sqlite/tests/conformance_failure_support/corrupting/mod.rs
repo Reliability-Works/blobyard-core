@@ -9,6 +9,7 @@ mod transfer;
 mod yard_access;
 mod yard_guests;
 mod yard_identity;
+mod yard_oidc;
 mod yard_sessions;
 mod yards;
 
@@ -173,6 +174,9 @@ pub(crate) enum Corruption {
     YardGuestCapacityCreateFailure,
     YardGuestCapacityOverflowAccepted,
     YardGuestIdentityRecord,
+    YardOidcMemberBinding,
+    YardOidcReturningBinding,
+    YardOidcGuestBinding,
 }
 
 pub(crate) struct Corrupting<'a, T> {
@@ -181,6 +185,7 @@ pub(crate) struct Corrupting<'a, T> {
     inbox_list_calls: AtomicUsize,
     audit_list_calls: AtomicUsize,
     environment_list_calls: AtomicUsize,
+    yard_admission_successes: AtomicUsize,
 }
 
 impl<T: blobyard_contract::WorkspaceGroupRepository> blobyard_contract::WorkspaceGroupRepository
@@ -297,6 +302,7 @@ impl<'a, T> Corrupting<'a, T> {
             inbox_list_calls: AtomicUsize::new(0),
             audit_list_calls: AtomicUsize::new(0),
             environment_list_calls: AtomicUsize::new(0),
+            yard_admission_successes: AtomicUsize::new(0),
         }
     }
 }

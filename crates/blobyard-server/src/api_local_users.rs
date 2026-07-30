@@ -203,7 +203,7 @@ fn new_login_key(user_id: &str, raw_key: &SecretString, now_ms: u64) -> LocalUse
 }
 
 fn normalize_email(value: &str) -> Result<String, ApiError> {
-    let email = value.trim();
+    let email = value.trim().to_lowercase();
     let valid = (3..=254).contains(&email.len())
         && !email
             .chars()
@@ -212,7 +212,7 @@ fn normalize_email(value: &str) -> Result<String, ApiError> {
             .split_once('@')
             .is_some_and(|(local, domain)| !local.is_empty() && !domain.is_empty());
     if valid {
-        Ok(email.to_owned())
+        Ok(email)
     } else {
         Err(ApiError::invalid_request())
     }

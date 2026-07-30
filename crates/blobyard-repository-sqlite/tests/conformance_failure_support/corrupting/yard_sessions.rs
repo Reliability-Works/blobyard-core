@@ -4,6 +4,7 @@ use blobyard_contract::{
     NewAuditEvent, NewYardContinuation, NewYardSession, RepositoryError, YardAdmission,
     YardSessionAuditContext, YardSessionExchange, YardSessionListing, YardSessionRepository,
 };
+use std::sync::atomic::Ordering;
 
 impl<T: YardSessionRepository> YardSessionRepository for Corrupting<'_, T> {
     fn evaluate_yard_admission(
@@ -15,7 +16,10 @@ impl<T: YardSessionRepository> YardSessionRepository for Corrupting<'_, T> {
         self.inner
             .evaluate_yard_admission(host_label, user_id, now_ms)
             .map(|mut admission| {
-                if matches!(self.corruption, Corruption::YardSessionAdmission) {
+                let successful_index = self.yard_admission_successes.fetch_add(1, Ordering::SeqCst);
+                if matches!(self.corruption, Corruption::YardSessionAdmission)
+                    && successful_index == 2
+                {
                     admission.yard_id.push_str("_corrupt");
                 }
                 admission

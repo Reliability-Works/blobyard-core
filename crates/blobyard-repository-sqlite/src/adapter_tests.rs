@@ -333,5 +333,8 @@ mod migration_behavior;
 #[path = "adapter_application_migration_tests.rs"]
 mod application_migration_behavior;
 
+#[path = "adapter_oidc_migration_tests.rs"]
+mod oidc_migration_behavior;
+
 #[path = "adapter_multipart_tests.rs"]
 mod multipart_behavior;

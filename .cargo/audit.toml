@@ -1,0 +1,9 @@
+[advisories]
+# RUSTSEC-2023-0071 (rsa Marvin attack): openidconnect uses rsa only for RS* ID-token
+# signature verification with provider public keys. Blob Yard never performs RSA decryption
+# and never holds an RSA private key, so the padding-oracle timing attack on decryption does
+# not apply. No safe upgrade is available upstream. The same justification is recorded in
+# deny.toml.
+ignore = [
+    "RUSTSEC-2023-0071",
+]

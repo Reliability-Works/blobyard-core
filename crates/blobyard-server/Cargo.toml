@@ -23,6 +23,7 @@ clap.workspace = true
 futures-util.workspace = true
 hex.workspace = true
 hmac.workspace = true
+openidconnect.workspace = true
 percent-encoding.workspace = true
 reqwest.workspace = true
 rustls-webpki.workspace = true

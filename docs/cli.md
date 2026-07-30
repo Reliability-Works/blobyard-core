@@ -57,6 +57,30 @@ The CLI and its MCP server classify every operation from the canonical contract.
 operation selected under a self-hosted profile fails locally with `OPERATION_UNSUPPORTED` before the
 client sends a request. Core operations remain identical across both deployment types.
 
+## Self-hosted server OIDC configuration
+
+Generic OIDC is configured on `blobyard-server serve`, not in a `blobyard` CLI profile. Register the
+exact callback `<public-url>/account/yard-oidc/callback`, then provide the issuer and client
+identifier as server flags and the client secret only through the process environment:
+
+```bash
+export BLOBYARD_OIDC_CLIENT_SECRET='replace-with-the-provider-client-secret'
+
+blobyard-server serve \
+  --public-url https://core.example.com \
+  --oidc-issuer https://identity.example.com/realms/blobyard \
+  --oidc-client-id blobyard-core
+```
+
+`--oidc-issuer`, `--oidc-client-id`, and `BLOBYARD_OIDC_CLIENT_SECRET` are all-or-nothing. There is
+no `--oidc-client-secret` flag. Discovery and provider endpoint validation complete before the
+server opens its listener. The callback origin derived from `--public-url` must use HTTPS, except
+for loopback HTTP origins in local development and tests. This feature adds a browser sign-in option
+and no `blobyard` CLI, MCP, SDK, or OpenAPI operation. It binds only to a pre-existing active local
+user or accepted guest and does not provision identities or grants. See the
+[self-hosted quickstart](self-hosting/quickstart.md#optional-generic-oidc-sign-in) for the complete
+operator and lifecycle contract.
+
 List or create workspaces without opening the dashboard:
 
 ```bash

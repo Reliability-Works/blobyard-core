@@ -1,5 +1,7 @@
 use super::auth_validation::{sql_time, validate_hash};
-use super::{SqliteRepository, lifecycle_audit, map_error, rows, validate_record, yard_rows};
+use super::{
+    SqliteRepository, lifecycle_audit, map_error, rows, validate_record, yard_guest_rows, yard_rows,
+};
 use blobyard_contract::{
     AuditValue, LocalUserListing, LocalUserLoginKeyRecord, LocalUserRecord, LocalUserRepository,
     LocalUserStatus, NewAuditEvent, RepositoryError,
@@ -136,6 +138,9 @@ fn validate_new_user(user: &LocalUserRecord) -> Result<(), RepositoryError> {
     rows::validate_text(&user.workspace_id)?;
     if let Some(email) = user.email.as_deref() {
         rows::validate_text(email)?;
+        if !yard_guest_rows::normalized_email(email) {
+            return Err(RepositoryError::InvalidInput);
+        }
     }
     if user.status != LocalUserStatus::Active || user.deactivated_at_ms.is_some() {
         return Err(RepositoryError::InvalidInput);

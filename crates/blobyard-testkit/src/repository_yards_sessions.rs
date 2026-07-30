@@ -34,7 +34,12 @@ pub(super) fn assert_session_controls(
 pub(super) fn create_session_user(
     repository: &dyn YardConformanceRepository,
 ) -> Result<(), RepositoryError> {
-    let user = local_user("workspace_fixture", "user_fixture", None, 100);
+    let user = local_user(
+        "workspace_fixture",
+        "user_fixture",
+        Some("member@example.test".to_owned()),
+        100,
+    );
     let key = login_key("userkey_yard", &user.id, '7', 100);
     repository.create_local_user(
         &user,

@@ -42,6 +42,9 @@ const YARD_CORRUPTIONS: &[Corruption] = &[
     Corruption::YardGuestCapacityCreateFailure,
     Corruption::YardGuestCapacityOverflowAccepted,
     Corruption::YardGuestIdentityRecord,
+    Corruption::YardOidcMemberBinding,
+    Corruption::YardOidcReturningBinding,
+    Corruption::YardOidcGuestBinding,
     Corruption::YardFixtureObjectList,
     Corruption::YardReusedStart,
     Corruption::YardReplacementStatus,
@@ -73,7 +76,7 @@ fn yard_conformance_propagates_each_adapter_failure() {
         )
     });
     assert_eq!(
-        operation_count, 221,
+        operation_count, 258,
         "fault inventory must retain each canonical Yard boundary while omitting the repeated \
          100-invitation capacity fill"
     );

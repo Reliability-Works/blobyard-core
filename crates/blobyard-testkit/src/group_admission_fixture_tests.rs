@@ -12,6 +12,45 @@ fn generated_group_admission_fixtures_have_valid_inventory() -> Result<(), Repos
 }
 
 #[test]
+fn generated_oidc_fixture_has_valid_inventory() -> Result<(), RepositoryError> {
+    super::oidc_fixture_conformance()
+}
+
+#[test]
+fn oidc_fixture_rejects_inventory_and_owner_drift() {
+    let document = super::fixture_document(super::OIDC_FIXTURE).expect("OIDC fixture");
+    for malformed in ["{", "{}"] {
+        assert_eq!(
+            super::oidc_fixture_conformance_for(malformed),
+            Err(RepositoryError::Unavailable)
+        );
+    }
+    let mut wrong_count = document.clone();
+    wrong_count["cases"]
+        .as_array_mut()
+        .expect("OIDC cases")
+        .pop();
+    assert_eq!(
+        super::oidc_fixture_conformance_for(&wrong_count.to_string()),
+        Err(RepositoryError::Unavailable)
+    );
+
+    let mut duplicate = document.clone();
+    duplicate["cases"][1]["id"] = duplicate["cases"][0]["id"].clone();
+    assert_eq!(
+        super::oidc_fixture_conformance_for(&duplicate.to_string()),
+        Err(RepositoryError::Unavailable)
+    );
+
+    let mut wrong_suite = document;
+    wrong_suite["cases"][0]["conformanceSuite"] = json!("unknown-suite");
+    assert_eq!(
+        super::oidc_fixture_conformance_for(&wrong_suite.to_string()),
+        Err(RepositoryError::Unavailable)
+    );
+}
+
+#[test]
 fn exact_case_assertion_rejects_semantic_drift() {
     let input = json!({"surface": "continuation"});
     let expected = json!({"lifetimeMilliseconds": 600_000});

@@ -1,0 +1,217 @@
+schemaVersion: 1
+cases:
+  - id: oidc-attempt-is-hash-only-and-single-claim
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      stateShape: byos-plus-64-lower-hex
+    expected:
+      persistedRawState: false
+      claimCount: 1
+  - id: oidc-attempt-expires-after-ten-minutes
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      surface: oidc-attempt
+    expected:
+      lifetimeMilliseconds: 600000
+  - id: oidc-first-binding-reuses-one-active-member
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      candidateKind: member
+      candidateCount: 1
+    expected:
+      bound: true
+      provisioned: false
+      auditEventCount: 1
+  - id: oidc-first-binding-reuses-one-accepted-guest
+    conformanceOwner: testkit
+    conformanceSuite: oidc-guest-repository
+    input:
+      candidateKind: accepted-guest
+      candidateCount: 1
+    expected:
+      bound: true
+      provisioned: false
+      auditEventCount: 1
+  - id: oidc-returning-binding-reuses-exact-issuer-subject-workspace
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      issuerMatches: true
+      subjectMatches: true
+      workspaceMatches: true
+    expected:
+      bindingCreated: false
+      lastAuthenticatedUpdated: true
+  - id: oidc-verified-email-drift-revokes-subject-sessions
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      verifiedEmailMatchesBinding: false
+    expected:
+      admitted: false
+      sessionsRevoked: true
+  - id: oidc-missing-verified-email-revokes-subject-sessions
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      verifiedEmail: null
+      existingBinding: true
+    expected:
+      admitted: false
+      sessionsRevoked: true
+  - id: oidc-zero-candidate-denies-without-provisioning
+    conformanceOwner: testkit
+    conformanceSuite: oidc-repository
+    input:
+      candidateCount: 0
+    expected:
+      admitted: false
+      provisioned: false
+  - id: oidc-ambiguous-candidates-deny-without-binding
+    conformanceOwner: testkit
+    conformanceSuite: oidc-guest-repository
+    input:
+      candidateCount: 2
+      candidateKinds:
+        - member
+        - accepted-guest
+    expected:
+      admitted: false
+      bindingCreated: false
+  - id: oidc-cross-tenant-candidate-is-ignored
+    conformanceOwner: testkit
+    conformanceSuite: oidc-guest-repository
+    input:
+      candidateWorkspaceMatchesYard: false
+    expected:
+      admitted: false
+      bindingCreated: false
+  - id: oidc-start-redirect-and-callback-are-exact
+    conformanceOwner: server
+    conformanceSuite: oidc-browser-flow
+    input:
+      startMethod: POST
+      callbackMethod: GET
+      callbackParameters:
+        - code
+        - state
+    expected:
+      startStatus: 303
+      callbackStatus: 303
+      stateShape: byos-plus-64-lower-hex
+  - id: oidc-member-callback-issues-yard-exchange-code
+    conformanceOwner: server
+    conformanceSuite: oidc-browser-flow
+    input:
+      candidateKind: member
+      candidateCount: 1
+    expected:
+      redirectCodeShape: byx-plus-64-lower-hex
+      provisioned: false
+  - id: oidc-accepted-guest-callback-issues-yard-exchange-code
+    conformanceOwner: server
+    conformanceSuite: oidc-browser-flow
+    input:
+      candidateKind: accepted-guest
+      candidateCount: 1
+    expected:
+      redirectCodeShape: byx-plus-64-lower-hex
+      provisioned: false
+  - id: oidc-malformed-callback-and-replay-are-concealed
+    conformanceOwner: server
+    conformanceSuite: oidc-browser-flow
+    input:
+      callbackShape: malformed-or-replayed
+    expected:
+      responseClass: invalid-sign-in-link
+      providerExchangeCountAfterReplay: 1
+  - id: oidc-provider-or-token-failure-is-concealed-after-claim
+    conformanceOwner: server
+    conformanceSuite: oidc-browser-flow
+    input:
+      providerResult: invalid-or-unavailable
+    expected:
+      responseClass: invalid-sign-in-link
+      attemptClaimedBeforeExchange: true
+  - id: oidc-authorization-uses-fixed-scopes-pkce-and-nonce
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      flow: authorization-code
+    expected:
+      scopes:
+        - openid
+        - email
+        - profile
+      pkceMethod: S256
+      nonceRequired: true
+  - id: oidc-issuer-mismatch-is-rejected
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      issuerMatchesDiscovery: false
+    expected:
+      admitted: false
+  - id: oidc-audience-mismatch-is-rejected
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      audienceContainsClient: false
+    expected:
+      admitted: false
+  - id: oidc-authorized-party-is-exact-for-multiple-audiences
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      audienceCount: 2
+      authorizedPartyMatchesClient: false
+    expected:
+      admitted: false
+  - id: oidc-expiry-and-not-before-are-enforced
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      callbackWithinTimeWindow: false
+    expected:
+      admitted: false
+  - id: oidc-nonce-mismatch-is-rejected
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      nonceMatchesAttempt: false
+    expected:
+      admitted: false
+  - id: oidc-subject-is-required-and-bounded
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      subjectShape: missing-empty-control-or-oversized
+    expected:
+      admitted: false
+  - id: oidc-userinfo-subject-and-verified-email-are-required
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      claimsVerifiedEmail: null
+      userInfoSubjectMatches: false
+    expected:
+      admitted: false
+  - id: oidc-signature-and-access-token-hash-are-enforced
+    conformanceOwner: server
+    conformanceSuite: oidc-provider-validation
+    input:
+      signatureValid: false
+      atHashMatches: false
+    expected:
+      admitted: false
+  - id: oidc-disabled-preserves-local-key-fallback
+    conformanceOwner: server
+    conformanceSuite: oidc-local-key-fallback
+    input:
+      oidcConfigured: false
+    expected:
+      localKeyFormPresent: true
+      oidcFormPresent: false

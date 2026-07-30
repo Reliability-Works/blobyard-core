@@ -25,13 +25,13 @@ test("generates and verifies a deterministic checksummed bundle", async () => {
   const root = fixtureRepository();
   try {
     assert.deepEqual(await generateConformance({ root }), {
-      files: 12,
+      files: 13,
       root: "conformance",
     });
-    assert.equal((await generateConformance({ check: true, root })).files, 12);
+    assert.equal((await generateConformance({ check: true, root })).files, 13);
     const manifest = JSON.parse(readFileSync(join(root, "conformance/manifest.json")));
     assert.equal(manifest.coreVersion, "1.2.3");
-    assert.equal(manifest.members.length, 12);
+    assert.equal(manifest.members.length, 13);
     writeFileSync(join(root, "conformance/behavior/cache.json"), "stale\n");
     await assert.rejects(generateConformance({ check: true, root }), /is stale/u);
   } finally {

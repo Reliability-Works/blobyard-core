@@ -3,8 +3,10 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 const YARD_SESSION_FIXTURE: &str = include_str!("../../../conformance/behavior/yard-sessions.json");
+const OIDC_FIXTURE: &str = include_str!("../../../conformance/behavior/yard-oidc.json");
 const AUTHORIZATION_FIXTURE: &str = include_str!("../../../conformance/authorization/vectors.json");
 const YARD_SESSION_CASE_COUNT: usize = 91;
+const OIDC_CASE_COUNT: usize = 25;
 const CLOUD_CASE_IDS: &[&str] = &[
     "cloud-duplicate-guest-identity-rows-fail-closed",
     "cloud-guest-acceptance-rejects-mismatched-email",
@@ -36,9 +38,17 @@ const OWNER_SUITES: &[(&str, &str)] = &[
     ("testkit", "yard-guests"),
     ("testkit", "yard-sessions"),
 ];
+const OIDC_OWNER_SUITES: &[(&str, &str)] = &[
+    ("testkit", "oidc-repository"),
+    ("testkit", "oidc-guest-repository"),
+    ("server", "oidc-browser-flow"),
+    ("server", "oidc-provider-validation"),
+    ("server", "oidc-local-key-fallback"),
+];
 
 /// Records the generated fixture cases reached by one executable conformance suite.
 pub struct FixtureExecutionTracker {
+    fixture: &'static str,
     owner: &'static str,
     suite: &'static str,
     recorded: BTreeSet<String>,
@@ -50,6 +60,19 @@ impl FixtureExecutionTracker {
     #[must_use]
     pub const fn new(owner: &'static str, suite: &'static str) -> Self {
         Self {
+            fixture: YARD_SESSION_FIXTURE,
+            owner,
+            suite,
+            recorded: BTreeSet::new(),
+            record_failed: false,
+        }
+    }
+
+    /// Starts tracking one owner-local OIDC aggregate suite.
+    #[must_use]
+    pub const fn new_oidc(owner: &'static str, suite: &'static str) -> Self {
+        Self {
+            fixture: OIDC_FIXTURE,
             owner,
             suite,
             recorded: BTreeSet::new(),
@@ -64,7 +87,7 @@ impl FixtureExecutionTracker {
     /// repository behavior.
     pub fn record_case(&mut self, id: &str, input: &Value, expected: &Value) {
         let valid = assert_fixture_member(
-            YARD_SESSION_FIXTURE,
+            self.fixture,
             "cases",
             id,
             Some(self.owner),
@@ -88,12 +111,7 @@ impl FixtureExecutionTracker {
         if self.record_failed {
             return Err(RepositoryError::Unavailable);
         }
-        fixture_execution_conformance_for(
-            YARD_SESSION_FIXTURE,
-            self.owner,
-            self.suite,
-            &self.recorded,
-        )
+        fixture_execution_conformance_for(self.fixture, self.owner, self.suite, &self.recorded)
     }
 }
 
@@ -139,6 +157,35 @@ fn fixture_execution_conformance_for(
 /// ownership boundary.
 pub fn group_admission_fixture_conformance() -> Result<(), RepositoryError> {
     group_admission_fixture_conformance_for(YARD_SESSION_FIXTURE, AUTHORIZATION_FIXTURE)
+}
+
+/// Verifies the structural invariants of the generated OIDC fixtures.
+///
+/// # Errors
+///
+/// Returns unavailable if the inventory drifts or contains an unowned case.
+pub fn oidc_fixture_conformance() -> Result<(), RepositoryError> {
+    oidc_fixture_conformance_for(OIDC_FIXTURE)
+}
+
+fn oidc_fixture_conformance_for(fixture: &str) -> Result<(), RepositoryError> {
+    let document = fixture_document(fixture)?;
+    let cases = members(&document, "cases")?;
+    if cases.len() != OIDC_CASE_COUNT {
+        return Err(RepositoryError::Unavailable);
+    }
+    unique_ids(cases)?;
+    if cases.iter().all(|member| {
+        member
+            .get("conformanceOwner")
+            .and_then(Value::as_str)
+            .zip(member.get("conformanceSuite").and_then(Value::as_str))
+            .is_some_and(|owner_suite| OIDC_OWNER_SUITES.contains(&owner_suite))
+    }) {
+        Ok(())
+    } else {
+        Err(RepositoryError::Unavailable)
+    }
 }
 
 /// Binds one executable scenario to its exact generated admission fixture.

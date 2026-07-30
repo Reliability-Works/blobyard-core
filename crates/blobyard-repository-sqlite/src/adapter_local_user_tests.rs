@@ -205,7 +205,7 @@ fn local_user_inputs_fail_closed_at_each_field_boundary() {
 
 fn invalid_users() -> Vec<LocalUserRecord> {
     let mut values = Vec::new();
-    for field in 0..6 {
+    for field in 0..7 {
         let mut value = fixture_user();
         match field {
             0 => value.id.clear(),
@@ -213,7 +213,8 @@ fn invalid_users() -> Vec<LocalUserRecord> {
             2 => value.workspace_id.clear(),
             3 => value.email = Some(String::new()),
             4 => value.status = LocalUserStatus::Deactivated,
-            _ => value.deactivated_at_ms = Some(0),
+            5 => value.deactivated_at_ms = Some(0),
+            _ => value.email = Some(" Mixed@Example.test".to_owned()),
         }
         values.push(value);
     }
