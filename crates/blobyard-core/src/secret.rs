@@ -35,6 +35,12 @@ pub enum GeneratedSecretKind {
     YardGuestLoginKey,
     /// Single-use Yard-origin session exchange code.
     YardExchangeCode,
+    /// Single-use generic OIDC state returned only through the browser.
+    YardOidcState,
+    /// Provider nonce derived for one generic OIDC authorization attempt.
+    YardOidcNonce,
+    /// PKCE verifier derived for one generic OIDC authorization attempt.
+    YardOidcPkceVerifier,
     /// Yard-origin browser session token.
     YardSession,
 }
@@ -55,6 +61,9 @@ impl GeneratedSecretKind {
             Self::YardGuestInvitation => "bygi",
             Self::YardGuestLoginKey => "byg",
             Self::YardExchangeCode => "byx",
+            Self::YardOidcState => "byos",
+            Self::YardOidcNonce => "byon",
+            Self::YardOidcPkceVerifier => "byop",
             Self::YardSession => "byys",
         }
     }

@@ -193,6 +193,21 @@ policy and returns a one-minute, single-use `byx_` exchange code to
 atomically and sets `__Host-blobyard-yard-session` with `Secure`, `HttpOnly`, `SameSite=Lax`, and
 `Path=/`. The absolute session lifetime is twelve hours. The identity origin sets no cookie.
 
+When self-hosted generic OIDC is configured, the identity page also exposes browser-only
+`POST /account/yard-oidc/start` and `GET /account/yard-oidc/callback` routes. The flow uses
+authorization code with PKCE S256, a nonce, fixed `openid email profile` scopes, and hashed
+single-use state bound to the exact Yard continuation. It validates the provider issuer, audience
+and authorized party, signature, expiry, not-before, nonce, access-token hash, subject consistency,
+and verified email before issuing the same one-minute Yard exchange code.
+
+OIDC binds an exact issuer and provider subject only to exactly one pre-existing active local user
+in the Yard workspace or accepted guest with a current exact-Yard grant. Local-user emails are
+stored trimmed and lowercased so they compare exactly against the normalized provider email. It
+never provisions an identity or grants access. Missing or changed verified email on a reused binding
+denies sign-in and revokes the bound identity's active Yard sessions. Provider tokens and OIDC flow
+secrets are not persisted. These two account routes are intentionally outside `/v1`, so they do not
+add OpenAPI, SDK, CLI, or MCP operations.
+
 Every private delivery request resolves the hashed session token, active local user, exact host,
 environment, current deployment, policy, and grants in one live repository path. Revoking a session
 or grant, tightening visibility, deactivating the user, deleting the Yard, or expiring a grant

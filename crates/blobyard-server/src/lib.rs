@@ -101,6 +101,13 @@ pub mod yard_cleanup;
 pub mod yard_invite;
 #[doc(hidden)]
 pub mod yard_login;
+mod yard_oidc_config;
+#[doc(hidden)]
+pub mod yard_oidc_contracts;
+#[doc(hidden)]
+pub mod yard_oidc_provider;
+#[doc(hidden)]
+pub mod yard_oidc_routes;
 #[doc(hidden)]
 pub mod yard_session_contracts;
 #[doc(hidden)]
@@ -116,7 +123,7 @@ pub use application::test_seams as application_test_seams;
 pub use application::{
     InitializedServer, enforce_retention, enforce_retention_with_storage, initialize,
     initialize_with_origin, initialize_with_origins, serve_until, serve_until_with_storage,
-    show_new_token,
+    serve_until_with_storage_and_oidc, show_new_token,
 };
 pub use error::ServerError;
 pub use hosted_migration::{HostedMigrationError, HostedMigrationOptions, migrate_from_hosted};
@@ -126,6 +133,7 @@ pub use recovery::{
     upgrade_preflight,
 };
 pub use storage_configuration::{S3RuntimeConfiguration, StorageConfiguration};
+pub use yard_oidc_config::YardOidcConfiguration;
 
 /// Converts the HTTP server's terminal I/O result into the operator entry point's error type.
 ///
@@ -161,6 +169,7 @@ repository_surface!(
     blobyard_contract::LocalUserRepository,
     blobyard_contract::WorkspaceGroupRepository,
     blobyard_contract::YardSessionRepository,
+    blobyard_contract::YardOidcRepository,
     blobyard_contract::YardGuestRepository,
     blobyard_contract::CiRepository,
     blobyard_contract::TransferRepository,

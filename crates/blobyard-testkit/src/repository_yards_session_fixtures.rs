@@ -133,6 +133,8 @@ pub(super) fn audit_count(
 
 const fn previous_character(value: char) -> char {
     match value {
+        '4' => '1',
+        '5' => '2',
         'e' => 'd',
         'f' => 'e',
         _ => '0',

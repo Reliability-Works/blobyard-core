@@ -1,7 +1,8 @@
 use blobyard_contract::{
     LifecycleRepository, LocalUserRepository, MetadataRepository, NewAuditEvent, RepositoryError,
     TransferRepository, WebYardRepository, WebYardStatus, WorkspaceGroupRepository,
-    YardDeployStatus, YardGuestRepository, YardIdentityRepository, YardSessionRepository,
+    YardDeployStatus, YardGuestRepository, YardIdentityRepository, YardOidcRepository,
+    YardSessionRepository,
 };
 use blobyard_core::{Slug, SlugError};
 
@@ -16,6 +17,8 @@ mod fixture_tests;
 mod fixtures;
 #[path = "repository_yards_guests.rs"]
 mod guests;
+#[path = "repository_yards_oidc.rs"]
+mod oidc;
 #[path = "repository_yards_policy.rs"]
 mod policy;
 #[path = "repository_yards_session_direct.rs"]
@@ -49,6 +52,7 @@ pub trait YardConformanceRepository:
     + LocalUserRepository
     + WorkspaceGroupRepository
     + YardSessionRepository
+    + YardOidcRepository
     + YardGuestRepository
     + YardIdentityRepository
     + LifecycleRepository
@@ -62,6 +66,7 @@ impl<
         + LocalUserRepository
         + WorkspaceGroupRepository
         + YardSessionRepository
+        + YardOidcRepository
         + YardGuestRepository
         + YardIdentityRepository
         + LifecycleRepository,
@@ -164,6 +169,7 @@ fn yard_conformance_with_guest_capacity(
     sessions::create_session_user(repository)?;
     policy::approve_application_policy(repository, &first.yard.id)?;
     access::assert_access_controls(repository, &first, &version_id)?;
+    oidc::assert_member_and_attempt_controls(repository, &first)?;
     let mut tracker = FixtureExecutionTracker::new("testkit", "yard-sessions");
     sessions::assert_session_controls(repository, &first, &version_id, &mut tracker)?;
     guests::assert_guest_controls(repository, &first, include_guest_capacity)?;

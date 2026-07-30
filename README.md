@@ -126,6 +126,12 @@ The supported operator journey is documented in
 [`docs/self-hosting/quickstart.md`](docs/self-hosting/quickstart.md). The default Compose path uses
 SQLite and filesystem storage. A MinIO-backed S3-compatible path is also provided.
 
+Self-hosted Core can add a generic OpenID Connect provider to the existing private-Yard sign-in
+page. OIDC is an authentication option only: it binds a provider identity to exactly one
+pre-existing active local user or accepted guest and never provisions users or grants access.
+Configuration and the exact callback contract are documented in the
+[self-hosted quickstart](docs/self-hosting/quickstart.md#optional-generic-oidc-sign-in).
+
 ## Repository checks
 
 Install the pinned local dependencies and hooks:

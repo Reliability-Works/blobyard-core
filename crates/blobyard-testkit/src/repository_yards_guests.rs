@@ -187,6 +187,13 @@ fn assert_admission_and_identity(
         return Err(RepositoryError::Unavailable);
     }
     record_admission_and_identity(tracker);
+    super::oidc::assert_guest_binding(
+        repository,
+        first,
+        &invitation.email,
+        SUBJECT_ID,
+        invitation.created_at_ms + 5,
+    )?;
     Ok(())
 }
 
@@ -213,6 +220,12 @@ fn assert_revocation(
     {
         return Err(RepositoryError::Unavailable);
     }
+    super::oidc::assert_revoked_guest_binding(
+        repository,
+        first,
+        &invitation.email,
+        CREATED_AT_MS + 21,
+    )?;
     tracker.record_case(
         "guest-revocation-denies-on-next-private-request",
         &serde_json::json!({"change": "invitation-revoked", "surface": "private-delivery"}),

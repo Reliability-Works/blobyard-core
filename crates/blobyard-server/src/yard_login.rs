@@ -16,7 +16,7 @@ use blobyard_contract::{NewYardContinuation, RepositoryError, YARD_EXCHANGE_CODE
 use blobyard_core::{GeneratedSecretKind, SecretString};
 
 #[path = "yard_login_page.rs"]
-mod page;
+pub(crate) mod page;
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new().route("/account/yard-login", any(dispatch))
@@ -59,6 +59,7 @@ fn get_at(
         claims.host_label(),
         continuation.expose_secret(),
         false,
+        state.yard_oidc_provider.is_some(),
     ))
 }
 
@@ -116,6 +117,7 @@ fn authenticate_and_redirect(
             claims.host_label(),
             continuation.expose_secret(),
             true,
+            state.yard_oidc_provider.is_some(),
         ));
     };
     let admission =
@@ -208,7 +210,7 @@ fn continuation_id() -> String {
     format!("yardcont_{}", uuid::Uuid::new_v4().simple())
 }
 
-fn exchange_redirect(
+pub(crate) fn exchange_redirect(
     origin: &str,
     host_label: &str,
     code: &SecretString,
@@ -232,7 +234,7 @@ fn parse_location(value: &str) -> Result<url::Url, ApiError> {
     url::Url::parse(value).map_err(|_error| ApiError::internal())
 }
 
-fn single_parameter(input: &str, name: &str) -> Option<String> {
+pub(crate) fn single_parameter(input: &str, name: &str) -> Option<String> {
     let mut values = url::form_urlencoded::parse(input.as_bytes());
     let value = values
         .next()

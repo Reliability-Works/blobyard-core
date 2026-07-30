@@ -26,7 +26,7 @@ async fn create_user(fixture: &TransferFixture) -> (String, String) {
         fixture,
         "POST",
         "/v1/users",
-        br#"{"displayName":"Ada Lovelace","email":" ada@example.test ","workspace":"fixture"}"#,
+        br#"{"displayName":"Ada Lovelace","email":" Ada@Example.TEST ","workspace":"fixture"}"#,
         false,
     )
     .await;
@@ -171,7 +171,7 @@ async fn user_routes_conceal_foreign_workspaces_and_reject_duplicates() {
             &fixture,
             "POST",
             "/v1/users",
-            br#"{"displayName":"Duplicate email","email":"ada@example.test","workspace":"fixture"}"#,
+            br#"{"displayName":"Duplicate email","email":"ADA@Example.Test","workspace":"fixture"}"#,
             false,
         )
         .await,

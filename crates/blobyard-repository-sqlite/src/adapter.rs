@@ -128,6 +128,7 @@ mod yard_lifecycle;
 mod yard_management_role_rows;
 #[path = "yard_management_roles.rs"]
 mod yard_management_roles;
+mod yard_oidc;
 #[path = "yard_queries.rs"]
 mod yard_queries;
 #[path = "yard_rows.rs"]

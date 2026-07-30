@@ -104,8 +104,23 @@ exchange code. The Yard origin consumes that code and sets a twelve-hour
 `__Host-blobyard-yard-session` cookie with `Secure`, `HttpOnly`, `SameSite=Lax`, and `Path=/`. The
 identity origin sets no cookie, so each Yard sign-in re-enters the key. Session claims are resolved
 server-side on every delivery request; client-supplied tenant identifiers are never authorization
-inputs, and revocation takes effect on the next request. Link redemption and OIDC identities arrive
-in later slices.
+inputs, and revocation takes effect on the next request. Link redemption arrives later.
+
+Self-hosted Core may add a generic OIDC option to the same identity page. The browser flow uses
+authorization code with PKCE S256, a nonce, fixed `openid email profile` scopes, hashed single-use
+state, and the exact Yard continuation context. Provider discovery completes before the listener
+opens, and callback validation covers issuer, audience and authorized party, signature, expiry,
+not-before, nonce, access-token hash, subject consistency, and verified email. Provider tokens, the
+client secret, raw state, nonce, and PKCE verifier are not persisted.
+
+OIDC never creates a user, guest, membership, role, or access grant. On first sign-in, the exact
+issuer and provider subject bind only when verified email resolves to exactly one pre-existing
+active local user in the Yard workspace or one accepted guest with a current exact-Yard grant.
+Local-user emails are stored trimmed and lowercased, and upgrades normalize existing stored emails
+or fail closed when two active users in one workspace would collide. Later sign-ins reuse that
+binding. A missing verified email, email drift, tenant drift, or invalid guest lifecycle denies
+sign-in; missing email or drift also revokes the bound identity's active Yard sessions. The
+local-key form remains available when OIDC is enabled.
 
 Core models every Yard-session principal as an opaque runtime subject. Existing local-user IDs
 remain the member subject IDs, so the current `YardIdentity.userId` contract does not change. An
@@ -164,14 +179,15 @@ Group IDs use `group_` followed by a lowercase UUID without separators. A group 
 only when the group is active and belongs to the Yard workspace. Legacy group-principal grants that
 do not resolve to a current group remain stored but fail closed.
 
-The generated `conformance/behavior/yard-sessions.json` and `conformance/authorization/vectors.json`
-files carry the portable group, guest, and admission matrix for Core and Cloud. The Rust testkit
-asserts the exact case inventory and execution owner. Core cases cover tenant isolation, lifecycle
-and environment drift, deterministic pagination, cardinality limits, exact mutation audits,
-rollback, machine-denied management routes, guest acceptance, live identity, and immediate
-revocation. Better Auth workspace membership and verified-email guest cases are marked
-`conformanceOwner: cloud`; Core proves the corresponding local-user and invitation boundaries
-without claiming Cloud identity semantics.
+The generated `conformance/behavior/yard-sessions.json`, `conformance/behavior/yard-oidc.json`, and
+`conformance/authorization/vectors.json` files carry the portable group, guest, admission, and
+generic OIDC matrix for Core and Cloud. The Rust testkit asserts the exact case inventory and
+execution owner. Core cases cover tenant isolation, lifecycle and environment drift, deterministic
+pagination, cardinality limits, exact mutation audits, rollback, machine-denied management routes,
+guest acceptance, live identity, immediate revocation, single-use OIDC state, exact
+existing-identity binding, callback validation, and local-key fallback. Better Auth workspace
+membership and verified-email guest cases are marked `conformanceOwner: cloud`; Core proves the
+corresponding local-user and invitation boundaries without claiming Cloud identity semantics.
 
 ## The application manifest
 

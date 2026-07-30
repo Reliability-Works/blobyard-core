@@ -27,6 +27,8 @@ mod transfers;
 mod yard_guests;
 #[path = "repository_fault_yard_identity.rs"]
 mod yard_identity;
+#[path = "repository_fault_yard_oidc.rs"]
+mod yard_oidc;
 #[path = "repository_fault_yard_sessions.rs"]
 mod yard_sessions;
 #[path = "repository_fault_yards.rs"]

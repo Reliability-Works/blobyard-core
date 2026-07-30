@@ -104,6 +104,7 @@ fn state() -> (TempDir, AppState, ProjectRecord) {
         staging_directory,
         default_workspace: workspace,
         oidc_verifier: Arc::new(crate::oidc::UnavailableGithubOidcVerifier),
+        yard_oidc_provider: None,
     };
     (temporary, state, project)
 }

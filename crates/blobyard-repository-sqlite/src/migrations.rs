@@ -1,7 +1,7 @@
 use blobyard_contract::RepositoryError;
 use rusqlite::{Connection, Transaction};
 
-pub(super) const CURRENT_SCHEMA_VERSION: u32 = 23;
+pub(super) const CURRENT_SCHEMA_VERSION: u32 = 24;
 const MIGRATIONS: [&str; CURRENT_SCHEMA_VERSION as usize] = [
     include_str!("../migrations/0001_initial.sql"),
     include_str!("../migrations/0002_local_auth.sql"),
@@ -26,6 +26,7 @@ const MIGRATIONS: [&str; CURRENT_SCHEMA_VERSION as usize] = [
     include_str!("../migrations/0021_workspace_groups.sql"),
     include_str!("../migrations/0022_yard_roles_and_identity.sql"),
     include_str!("../migrations/0023_yard_guest_invitations.sql"),
+    include_str!("../migrations/0024_yard_oidc.sql"),
 ];
 
 pub(super) fn apply(connection: &mut Connection) -> Result<(), RepositoryError> {

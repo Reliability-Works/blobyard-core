@@ -1,0 +1,195 @@
+{
+  "cases": [
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-browser-flow",
+      "expected": { "provisioned": false, "redirectCodeShape": "byx-plus-64-lower-hex" },
+      "id": "oidc-accepted-guest-callback-issues-yard-exchange-code",
+      "input": { "candidateCount": 1, "candidateKind": "accepted-guest" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-guest-repository",
+      "expected": { "admitted": false, "bindingCreated": false },
+      "id": "oidc-ambiguous-candidates-deny-without-binding",
+      "input": { "candidateCount": 2, "candidateKinds": ["member", "accepted-guest"] }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "lifetimeMilliseconds": 600000 },
+      "id": "oidc-attempt-expires-after-ten-minutes",
+      "input": { "surface": "oidc-attempt" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "claimCount": 1, "persistedRawState": false },
+      "id": "oidc-attempt-is-hash-only-and-single-claim",
+      "input": { "stateShape": "byos-plus-64-lower-hex" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-audience-mismatch-is-rejected",
+      "input": { "audienceContainsClient": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": {
+        "nonceRequired": true,
+        "pkceMethod": "S256",
+        "scopes": ["openid", "email", "profile"]
+      },
+      "id": "oidc-authorization-uses-fixed-scopes-pkce-and-nonce",
+      "input": { "flow": "authorization-code" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-authorized-party-is-exact-for-multiple-audiences",
+      "input": { "audienceCount": 2, "authorizedPartyMatchesClient": false }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-guest-repository",
+      "expected": { "admitted": false, "bindingCreated": false },
+      "id": "oidc-cross-tenant-candidate-is-ignored",
+      "input": { "candidateWorkspaceMatchesYard": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-local-key-fallback",
+      "expected": { "localKeyFormPresent": true, "oidcFormPresent": false },
+      "id": "oidc-disabled-preserves-local-key-fallback",
+      "input": { "oidcConfigured": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-expiry-and-not-before-are-enforced",
+      "input": { "callbackWithinTimeWindow": false }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-guest-repository",
+      "expected": { "auditEventCount": 1, "bound": true, "provisioned": false },
+      "id": "oidc-first-binding-reuses-one-accepted-guest",
+      "input": { "candidateCount": 1, "candidateKind": "accepted-guest" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "auditEventCount": 1, "bound": true, "provisioned": false },
+      "id": "oidc-first-binding-reuses-one-active-member",
+      "input": { "candidateCount": 1, "candidateKind": "member" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-issuer-mismatch-is-rejected",
+      "input": { "issuerMatchesDiscovery": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-browser-flow",
+      "expected": {
+        "providerExchangeCountAfterReplay": 1,
+        "responseClass": "invalid-sign-in-link"
+      },
+      "id": "oidc-malformed-callback-and-replay-are-concealed",
+      "input": { "callbackShape": "malformed-or-replayed" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-browser-flow",
+      "expected": { "provisioned": false, "redirectCodeShape": "byx-plus-64-lower-hex" },
+      "id": "oidc-member-callback-issues-yard-exchange-code",
+      "input": { "candidateCount": 1, "candidateKind": "member" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "admitted": false, "sessionsRevoked": true },
+      "id": "oidc-missing-verified-email-revokes-subject-sessions",
+      "input": { "existingBinding": true, "verifiedEmail": null }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-nonce-mismatch-is-rejected",
+      "input": { "nonceMatchesAttempt": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-browser-flow",
+      "expected": { "attemptClaimedBeforeExchange": true, "responseClass": "invalid-sign-in-link" },
+      "id": "oidc-provider-or-token-failure-is-concealed-after-claim",
+      "input": { "providerResult": "invalid-or-unavailable" }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "bindingCreated": false, "lastAuthenticatedUpdated": true },
+      "id": "oidc-returning-binding-reuses-exact-issuer-subject-workspace",
+      "input": { "issuerMatches": true, "subjectMatches": true, "workspaceMatches": true }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-signature-and-access-token-hash-are-enforced",
+      "input": { "atHashMatches": false, "signatureValid": false }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-browser-flow",
+      "expected": {
+        "callbackStatus": 303,
+        "startStatus": 303,
+        "stateShape": "byos-plus-64-lower-hex"
+      },
+      "id": "oidc-start-redirect-and-callback-are-exact",
+      "input": {
+        "callbackMethod": "GET",
+        "callbackParameters": ["code", "state"],
+        "startMethod": "POST"
+      }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-subject-is-required-and-bounded",
+      "input": { "subjectShape": "missing-empty-control-or-oversized" }
+    },
+    {
+      "conformanceOwner": "server",
+      "conformanceSuite": "oidc-provider-validation",
+      "expected": { "admitted": false },
+      "id": "oidc-userinfo-subject-and-verified-email-are-required",
+      "input": { "claimsVerifiedEmail": null, "userInfoSubjectMatches": false }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "admitted": false, "sessionsRevoked": true },
+      "id": "oidc-verified-email-drift-revokes-subject-sessions",
+      "input": { "verifiedEmailMatchesBinding": false }
+    },
+    {
+      "conformanceOwner": "testkit",
+      "conformanceSuite": "oidc-repository",
+      "expected": { "admitted": false, "provisioned": false },
+      "id": "oidc-zero-candidate-denies-without-provisioning",
+      "input": { "candidateCount": 0 }
+    }
+  ],
+  "schemaVersion": 1
+}

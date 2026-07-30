@@ -2,8 +2,10 @@
 
 #![allow(clippy::expect_used, reason = "test fixtures must fail loudly")]
 
+use blobyard_core::SecretString;
 use blobyard_server::{
-    ServerError, enforce_retention, initialize, initialize_with_origin, initialize_with_origins,
+    ServerError, StorageConfiguration, YardOidcConfiguration, enforce_retention, initialize,
+    initialize_with_origin, initialize_with_origins, serve_until_with_storage_and_oidc,
 };
 use rusqlite::Connection;
 
@@ -130,4 +132,36 @@ fn retention_rejects_enabled_policies_without_a_project() {
         enforce_retention(temporary.path()),
         Err(ServerError::Repository(_))
     ));
+}
+
+#[tokio::test]
+async fn oidc_discovery_failure_precedes_listener_binding() {
+    let unused = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("unused provider listener");
+    let issuer = format!(
+        "http://{}/",
+        unused.local_addr().expect("unused provider address")
+    );
+    drop(unused);
+    let configuration = YardOidcConfiguration::from_optional(
+        Some(issuer),
+        Some("fixture-client".to_owned()),
+        SecretString::new("fixture-secret").ok(),
+    )
+    .expect("configuration")
+    .expect("enabled OIDC");
+    assert!(
+        serve_until_with_storage_and_oidc(
+            "127.0.0.1:0".parse().expect("loopback"),
+            tempfile::tempdir().expect("data directory").path(),
+            Some("http://127.0.0.1:8787"),
+            None,
+            &StorageConfiguration::Filesystem,
+            Some(&configuration),
+            Box::pin(async {}),
+        )
+        .await
+        .is_err()
+    );
 }

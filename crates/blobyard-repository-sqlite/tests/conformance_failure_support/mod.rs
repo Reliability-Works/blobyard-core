@@ -19,6 +19,7 @@ mod faulting_previews;
 mod faulting_sharing;
 mod faulting_yard_guests;
 mod faulting_yard_identity;
+mod faulting_yard_oidc;
 mod faulting_yard_sessions;
 mod faulting_yards;
 
@@ -42,7 +43,7 @@ pub(crate) fn yard_fixture() -> blobyard_testkit::YardConformanceFixture {
 pub(crate) fn every_operation_fails_closed(
     mut run: impl FnMut(usize) -> Result<(), RepositoryError>,
 ) -> usize {
-    let successful_index = (0..256).find(|&failure_index| run(failure_index).is_ok());
+    let successful_index = (0..264).find(|&failure_index| run(failure_index).is_ok());
     assert!(successful_index.is_some(), "conformance must terminate");
     assert_ne!(
         successful_index,

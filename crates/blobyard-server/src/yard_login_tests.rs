@@ -7,6 +7,8 @@ use axum::{
 };
 use blobyard_contract::RepositoryError;
 use blobyard_core::SecretString;
+use blobyard_testkit::FixtureExecutionTracker;
+use http_body_util::BodyExt;
 
 #[test]
 fn durable_continuation_ids_use_the_normative_prefix() {
@@ -121,4 +123,37 @@ async fn login_clock_and_expiry_failures_are_internal() {
         )),
         StatusCode::INTERNAL_SERVER_ERROR
     );
+}
+
+#[tokio::test]
+async fn disabled_oidc_preserves_the_local_key_fallback() {
+    let response = super::page::login("docs-fixture", "continuation", false, false);
+    let body = response
+        .into_body()
+        .collect()
+        .await
+        .expect("login page body")
+        .to_bytes();
+    let body = std::str::from_utf8(&body).expect("login page text");
+    assert!(body.contains("action=\"/account/yard-login\""));
+    assert!(body.contains("name=\"login_key\""));
+    assert!(!body.contains("action=\"/account/yard-oidc/start\""));
+    let enabled = super::page::login("docs-fixture", "continuation<&", false, true)
+        .into_body()
+        .collect()
+        .await
+        .expect("OIDC login page")
+        .to_bytes();
+    let enabled = std::str::from_utf8(&enabled).expect("OIDC login page text");
+    assert!(enabled.contains("action=\"/account/yard-login\""));
+    assert!(enabled.contains("action=\"/account/yard-oidc/start\""));
+    assert!(enabled.contains("continuation&lt;&amp;"));
+
+    let mut tracker = FixtureExecutionTracker::new_oidc("server", "oidc-local-key-fallback");
+    tracker.record_case(
+        "oidc-disabled-preserves-local-key-fallback",
+        &serde_json::json!({"oidcConfigured": false}),
+        &serde_json::json!({"localKeyFormPresent": true, "oidcFormPresent": false}),
+    );
+    tracker.finish().expect("local-key OIDC fixture coverage");
 }

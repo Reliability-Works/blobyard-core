@@ -39,9 +39,14 @@ pub(crate) struct AppState {
     pub(crate) staging_directory: PathBuf,
     pub(crate) default_workspace: WorkspaceRecord,
     pub(crate) oidc_verifier: Arc<dyn crate::oidc::GithubOidcVerifier>,
+    pub(crate) yard_oidc_provider: Option<Arc<dyn crate::yard_oidc_provider::YardOidcProvider>>,
 }
 
-pub(crate) fn router(
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the runtime adapter set is explicit at the single application composition root"
+)]
+pub(crate) fn router_with_yard_oidc(
     repository: Arc<dyn Repository>,
     storage: Arc<dyn ObjectStorage>,
     workspace: WorkspaceRecord,
@@ -49,6 +54,7 @@ pub(crate) fn router(
     public_origin: String,
     web_yard_origin: String,
     staging_directory: PathBuf,
+    yard_oidc_provider: Option<Arc<dyn crate::yard_oidc_provider::YardOidcProvider>>,
 ) -> Router {
     let yard_continuation_key =
         Arc::new(crate::yard_session_contracts::derive_key(&capability_key));
@@ -62,6 +68,7 @@ pub(crate) fn router(
         staging_directory,
         default_workspace: workspace,
         oidc_verifier: Arc::new(crate::oidc::RemoteGithubOidcVerifier::new()),
+        yard_oidc_provider,
     };
     router_with_state(state)
 }
@@ -93,6 +100,7 @@ pub(crate) fn router_with_state(state: AppState) -> Router {
         .merge(crate::yards::routes())
         .merge(crate::yard_invite::routes())
         .merge(crate::yard_login::routes())
+        .merge(crate::yard_oidc_routes::routes())
         .merge(crate::yard_session_runtime::routes())
         .fallback(crate::yards::public_fallback)
         .with_state(state)

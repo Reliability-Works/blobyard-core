@@ -21,6 +21,10 @@ pub enum ServerError {
     PublicOrigin,
     /// The configured Web Yard origin cannot safely host first-level public subdomains.
     WebYardOrigin,
+    /// The optional generic OIDC configuration is partial or invalid.
+    OidcConfiguration,
+    /// Generic OIDC discovery or provider construction failed before startup.
+    OidcDiscovery,
     /// A required local invariant could not be established.
     Initialization,
 }
@@ -33,6 +37,8 @@ impl Display for ServerError {
             Self::Storage => "standalone object storage is unavailable",
             Self::PublicOrigin => "standalone public origin is invalid",
             Self::WebYardOrigin => "standalone Web Yard origin is invalid",
+            Self::OidcConfiguration => "standalone OIDC configuration is invalid",
+            Self::OidcDiscovery => "standalone OIDC provider discovery failed",
             Self::Initialization => "standalone runtime initialization failed",
         })
     }
